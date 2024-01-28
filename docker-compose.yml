@@ -1,0 +1,34 @@
+version: '3.1'
+services:
+  acton-3:
+    # Shairport Sync AirPlay receiver
+    # Referenced from https://github.com/mikebrady/shairport-sync/blob/master/docker/docker-compose.yaml
+    container_name: acton-3
+    image: mikebrady/shairport-sync:latest
+    command: '--statistics -a "Acton III"'
+    network_mode: host
+    restart: unless-stopped
+    # environment:
+    #  PULSE_SERVER: unix:/tmp/pulseaudio.socket # Path for PulseAudio socket
+    #  PULSE_COOKIE: /tmp/pulseaudio.cookie # Path for PulseAudio cookie
+    devices:
+      - "/dev/snd"
+    volumes:
+      - ./configs/shairport-sync/shairport-sync.conf:/etc/shairport-sync.conf # Customised Shairport Sync configuration file.
+    #   - /run/user/1000/pulse/native:/tmp/pulseaudio.socket # PulseAudio socket when using that backend
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+  homeassistant:
+    # Home Assistant
+    # Referenced from https://www.home-assistant.io/installation/raspberrypi#docker-compose
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ./configs/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
