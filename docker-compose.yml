@@ -1,13 +1,33 @@
 version: '3.1'
+networks:
+  frontend:
+    external: true
 services:
+  traefik:
+    # Traefik
+    # Referenced from https://doc.traefik.io/traefik/getting-started/quick-start/
+    container_name: traefik
+    image: traefik:v2.10
+    ports:
+      - 80:80
+      - 443:443
+      # Enable Dashboard, don't do this in production
+      - 8080:8080
+    volumes:
+      - ./configs/traefik:/etc/traefik
+      - ./data/certs:/certs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - frontend
+    restart: unless-stopped
   acton-3:
     # Shairport Sync AirPlay receiver
     # Referenced from https://github.com/mikebrady/shairport-sync/blob/master/docker/docker-compose.yaml
     container_name: acton-3
     image: mikebrady/shairport-sync:latest
     command: '--statistics -a "Acton III"'
-    network_mode: host
     restart: unless-stopped
+    network_mode: host
     # environment:
     #  PULSE_SERVER: unix:/tmp/pulseaudio.socket # Path for PulseAudio socket
     #  PULSE_COOKIE: /tmp/pulseaudio.cookie # Path for PulseAudio cookie
@@ -38,16 +58,30 @@ services:
     volumes:
       - ./configs/esphome/config:/config
       - /etc/localtime:/etc/localtime:ro
-    restart: always
+    restart: unless-stopped
     privileged: true
     network_mode: host
+
   teleport:
     # Teleport
     # Referenced from https://goteleport.com/docs/installation/#example-of-running-a-teleport-container
     container_name: teleport
-    image: public.ecr.aws/gravitational/teleport-distroless:15.0.0
+    image: public.ecr.aws/gravitational/teleport-distroless-debug:15.0.0
     volumes:
       - ./configs/teleport/config:/etc/teleport
-      - ./configs/teleport/data:/var/lib/teleport
-    restart: always
-    network_mode: host
+      - ./data/teleport:/var/lib/teleport
+    ports:
+      - "3080:3080"
+      - "3023:3023"
+      - "3024:3024"
+      - "3025:3025"
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.teleport.loadbalancer.server.port: "3080"
+      traefik.http.services.teleport.loadbalancer.server.scheme: "https"
+      traefik.http.routers.teleport-http.entrypoints: "web"
+      traefik.http.routers.teleport-http.rule: "Host(`localhost`)"
+      traefik.http.routers.teleport-https.entrypoints: "websecure"
+      traefik.http.routers.teleport-https.rule: "Host(`localhost`)"
+      traefik.http.routers.teleport-https.tls: "true"
+    restart: unless-stopped
