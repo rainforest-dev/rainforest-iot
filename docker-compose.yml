@@ -41,3 +41,13 @@ services:
     restart: always
     privileged: true
     network_mode: host
+  teleport:
+    # Teleport
+    # Referenced from https://goteleport.com/docs/installation/#example-of-running-a-teleport-container
+    container_name: teleport
+    image: public.ecr.aws/gravitational/teleport-distroless:15.0.0
+    volumes:
+      - ./configs/teleport/config:/etc/teleport
+      - ./configs/teleport/data:/var/lib/teleport
+    restart: always
+    network_mode: host
