@@ -7,24 +7,28 @@
 #
 version: v3
 teleport:
-  nodename: localhost
+  nodename: teleport.rainforest.cluster
   data_dir: /var/lib/teleport
   log:
     output: stderr
     severity: INFO
     format:
       output: text
-  ca_pin: ""
-  diag_addr: ""
+
 auth_service:
   enabled: "yes"
   listen_addr: 0.0.0.0:3025
   proxy_listener_mode: multiplex
+  cluster_name: teleport.rainforest.cluster
+
 ssh_service:
   enabled: "no"
+
 proxy_service:
   enabled: "yes"
+  web_listen_addr: 0.0.0.0:3080
+  # when using reverse proxy
+  public_addr: teleport.rainforest.cluster
   https_keypairs: []
-  https_keypairs_reload_interval: 0s
   acme: {}
 

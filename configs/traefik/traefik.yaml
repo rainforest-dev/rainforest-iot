@@ -13,6 +13,7 @@ api:
 entryPoints:
   web:
     address: :80
+    # redirect all http traffic to https
     http:
       redirections:
         entryPoint:
@@ -28,6 +29,7 @@ providers:
     watch: true
     swarmMode: false
 
+# disable TLS Cert verification check
 serversTransport:
   insecureSkipVerify: true
 tls:
