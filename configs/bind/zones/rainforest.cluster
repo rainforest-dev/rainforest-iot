@@ -1,0 +1,17 @@
+$TTL 2d
+
+$ORIGIN rainforest.cluster.
+
+@       IN      SOA     ns.rainforest.cluster. info.rainforest.cluster. (
+                        2024020400 ; serial
+                        12h        ; refresh
+                        15m        ; retry
+                        3w         ; expire
+                        2h         ; minimum
+                        )
+
+                IN      NS      ns.rainforest.cluster.
+
+ns              IN      A       172.20.0.2
+
+; -- add dns records below

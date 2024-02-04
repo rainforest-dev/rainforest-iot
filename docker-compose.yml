@@ -3,6 +3,25 @@ networks:
   frontend:
     external: true
 services:
+  dns:
+    # Bind9
+    # Referenced from 
+    #   - https://www.youtube.com/watch?v=syzwLwE3Xq4&list=PLj-2elZxVPZ8ByT3pEPVFr6MqPH0WsPjc&index=30
+    #   - https://hub.docker.com/r/internetsystemsconsortium/bind9
+    container_name: dns
+    image: ubuntu/bind9:latest
+    environment:
+      - BIND9_USER=root
+      - TZ=Asia/Taipei
+    ports:
+      - 53:53/udp
+      - 53:53/tcp
+    volumes:
+      - ./configs/bind:/etc/bind
+      - ./cache:/var/cache/bind
+      - ./records:/var/lib/bind
+    restart: unless-stopped
+
   traefik:
     # Traefik
     # Referenced from https://doc.traefik.io/traefik/getting-started/quick-start/
