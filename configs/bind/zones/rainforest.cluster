@@ -15,3 +15,5 @@ $ORIGIN rainforest.cluster.
 ns              IN      A       172.20.0.2
 
 ; -- add dns records below
+teleport        IN      A       172.20.0.3
+proxy           IN      A       172.19.0.2
