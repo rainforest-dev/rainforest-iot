@@ -21,7 +21,7 @@ resource "docker_image" "shareport-sync" {
 }
 
 resource "docker_container" "add-configuration" {
-  image    = docker_image.alpine.name
+  image    = docker_image.alpine.image_id
   name     = "add-configuration"
   command  = ["sh", "-c", "echo 'general = { volume_range_db = 60 }' > /shairport-sync/shairport-sync.conf"]
   must_run = false
@@ -33,7 +33,7 @@ resource "docker_container" "add-configuration" {
 
 resource "docker_container" "acton-3" {
   depends_on   = [docker_container.add-configuration]
-  image        = docker_image.shareport-sync.name
+  image        = docker_image.shareport-sync.image_id
   name         = "acton-3"
   restart      = "unless-stopped"
   network_mode = "host"

@@ -36,3 +36,19 @@ module "homepage" {
     docker = docker.raspberry-pi
   }
 }
+
+module "watchtower" {
+  source = "./modules/watchtower"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+}
+
+# module "pi-hole" {
+#   source = "./modules/pi-hole"
+
+#   providers = {
+#     docker = docker.raspberry-pi
+#   }
+# }
