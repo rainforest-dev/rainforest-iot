@@ -8,6 +8,10 @@ terraform {
   }
 }
 
+resource "docker_volume" "homeassistant_configuration" {
+  name = "homeassistant_configuration"
+}
+
 resource "docker_image" "homeassistant" {
   name = "ghcr.io/home-assistant/home-assistant:stable"
 }
@@ -21,8 +25,7 @@ resource "docker_container" "homeassistant" {
 
   volumes {
     container_path = "/config"
-    host_path      = "/homeassistant"
-    volume_name    = var.configuration_volume_name
+    volume_name    = docker_volume.homeassistant_configuration.name
   }
 
   volumes {
