@@ -1,4 +1,22 @@
-## Self-Signed Certificate
+# Rainforest IoT Platform
+## Raspberry Pi 4B
+### Setup
+#### OS
+#### Install Docker
+- create remote docker context
+
+#### Setup from client via `terraform`
+
 ```bash
-openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out cert.crt -keyout cert.key
+docker context create raspberrypi-4 --docker "host=ssh://raspberrypi-4" 
 ```
+```bash
+terraform init
+terraform apply
+```
+
+### Components
+1. homeassistant
+2. shairport-sync
+3. watchtower
+4. openspeedtest

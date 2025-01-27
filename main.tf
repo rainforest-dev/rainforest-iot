@@ -45,6 +45,14 @@ module "watchtower" {
   }
 }
 
+module "openspeedtest" {
+  source = "./modules/openspeedtest"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+}
+
 # module "pi-hole" {
 #   source = "./modules/pi-hole"
 
