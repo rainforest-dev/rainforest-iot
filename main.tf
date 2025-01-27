@@ -28,3 +28,11 @@ module "acton-3" {
     docker = docker.raspberry-pi
   }
 }
+
+module "homepage" {
+  source = "./modules/homepage"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+}
