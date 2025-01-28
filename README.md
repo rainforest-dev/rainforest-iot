@@ -17,6 +17,11 @@ terraform apply
 
 ### Components
 1. homeassistant
+enables the integration of HACS
+```bash
+docker exec -it <name of the container running homeassistant> bash
+wget -O - https://get.hacs.xyz | bash -
+```
 2. shairport-sync
 3. watchtower
 4. openspeedtest
