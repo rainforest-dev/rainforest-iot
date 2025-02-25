@@ -42,3 +42,4 @@ terraform.rc
 configs/homeassistant
 configs/teleport/data
 data
+.DS_Store

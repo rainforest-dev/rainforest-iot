@@ -37,13 +37,13 @@ module "homepage" {
   }
 }
 
-module "watchtower" {
-  source = "./modules/watchtower"
+# module "watchtower" {
+#   source = "./modules/watchtower"
 
-  providers = {
-    docker = docker.raspberry-pi
-  }
-}
+#   providers = {
+#     docker = docker.raspberry-pi
+#   }
+# }
 
 module "openspeedtest" {
   source = "./modules/openspeedtest"
