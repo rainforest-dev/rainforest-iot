@@ -1,12 +1,12 @@
 - Mac mini M4:
     - Open WebUI:
         href: https://open-webui.k8s.orb.local/
-        # container: webui
-        # server: macmini-docker
     - Flowise:
         href: https://flowise.k8s.orb.local/
     - Calibre:
         href: https://calibre-web.orb.local/
+        container: calibre-web
+        server: macmini-docker
 
 - Raspberry Pi 4:
     - Home Assistant:

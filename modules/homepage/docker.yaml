@@ -1,2 +1,5 @@
 rpi4-docker:
   socket: /var/run/docker.sock
+macmini-docker:
+  host: dockerproxy.orb.local
+  port: 2375
