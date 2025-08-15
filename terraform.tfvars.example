@@ -1,0 +1,25 @@
+# Raspberry Pi connection settings
+raspberry_pi_hostname = "raspberrypi-5"  # or use IP address like "192.168.1.100"
+raspberry_pi_user = "rainforest"
+raspberry_pi_port = 22
+# raspberry_pi_host = "ssh://rainforest@raspberrypi-5:22"  # Optional: override computed connection string
+
+# System configuration
+timezone = "Asia/Taipei"
+
+# HomeAssistant settings
+homeassistant_memory = 1024
+enable_usb_devices = false  # Set to true if using Zigbee/Z-Wave USB dongles
+
+# Port mappings
+pihole_web_port = 8080
+homepage_port = 80
+openspeedtest_ports = {
+  http  = 3000
+  https = 3001
+}
+
+# Maintenance settings
+watchtower_poll_interval = 86400  # 24 hours in seconds
+log_max_size = "50m"
+log_max_files = 3
