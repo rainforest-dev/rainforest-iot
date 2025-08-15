@@ -16,7 +16,7 @@ resource "docker_image" "alpine" {
   name = "alpine:latest"
 }
 
-resource "docker_image" "shareport-sync" {
+resource "docker_image" "shairport-sync" {
   name = "mikebrady/shairport-sync:latest"
 }
 
@@ -33,11 +33,24 @@ resource "docker_container" "add-configuration" {
 
 resource "docker_container" "acton-3" {
   depends_on   = [docker_container.add-configuration]
-  image        = docker_image.shareport-sync.image_id
+  image        = docker_image.shairport-sync.image_id
   name         = "acton-3"
   restart      = "unless-stopped"
   network_mode = "host"
   command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "Headphone"]
+
+  # Resource limits
+  memory = 128
+  memory_swap = 256
+
+  # Health check for audio service
+  healthcheck {
+    test         = ["CMD", "pgrep", "shairport-sync"]
+    interval     = "30s"
+    timeout      = "5s"
+    retries      = 3
+    start_period = "10s"
+  }
 
   devices {
     host_path = "/dev/snd"
@@ -48,8 +61,5 @@ resource "docker_container" "acton-3" {
     volume_name    = docker_volume.shairport_sync_configuration.name
   }
 
-  log_opts = {
-    "max-size" = "200k"
-    "max-file" = "10"
-  }
+  log_opts = var.log_opts
 }
