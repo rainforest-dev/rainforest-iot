@@ -45,7 +45,6 @@ terraform apply
 |---------|-------------|------|--------|
 | **HomeAssistant** | Home automation platform | 8123 | ✅ Active |
 | **Homepage** | Dashboard and service portal | 80 | ✅ Active |
-| **Shairport-sync** | AirPlay audio receiver | - | ✅ Active |
 | **Pi-hole** | DNS-based ad blocker | 8080 | ✅ Active |
 | **Watchtower** | Automatic container updates | - | ✅ Active |
 | **OpenSpeedTest** | Network speed testing | 3000/3001 | ✅ Active |

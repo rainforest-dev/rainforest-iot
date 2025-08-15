@@ -28,16 +28,16 @@ module "homeassistant" {
   log_opts = local.common_log_opts
 }
 
-module "acton-3" {
-  source = "./modules/acton-3"
+# module "acton-3" {
+#   source = "./modules/acton-3"
 
-  providers = {
-    docker = docker.raspberry-pi
-  }
+#   providers = {
+#     docker = docker.raspberry-pi
+#   }
   
-  timezone = var.timezone
-  log_opts = local.common_log_opts
-}
+#   timezone = var.timezone
+#   log_opts = local.common_log_opts
+# }
 
 module "homepage" {
   source = "./modules/homepage"
