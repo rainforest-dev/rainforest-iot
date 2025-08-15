@@ -40,9 +40,24 @@ resource "docker_container" "homepage" {
   depends_on = [docker_container.helper]
   image      = docker_image.homepage.image_id
   name       = "homepage"
+  restart    = "unless-stopped"
+
+  # Resource limits
+  memory = 256
+  memory_swap = 512
+
+  # Health check
+  healthcheck {
+    test         = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "30s"
+  }
+
   ports {
     internal = 3000
-    external = 80
+    external = var.external_port
   }
 
   volumes {
@@ -53,5 +68,9 @@ resource "docker_container" "homepage" {
   volumes {
     container_path = "/var/run/docker.sock"
     host_path      = "/var/run/docker.sock"
+    read_only      = true
   }
+
+  # Logging configuration
+  log_opts = var.log_opts
 }

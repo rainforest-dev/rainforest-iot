@@ -13,11 +13,28 @@ resource "docker_image" "watchtower" {
 }
 
 resource "docker_container" "watchtower" {
-  image = docker_image.watchtower.image_id
-  name  = "watchtower"
+  image   = docker_image.watchtower.image_id
+  name    = "watchtower"
+  restart = "unless-stopped"
+
+  # Resource limits
+  memory = 128
+  memory_swap = 256
+
+  # Environment variables for safer operation
+  env = [
+    "TZ=${var.timezone}",
+    "WATCHTOWER_CLEANUP=true",
+    "WATCHTOWER_POLL_INTERVAL=${var.poll_interval}",
+    "WATCHTOWER_INCLUDE_STOPPED=true"
+  ]
 
   volumes {
     container_path = "/var/run/docker.sock"
     host_path      = "/var/run/docker.sock"
+    read_only      = true
   }
+
+  # Logging configuration
+  log_opts = var.log_opts
 }
