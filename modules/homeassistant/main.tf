@@ -20,8 +20,42 @@ resource "docker_container" "homeassistant" {
   image        = docker_image.homeassistant.image_id
   name         = "homeassistant"
   restart      = "unless-stopped"
-  privileged   = true
   network_mode = "host"
+
+  # Resource limits for stability
+  memory = var.memory_limit
+  memory_swap = var.memory_limit * 2
+
+  # Health check
+  healthcheck {
+    test         = ["CMD", "curl", "-f", "http://localhost:8123/api/"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "60s"
+  }
+
+  # Security capabilities instead of privileged mode
+  capabilities {
+    add = ["NET_ADMIN", "NET_RAW", "SYS_ADMIN"]
+  }
+
+  # USB device access for Zigbee/Z-Wave dongles
+  dynamic "devices" {
+    for_each = var.enable_usb_devices ? [1] : []
+    content {
+      host_path      = "/dev/ttyUSB0"
+      container_path = "/dev/ttyUSB0"
+    }
+  }
+  
+  dynamic "devices" {
+    for_each = var.enable_usb_devices ? [1] : []
+    content {
+      host_path      = "/dev/ttyACM0"
+      container_path = "/dev/ttyACM0"
+    }
+  }
 
   volumes {
     container_path = "/config"
@@ -39,4 +73,7 @@ resource "docker_container" "homeassistant" {
     host_path      = "/run/dbus"
     read_only      = true
   }
+
+  # Logging configuration
+  log_opts = var.log_opts
 }
