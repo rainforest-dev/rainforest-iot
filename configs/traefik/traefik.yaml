@@ -7,7 +7,7 @@ log:
 
 api:
   dashboard: true
-  insecure: true
+  insecure: false  # Secure dashboard access
   debug: false
 
 entryPoints:
@@ -29,9 +29,13 @@ providers:
     watch: true
     swarmMode: false
 
-# disable TLS Cert verification check
+# TLS configuration - enable verification in production
 serversTransport:
-  insecureSkipVerify: true
+  insecureSkipVerify: false  # Changed to secure default
+  maxIdleConnsPerHost: 10
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 0s
 tls:
   certificates:
     - certFile: /certs/cert.crt
