@@ -64,6 +64,14 @@ module "homepage" {
   external_port = var.homepage_port
   timezone = var.timezone
   log_opts = local.common_log_opts
+  
+  # New template variables
+  mac_mini_hostname = var.mac_mini_hostname
+  homepage_title = var.homepage_title
+  homepage_enable_kubernetes_widgets = var.homepage_enable_kubernetes_widgets
+  grafana_port = var.grafana_port
+  prometheus_port = var.prometheus_port
+  alertmanager_port = var.alertmanager_port
 }
 
 module "watchtower" {

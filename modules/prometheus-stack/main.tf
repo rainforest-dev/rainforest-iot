@@ -175,6 +175,48 @@ resource "helm_release" "prometheus_stack" {
             admin_password = var.grafana_admin_password
           }
         }
+        
+        # Sidecar resource limits
+        sidecar = {
+          dashboards = {
+            resources = {
+              requests = {
+                cpu    = "50m"
+                memory = "64Mi"
+              }
+              limits = {
+                cpu    = "100m"
+                memory = "128Mi"
+              }
+            }
+          }
+          datasources = {
+            resources = {
+              requests = {
+                cpu    = "50m"
+                memory = "64Mi"
+              }
+              limits = {
+                cpu    = "100m"
+                memory = "128Mi"
+              }
+            }
+          }
+        }
+        
+        # Init container resource limits
+        initChownData = {
+          resources = {
+            requests = {
+              cpu    = "50m"
+              memory = "64Mi"
+            }
+            limits = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+          }
+        }
       }
       
       # AlertManager configuration
@@ -236,6 +278,34 @@ resource "helm_release" "prometheus_stack" {
       kubeStateMetrics = {
         enabled = var.kube_state_metrics_enabled
         
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+          limits = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+        }
+      }
+      
+      # Admission webhook configuration with resource limits
+      prometheusOperator = {
+        admissionWebhooks = {
+          patch = {
+            resources = {
+              requests = {
+                cpu    = "10m"
+                memory = "32Mi"
+              }
+              limits = {
+                cpu    = "50m"
+                memory = "64Mi"
+              }
+            }
+          }
+        }
         resources = {
           requests = {
             cpu    = "50m"
