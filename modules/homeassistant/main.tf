@@ -40,7 +40,7 @@ resource "docker_container" "homeassistant" {
 
   # Health check
   healthcheck {
-    test         = ["CMD", "curl", "-f", "http://localhost:8123/api/"]
+    test         = ["CMD", "curl", "-f", "http://localhost:8123/"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3
