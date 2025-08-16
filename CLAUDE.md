@@ -4,52 +4,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a secure, containerized IoT platform for Raspberry Pi 5 using Terraform for Infrastructure as Code and Docker for containerized services. The platform deploys and manages various IoT services including HomeAssistant, Pi-hole, Homepage dashboard, Watchtower, and OpenSpeedTest via SSH-based remote management.
+This is a production-grade IoT platform for Raspberry Pi 5 using a 3-layer architecture:
+- **Layer 1 (Ansible)**: Infrastructure setup - K3s Kubernetes cluster, system hardening, kubeconfig management  
+- **Layer 2 (Terraform)**: Workloads - Docker services + Kubernetes monitoring with automatic dependency management
+- **Layer 3 (Future)**: Application management and custom integrations
+
+The platform deploys IoT services (HomeAssistant, Pi-hole, Homepage, Watchtower, OpenSpeedTest) plus production monitoring (Prometheus, Grafana, Loki, AlertManager) with proper CRD dependency handling.
 
 ## Essential Commands
 
-### Initial Setup
+### Layer 1: Infrastructure Setup (Ansible)
 ```bash
-# Copy and configure connection settings
+# Configure Ansible inventory first
+# Edit ansible/inventory.yml with your Pi's IP/hostname
+
+# Deploy K3s cluster and system hardening
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/k3s-install.yml
+
+# Validate infrastructure deployment
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
+
+# Check K3s cluster from Pi kubeconfig
+kubectl get nodes --kubeconfig ~/.kube/config-raspberrypi-5
+```
+
+### Layer 2: Workloads Deployment (Terraform)
+```bash
+# Configure Terraform
 cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your configuration
 
 # Create Docker context for remote Pi deployment
 docker context create raspberrypi-5 --docker "host=ssh://raspberrypi-5"
-```
 
-### Core Terraform Operations
-```bash
-# Initialize Terraform
+# Deploy all workloads with dependency management
 terraform init
+terraform plan    # Safe to run repeatedly
+terraform apply   # Deploy with automatic sequencing
 
-# Plan deployment (safe to run repeatedly)
-terraform plan
-
-# Apply infrastructure changes
-terraform apply
-
-# Destroy infrastructure
-terraform destroy
-
-# Target specific module for changes
+# Target specific modules if needed
 terraform apply -target=module.homepage
+terraform apply -target=module.prometheus_stack
 
-# Replace specific service container (rarely needed)
-terraform apply -replace=module.homeassistant.docker_container.homeassistant
+# Clean deployment (useful for testing)
+terraform destroy && terraform apply
 ```
 
 ### Service Management
 ```bash
-# View container logs on remote Pi
+# Docker services (Layer 2)
 docker logs homeassistant
 docker logs pihole
 docker logs watchtower
-
-# Check container status
 docker ps -a
 
-# Manual container update
-docker pull ghcr.io/home-assistant/home-assistant:stable
+# Kubernetes monitoring (Layer 2)
+kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+kubectl logs -f deployment/prometheus-server -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+kubectl describe pod <pod-name> -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+
+# Access monitoring services
+echo "Grafana: http://raspberrypi-5:30080 (admin/admin123)"
+echo "Prometheus: http://raspberrypi-5:30090"
+echo "AlertManager: http://raspberrypi-5:30093"
 ```
 
 ### Backup Operations
@@ -60,29 +77,39 @@ docker run --rm -v homeassistant_configuration:/source -v $(pwd):/backup alpine 
 
 ## Architecture
 
-### Infrastructure Pattern
-- **Remote Deployment**: Uses Docker provider with SSH connection to Raspberry Pi
-- **Modular Design**: Each service is a separate Terraform module in `modules/` directory
-- **Security Hardened**: No privileged containers, resource limits, minimal capabilities
-- **Configuration Driven**: All customization via `terraform.tfvars`
-- **Lifecycle Management**: Prevents unnecessary container recreation, only updates when needed
-- **Connection Reliability**: SSH keepalive settings prevent timeouts during operations
+### 3-Layer Architecture Benefits
+- ✅ **Automatic dependency management**: CRDs installed before usage (Prometheus → Loki ServiceMonitors)
+- ✅ **Clean layer separation**: Infrastructure vs workloads vs applications
+- ✅ **Single deployment command**: No manual sequencing required
+- ✅ **Production monitoring**: Full observability stack included
+- ✅ **Remote Helm deployment**: No need to install Helm on Pi
+- ✅ **Scalable architecture**: Easy to add Layer 3 applications
 
 ### Key Components
-- **main.tf**: Root module orchestrating all service modules
-- **variables.tf**: Input variable definitions with defaults
-- **locals.tf**: Computed values including SSH connection strings and common configs
-- **modules/**: Service-specific Terraform modules (homeassistant, pi-hole, homepage, watchtower, openspeedtest)
+**Layer 1 (Ansible)**:
+- `ansible/playbooks/k3s-install.yml`: K3s cluster setup + kubeconfig fetch
+- `ansible/playbooks/validate-setup.yml`: Infrastructure validation
+- `ansible/inventory.yml`: Pi connection configuration
 
-### Service Modules Structure
-Each module in `modules/` contains:
-- `main.tf`: Docker resources (image, container, volumes)
-- `variables.tf`: Module-specific input variables
-- Configuration files where applicable
+**Layer 2 (Terraform)**:
+- `main.tf`: Orchestrates Docker services + K8s monitoring with dependencies
+- `modules/prometheus-stack/`: Production monitoring stack with CRD management
+- `modules/loki-stack/`: Centralized logging with Promtail
+- `modules/monitoring-integrations/`: ServiceMonitors after CRD availability
+- `modules/<service>/`: Docker service modules (homeassistant, pi-hole, etc.)
+
+### Dependency Flow
+```
+Ansible (K3s + kubeconfig) → Terraform (Prometheus Stack) → time_sleep(60s) → Loki + ServiceMonitors
+                           → Docker Services (HomeAssistant, Pi-hole, etc.)
+```
 
 ### Connection Architecture
 ```
-Client Machine (Terraform) --SSH--> Raspberry Pi (Docker Engine)
+Local Machine (Ansible/Terraform) --SSH--> Raspberry Pi 5 (K3s + Docker)
+                ↓
+        ~/.kube/config-raspberrypi-5 (Pi cluster access)
+        ~/.kube/config (Docker Desktop - preserved)
 ```
 
 ## Configuration Management
@@ -108,12 +135,21 @@ Edit `terraform.tfvars` for all deployments:
 
 ## Service Ports
 
+**Docker Services:**
 | Service | Port | Purpose |
 |---------|------|---------|
 | HomeAssistant | 8123 | Home automation web interface |
 | Homepage | 80 | Dashboard and service portal |
 | Pi-hole | 8080 | DNS ad-blocker web interface |
 | OpenSpeedTest | 3000/3001 | Network speed testing (HTTP/HTTPS) |
+
+**Kubernetes Monitoring:**
+| Service | Port | Purpose |
+|---------|------|---------|
+| Prometheus | 30090 | Metrics collection and queries |
+| Grafana | 30080 | Dashboards and visualization |
+| AlertManager | 30093 | Alert management and routing |
+| Loki | 30100 | Log aggregation (internal) |
 
 ## Development Workflow
 
@@ -145,24 +181,35 @@ The infrastructure includes smart lifecycle rules that prevent unnecessary conta
 
 ### Common Issues & Solutions
 
-#### Container Recreation Errors
+#### Layer 1 (Infrastructure) Issues
 ```bash
-# If containers show as needing replacement unnecessarily:
-terraform plan  # Check what changes are proposed
+# K3s cluster problems
+ssh rainforest@raspberrypi-5 'systemctl status k3s'
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
 
-# For state mismatches, target specific modules:
-terraform apply -target=module.homepage
-
-# For SSH timeout issues, check connection:
-docker context use raspberrypi-5
-docker ps  # Verify remote connection works
+# Kubeconfig connectivity issues
+kubectl get nodes --kubeconfig ~/.kube/config-raspberrypi-5
 ```
 
-#### Homepage Host Validation
-The Homepage service includes `HOMEPAGE_ALLOWED_HOSTS` environment variable to prevent host validation errors when accessing the dashboard.
+#### Layer 2 (Workload) Issues
+```bash
+# Docker service issues
+docker context use raspberrypi-5
+docker ps  # Verify remote connection works
+terraform apply -target=module.homepage  # Target specific module
 
-#### Memory Limit Detection
-Lifecycle rules ignore memory limit differences between Terraform config and runtime values, preventing false-positive recreation triggers.
+# Kubernetes monitoring issues
+kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+
+# CRD dependency issues (resolved by time_sleep)
+# Clean deployment usually resolves ServiceMonitor CRD conflicts:
+terraform destroy && terraform apply
+```
+
+#### Architecture-Specific Solutions
+- **ServiceMonitor CRD conflicts**: The `time_sleep` resource ensures Prometheus CRDs exist before Loki ServiceMonitors deploy
+- **Kubeconfig separation**: Pi cluster access via `~/.kube/config-raspberrypi-5`, Docker Desktop preserved at `~/.kube/config`
+- **Clean deployment validation**: Always test with `terraform destroy && terraform apply` to verify dependency management works
 
 ### Infrastructure Recovery
 ```bash

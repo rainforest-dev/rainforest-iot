@@ -120,6 +120,32 @@
       changed_when: false
       become: yes
       
+    # Local Pi Kubeconfig Validation
+    - name: Check if Pi kubeconfig exists locally
+      stat:
+        path: "~/.kube/config-{{ inventory_hostname }}"
+      delegate_to: localhost
+      become: no
+      register: pi_kubeconfig
+      
+    - name: Validate Pi kubeconfig connectivity
+      shell: kubectl get nodes --kubeconfig ~/.kube/config-{{ inventory_hostname }}
+      delegate_to: localhost
+      become: no
+      register: kubectl_pi_test
+      changed_when: false
+      failed_when: false
+      when: pi_kubeconfig.stat.exists
+      
+    - name: Test Pi kubectl cluster-info
+      shell: kubectl cluster-info --kubeconfig ~/.kube/config-{{ inventory_hostname }}
+      delegate_to: localhost
+      become: no
+      register: kubectl_pi_cluster_info
+      changed_when: false
+      failed_when: false
+      when: pi_kubeconfig.stat.exists
+      
     # Generate Validation Report
     - name: Generate validation report
       debug:
@@ -149,6 +175,11 @@
           - "  SSH Root Login: {{ 'Disabled' if not ssh_security.changed else 'ENABLED (Risk!)' }}"
           - "  Firewall: {{ firewall_status.stdout.split('\\n')[0] if firewall_status.rc == 0 else 'Not configured' }}"
           - "  Security Updates: {{ security_updates.stdout }} pending"
+          - ""
+          - "🔧 PI KUBECONFIG (LOCAL):"
+          - "  Config Exists: {{ 'Yes' if pi_kubeconfig.stat.exists else 'No' }}"
+          - "  Connectivity: {{ 'Working' if (kubectl_pi_test is defined and kubectl_pi_test.rc == 0) else 'Failed/Not tested' }}"
+          - "  Cluster Info: {{ 'Available' if (kubectl_pi_cluster_info is defined and kubectl_pi_cluster_info.rc == 0) else 'Failed/Not tested' }}"
           - ""
           - "✅ Validation Complete"
           

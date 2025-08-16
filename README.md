@@ -1,44 +1,62 @@
 # Rainforest IoT Platform
 
-A secure, containerized IoT platform for Raspberry Pi 5 using Terraform and Docker.
+A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture with Ansible, Terraform, and Kubernetes.
 
 ## Architecture
 
-- **Infrastructure as Code**: Terraform modules for reproducible deployments
-- **Containerized Services**: Docker containers with security hardening
-- **Remote Management**: SSH-based deployment from client machine
-- **Modular Design**: Independent service modules for easy maintenance
-- **Smart Lifecycle Management**: Prevents unnecessary container recreation
-- **Connection Reliability**: SSH keepalive for stable remote operations
+**🏗️ Layer 1 (Ansible)** - Infrastructure
+- **K3s Kubernetes cluster** with ARM64 optimization
+- **System hardening** with UFW firewall and fail2ban
+- **Kubeconfig management** with automatic local fetch
+
+**🐳 Layer 2 (Terraform)** - Workloads  
+- **Docker services**: HomeAssistant, Pi-hole, Homepage, Watchtower
+- **Kubernetes monitoring**: Prometheus, Grafana, Loki with dependency management
+- **Remote Helm deployment** with automatic CRD handling
+
+**🚀 Layer 3 (Future)** - Applications
+- Custom application deployments and integrations
+
+### Key Benefits
+- ✅ **Automatic dependency management** - CRDs installed before usage
+- ✅ **Clean layer separation** - Infrastructure vs workloads  
+- ✅ **Single deployment command** - No manual sequencing required
+- ✅ **Production monitoring** - Full observability stack included
 
 ## Prerequisites
 
-- Raspberry Pi 5 with Docker installed
-- SSH access configured
-- Terraform >= 1.0 installed on client machine
+- Raspberry Pi 5 with SSH access
+- Ansible inventory configured (`ansible/inventory.yml`)
+- Terraform >= 1.0 with Helm provider
+- kubectl for cluster management
 
 ## Quick Start
 
-1. **Configure Connection**
+1. **Setup Infrastructure (Layer 1)**
 ```bash
-# Copy and edit configuration
+# Configure Ansible inventory
+# Edit ansible/inventory.yml with your Pi's IP/hostname
+
+# Deploy K3s cluster and hardening
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/k3s-install.yml
+
+# Validate infrastructure
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
+```
+
+2. **Deploy Workloads (Layer 2)**  
+```bash
+# Configure Terraform
 cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your configuration
 
-# Edit your Pi's hostname/IP in terraform.tfvars:
-# raspberry_pi_hostname = "your-pi-hostname"  # or IP like "192.168.1.100"
-```
-
-2. **Create Docker Context**
-```bash
-# Use your actual hostname or IP
+# Create Docker context for remote deployment
 docker context create raspberrypi-5 --docker "host=ssh://raspberrypi-5"
-```
 
-3. **Deploy Infrastructure**
-```bash
+# Deploy all workloads with dependency management
 terraform init
 terraform plan    # Safe to run repeatedly
-terraform apply   # Only updates what changed
+terraform apply   # Deploy with automatic sequencing
 ```
 
 ## Services

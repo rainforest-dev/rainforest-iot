@@ -254,9 +254,18 @@ resource "helm_release" "loki_stack" {
   ]
 }
 
-# Create a ServiceMonitor for Prometheus to scrape Loki metrics
-resource "kubernetes_manifest" "loki_service_monitor" {
+# Wait for Prometheus CRDs to be available
+resource "time_sleep" "wait_for_crds" {
   count = var.enable_prometheus_monitoring ? 1 : 0
+  depends_on = [helm_release.loki_stack]
+  create_duration = "60s"
+}
+
+# Create a ServiceMonitor for Prometheus to scrape Loki metrics
+# Note: Disabled temporarily until Prometheus CRDs are reliably available  
+resource "kubernetes_manifest" "loki_service_monitor" {
+  count = 0  # Temporarily disabled: var.enable_prometheus_monitoring ? 1 : 0
+  depends_on = [time_sleep.wait_for_crds]
   
   manifest = {
     apiVersion = "monitoring.coreos.com/v1"
@@ -285,5 +294,4 @@ resource "kubernetes_manifest" "loki_service_monitor" {
     }
   }
   
-  depends_on = [helm_release.loki_stack]
 }

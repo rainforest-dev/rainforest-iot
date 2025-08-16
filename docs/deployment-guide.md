@@ -1,122 +1,120 @@
 # Deployment Guide
 
-This guide covers the two-step deployment process for the Raspberry Pi 5 IoT platform with production monitoring.
+This guide covers the 3-layer architecture deployment for the Raspberry Pi 5 IoT platform with production monitoring.
 
 ## Overview
 
-The deployment is split into two phases for safety and modularity:
+The deployment uses a clean 3-layer architecture with automatic dependency management:
 
-1. **Phase 1**: Docker Services (HomeAssistant, Pi-hole, Homepage, etc.)
-2. **Phase 2**: Kubernetes Monitoring Stack (Prometheus, Grafana, Loki)
+1. **Layer 1 (Ansible)**: Infrastructure setup - K3s cluster, system hardening, kubeconfig management
+2. **Layer 2 (Terraform)**: All workloads - Docker services + Kubernetes monitoring with proper CRD dependencies  
+3. **Layer 3 (Future)**: Application management and custom integrations
 
 ## Prerequisites
 
-- Raspberry Pi 5 with SSH access
-- Docker installed on Pi 5
-- Terraform installed locally
+- Raspberry Pi 5 with SSH access and Ansible inventory configured
+- Terraform installed locally with Helm provider
 - Valid terraform.tfvars configuration
+- kubectl installed locally for cluster management
 
-## Phase 1: Docker Services Deployment
+## Layer 1: Infrastructure Setup (Ansible)
 
 ### What Gets Deployed
+- **K3s Kubernetes cluster** with proper ARM64 configuration
+- **System hardening** with UFW firewall and fail2ban
+- **Kubeconfig management** with automatic local fetch for Terraform
+- **Namespace and storage setup** for monitoring workloads
+
+### Deploy Infrastructure
+```bash
+# Deploy infrastructure layer
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/k3s-install.yml
+
+# Validate infrastructure
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
+```
+
+### Post-Layer 1 Verification
+```bash
+# Check K3s cluster
+kubectl get nodes --kubeconfig ~/.kube/config-raspberrypi-5
+
+# Verify cluster components
+kubectl get pods -A --kubeconfig ~/.kube/config-raspberrypi-5
+```
+
+## Layer 2: Workloads Deployment (Terraform)
+
+### What Gets Deployed
+**Docker Services:**
 - **HomeAssistant**: Smart home automation platform
 - **Pi-hole**: Network-wide DNS ad blocking with Tailscale support
 - **Homepage**: Service dashboard
 - **Watchtower**: Container auto-updates
 - **OpenSpeedTest**: Network speed testing
 
-### Deploy Docker Services
-```bash
-# Ensure K8s is disabled for Phase 1
-# In terraform.tfvars:
-enable_k8s_cluster = false
-
-# Deploy Docker services
-terraform plan   # Review changes
-terraform apply  # Deploy
-```
-
-### Post-Phase 1 Verification
-```bash
-# Check service status
-ssh rainforest@raspberrypi-5 'docker ps'
-
-# Verify Pi-hole is working
-curl -I http://raspberrypi-5:8080/admin
-
-# Test Homepage dashboard
-curl -I http://raspberrypi-5:80
-```
-
-## Phase 2: Kubernetes Monitoring Stack
-
-### Prerequisites for Phase 2
-K3s must be installed on the Raspberry Pi 5:
-
-```bash
-# SSH to Pi 5
-ssh rainforest@raspberrypi-5
-
-# Install K3s
-curl -sfL https://get.k3s.io | sh -
-
-# Copy kubeconfig for remote access (optional)
-sudo cat /etc/rancher/k3s/k3s.yaml
-# Copy contents to ~/.kube/config on your local machine
-# Update server: https://raspberrypi-5:6443
-```
-
-### What Gets Deployed in Phase 2
-- **K3s Cluster**: Foundation with namespaces, storage, security policies
-- **Prometheus Stack**: Metrics collection, alerting, visualization
-- **Grafana**: Dashboards with pre-configured homelab views
+**Kubernetes Monitoring Stack:**
+- **Prometheus Stack**: Metrics collection with CRD installation
+- **Grafana**: Dashboards with pre-configured homelab views  
 - **Loki + Promtail**: Centralized logging for containers and K8s
 - **AlertManager**: Custom homelab alerting rules
+- **ServiceMonitors**: Integration between services and monitoring
 
-### Deploy Monitoring Stack
+### Deploy All Workloads
 ```bash
-# Enable K8s in terraform.tfvars:
-enable_k8s_cluster = true
-
-# Deploy full stack
-terraform plan   # Review K8s resources
-terraform apply  # Deploy monitoring
+# Single deployment with dependency management
+terraform plan   # Review all changes
+terraform apply  # Deploy everything with proper sequencing
 ```
 
-### Post-Phase 2 Verification
+### Post-Layer 2 Verification
 ```bash
-# Check K8s cluster
-kubectl get nodes
-kubectl get pods -A
+# Check Docker services
+ssh rainforest@raspberrypi-5 'docker ps'
 
-# Access monitoring services
+# Check Kubernetes monitoring
+kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+
+# Access all services
+echo "Pi-hole: http://raspberrypi-5:8080/admin"
+echo "Homepage: http://raspberrypi-5:80"
 echo "Grafana: http://raspberrypi-5:30080 (admin/admin123)"
 echo "Prometheus: http://raspberrypi-5:30090"
-echo "Loki: http://raspberrypi-5:30100"
 echo "AlertManager: http://raspberrypi-5:30093"
 ```
 
-## Alternative: Pure Helm Deployment
+## Architecture Benefits
 
-If you prefer using Helm directly instead of Terraform for the monitoring stack, see [helm-deployment.md](./helm-deployment.md).
+### **Dependency Management**
+- ✅ **Automatic CRD handling**: Prometheus deploys first, then Loki can use ServiceMonitor CRDs
+- ✅ **No manual sequencing**: Single `terraform apply` handles everything
+- ✅ **Clean state management**: No conflicts between layers
+
+### **Layer Separation**  
+- ✅ **Infrastructure vs Workloads**: Clear separation of concerns
+- ✅ **Remote Helm management**: No need to install Helm on Pi
+- ✅ **Scalable architecture**: Easy to add Layer 3 applications
+
+### **Operational Benefits**
+- ✅ **Single source of truth**: All workloads managed by Terraform
+- ✅ **Rollback capabilities**: Terraform state management
+- ✅ **Environment consistency**: Reproducible deployments
 
 ## Configuration Files
 
 ### Key Configuration Files
-- `terraform.tfvars`: Main configuration (ports, resources, IPs)
-- `variables.tf`: Variable definitions with defaults
-- `main.tf`: Infrastructure definitions
+- `ansible/inventory.yml`: Pi connection details
+- `terraform.tfvars`: Workload configuration (ports, resources, IPs)
+- `main.tf`: Layer 2 workload definitions with dependencies
 
 ### Important Settings
 ```hcl
-# Phase control
-enable_k8s_cluster = false  # Phase 1
-enable_k8s_cluster = true   # Phase 2
+# Layer control
+enable_k8s_cluster = true   # Enable Kubernetes monitoring
 
-# Pi-hole network configuration
-pihole_network_interface = "eth0"
-pihole_server_ip = ""  # Auto-detect
-tailscale_ip = ""      # Set your Tailscale IP
+# Kubeconfig management (set by Ansible)
+k8s_config_path = "~/.kube/config-raspberrypi-5"
+k8s_insecure_skip_tls_verify = false
 
 # Monitoring resource limits (optimized for Pi 5)
 monitoring_resource_limits = {
@@ -130,33 +128,38 @@ monitoring_resource_limits = {
 
 ## Troubleshooting
 
-### Phase 1 Issues
+### Layer 1 (Infrastructure) Issues
 ```bash
-# Check Docker service status
-ssh rainforest@raspberrypi-5 'systemctl status docker'
-
-# View container logs
-ssh rainforest@raspberrypi-5 'docker logs pihole'
-ssh rainforest@raspberrypi-5 'docker logs homeassistant'
-```
-
-### Phase 2 Issues
-```bash
-# Check K3s status
+# Check K3s cluster status
 ssh rainforest@raspberrypi-5 'systemctl status k3s'
 
-# Check pod status
-kubectl describe pod <pod-name> -n monitoring
+# Validate Ansible deployment
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
 
-# View pod logs
-kubectl logs <pod-name> -n monitoring
+# Check kubeconfig connectivity
+kubectl get nodes --kubeconfig ~/.kube/config-raspberrypi-5
+```
+
+### Layer 2 (Workload) Issues
+```bash
+# Check Docker services
+ssh rainforest@raspberrypi-5 'docker ps'
+ssh rainforest@raspberrypi-5 'docker logs <container-name>'
+
+# Check Kubernetes monitoring
+kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+kubectl describe pod <pod-name> -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
+
+# Check Terraform state
+terraform state list | grep monitoring
 ```
 
 ### Common Issues
-- **Connection refused**: Ensure K3s is running before Phase 2
-- **Resource limits**: Pi 5 resource constraints may require tuning
-- **DNS issues**: Check Pi-hole configuration and network settings
+- **CRD conflicts**: Clean deployment resolves ServiceMonitor issues
+- **Resource limits**: Pi 5 resource constraints may require tuning in terraform.tfvars
+- **Network connectivity**: Check kubeconfig path and TLS settings
 - **Storage issues**: Ensure sufficient disk space (20GB+ recommended)
+- **Docker image downloads**: Pi network speed may slow initial deployment
 
 ## Monitoring Architecture
 

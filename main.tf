@@ -124,6 +124,7 @@ module "k3s_cluster" {
 module "prometheus_stack" {
   count  = var.enable_k8s_cluster && var.k8s_enable_monitoring ? 1 : 0
   source = "./modules/prometheus-stack"
+  depends_on = [module.k3s_cluster]
 
   providers = {
     kubernetes = kubernetes.k3s
@@ -168,15 +169,46 @@ module "prometheus_stack" {
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_endpoint = "${var.raspberry_pi_hostname}:${var.pihole_web_port}"
   pihole_api_token = var.pihole_api_token
-
-  depends_on = [module.k3s_cluster]
 }
 
-# Loki logging stack (when K8s is enabled)
+# Wait for Prometheus CRDs to be available
+resource "time_sleep" "wait_for_prometheus_crds" {
+  count = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.loki_enabled ? 1 : 0
+  depends_on = [module.prometheus_stack]
+  create_duration = "60s"
+}
+
+# Monitoring integrations (ServiceMonitors after CRDs are ready)
+module "monitoring_integrations" {
+  count  = var.enable_k8s_cluster && var.k8s_enable_monitoring ? 1 : 0
+  source = "./modules/monitoring-integrations"
+  depends_on = [time_sleep.wait_for_prometheus_crds]
+
+  providers = {
+    kubernetes = kubernetes.k3s
+  }
+
+  namespace = var.k8s_monitoring_namespace
+  raspberry_pi_hostname = var.raspberry_pi_hostname
+
+  # Integration toggles
+  enable_loki_monitoring = false  # Disable until Loki is deployed
+  enable_external_monitoring = true
+  enable_custom_alerts = true
+
+  # External monitoring targets
+  mac_mini_ip = var.mac_mini_ip
+  mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
+  pihole_port = var.pihole_web_port
+  pihole_api_token = var.pihole_api_token
+}
+
+# Loki logging stack (after Prometheus CRDs exist)
 module "loki_stack" {
   count  = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.loki_enabled ? 1 : 0
   source = "./modules/loki-stack"
-
+  depends_on = [time_sleep.wait_for_prometheus_crds]
+  
   providers = {
     kubernetes = kubernetes.k3s
     helm = helm.k3s
@@ -203,9 +235,7 @@ module "loki_stack" {
   promtail_memory_request = var.monitoring_resource_limits.promtail_memory_request
   promtail_memory_limit = var.monitoring_resource_limits.promtail_memory_limit
 
-  # Integration with Prometheus
-  enable_prometheus_monitoring = true
-  alertmanager_url = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.alertmanager_enabled ? "http://prometheus-kube-prometheus-alertmanager:9093" : ""
-
-  depends_on = [module.k3s_cluster, module.prometheus_stack]
+  # Integration with Prometheus (disabled to avoid CRD issues)
+  enable_prometheus_monitoring = false
+  alertmanager_url = ""
 }
