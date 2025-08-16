@@ -21,6 +21,19 @@ resource "docker_container" "openspeedtest" {
   memory = 256
   memory_swap = 512
 
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore Docker-managed attributes that don't affect functionality
+      memory,
+      memory_swap,
+      network_mode,
+    ]
+    replace_triggered_by = [
+      docker_image.openspeedtest.image_id,
+    ]
+  }
+
   # Health check
   healthcheck {
     test         = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]

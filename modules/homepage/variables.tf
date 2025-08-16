@@ -4,6 +4,12 @@ variable "hostname" {
   default     = "raspberrypi-5"
 }
 
+variable "raspberry_pi_hostname" {
+  description = "Raspberry Pi hostname for allowed hosts"
+  type        = string
+  default     = "raspberrypi-5"
+}
+
 variable "external_port" {
   description = "External port for Homepage dashboard"
   type        = number

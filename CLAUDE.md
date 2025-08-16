@@ -22,7 +22,7 @@ docker context create raspberrypi-5 --docker "host=ssh://raspberrypi-5"
 # Initialize Terraform
 terraform init
 
-# Plan deployment
+# Plan deployment (safe to run repeatedly)
 terraform plan
 
 # Apply infrastructure changes
@@ -31,7 +31,10 @@ terraform apply
 # Destroy infrastructure
 terraform destroy
 
-# Replace specific service container
+# Target specific module for changes
+terraform apply -target=module.homepage
+
+# Replace specific service container (rarely needed)
 terraform apply -replace=module.homeassistant.docker_container.homeassistant
 ```
 
@@ -62,6 +65,8 @@ docker run --rm -v homeassistant_configuration:/source -v $(pwd):/backup alpine 
 - **Modular Design**: Each service is a separate Terraform module in `modules/` directory
 - **Security Hardened**: No privileged containers, resource limits, minimal capabilities
 - **Configuration Driven**: All customization via `terraform.tfvars`
+- **Lifecycle Management**: Prevents unnecessary container recreation, only updates when needed
+- **Connection Reliability**: SSH keepalive settings prevent timeouts during operations
 
 ### Key Components
 - **main.tf**: Root module orchestrating all service modules
@@ -128,6 +133,45 @@ Edit `terraform.tfvars` for all deployments:
 - `main`: Production-ready configuration
 - `rental-setup`: Current branch with rental-specific modifications (acton-3 module disabled)
 
+## Terraform Best Practices & Troubleshooting
+
+### Container Lifecycle Management
+The infrastructure includes smart lifecycle rules that prevent unnecessary container recreation:
+
+- **Automatic Image Updates**: Containers only recreate when Docker images change
+- **Configuration Changes**: Most config updates happen in-place without downtime
+- **State Drift Protection**: Ignores Docker-managed attributes that don't affect functionality
+- **SSH Reliability**: Connection keepalive prevents timeouts during operations
+
+### Common Issues & Solutions
+
+#### Container Recreation Errors
+```bash
+# If containers show as needing replacement unnecessarily:
+terraform plan  # Check what changes are proposed
+
+# For state mismatches, target specific modules:
+terraform apply -target=module.homepage
+
+# For SSH timeout issues, check connection:
+docker context use raspberrypi-5
+docker ps  # Verify remote connection works
+```
+
+#### Homepage Host Validation
+The Homepage service includes `HOMEPAGE_ALLOWED_HOSTS` environment variable to prevent host validation errors when accessing the dashboard.
+
+#### Memory Limit Detection
+Lifecycle rules ignore memory limit differences between Terraform config and runtime values, preventing false-positive recreation triggers.
+
+### Infrastructure Recovery
+```bash
+# If infrastructure state is corrupted:
+terraform refresh  # Sync state with reality
+terraform plan     # Review proposed changes
+terraform apply    # Apply only necessary changes
+```
+
 ## Security Considerations
 
 - All containers run with minimal required capabilities
@@ -135,3 +179,4 @@ Edit `terraform.tfvars` for all deployments:
 - Logging rotation configured to prevent disk space issues
 - No hardcoded secrets - all configuration via variables
 - SSH-based deployment maintains air gap from internet for Pi
+- Provider SSH configuration includes security best practices

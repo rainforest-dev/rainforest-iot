@@ -46,6 +46,24 @@ resource "docker_container" "homepage" {
   memory = 256
   memory_swap = 512
 
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    replace_triggered_by = [
+      # Only recreate if image or critical config changes
+      docker_image.homepage.image_id,
+    ]
+  }
+
+  # Environment variables for host validation
+  env = [
+    "TZ=${var.timezone}",
+    "HOMEPAGE_VAR_TITLE=IoT Dashboard",
+    "HOMEPAGE_VAR_SEARCH_PROVIDER=duckduckgo",
+    "HOMEPAGE_VAR_HEADER_STYLE=clean",
+    "HOMEPAGE_VAR_DISABLE_GUEST=false",
+    "HOMEPAGE_ALLOWED_HOSTS=raspberrypi-5,raspberrypi-5.local,${var.raspberry_pi_hostname},${var.raspberry_pi_hostname}.local"
+  ]
+
   # Health check
   healthcheck {
     test         = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]

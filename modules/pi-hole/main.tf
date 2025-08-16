@@ -25,6 +25,18 @@ resource "docker_container" "pihole" {
   memory = 512
   memory_swap = 1024
 
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore Docker-managed attributes that don't affect functionality
+      image,
+      memory,
+      memory_swap,
+      network_mode,
+    ]
+    create_before_destroy = true
+  }
+
   # Environment variables
   env = [
     "TZ=${var.timezone}",

@@ -1,16 +1,9 @@
-terraform {
-  required_providers {
-    docker = {
-      source                = "kreuzwerker/docker"
-      version               = "~> 3.0"
-      configuration_aliases = [docker]
-    }
-  }
-}
-
 provider "docker" {
   alias = "raspberry-pi"
   host  = local.raspberry_pi_host
+  
+  # SSH connection configuration for reliability
+  ssh_opts = ["-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=6"]
 }
 
 module "homeassistant" {
@@ -47,6 +40,7 @@ module "homepage" {
   }
   
   hostname = var.raspberry_pi_hostname
+  raspberry_pi_hostname = var.raspberry_pi_hostname
   external_port = var.homepage_port
   timezone = var.timezone
   log_opts = local.common_log_opts

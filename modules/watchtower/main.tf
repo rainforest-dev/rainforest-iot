@@ -21,6 +21,20 @@ resource "docker_container" "watchtower" {
   memory = 128
   memory_swap = 256
 
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore Docker-managed attributes that don't affect functionality
+      memory,
+      memory_swap,
+      network_mode,
+      healthcheck,
+    ]
+    replace_triggered_by = [
+      docker_image.watchtower.image_id,
+    ]
+  }
+
   # Environment variables for safer operation
   env = [
     "TZ=${var.timezone}",

@@ -1,5 +1,5 @@
 locals {
-  # Compute SSH connection string from components if not explicitly provided
+  # Compute SSH connection string for Docker
   raspberry_pi_host = var.raspberry_pi_host != "" ? var.raspberry_pi_host : "ssh://${var.raspberry_pi_user}@${var.raspberry_pi_hostname}:${var.raspberry_pi_port}"
   
   # Common container environment variables

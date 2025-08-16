@@ -26,6 +26,18 @@ resource "docker_container" "homeassistant" {
   memory = var.memory_limit
   memory_swap = var.memory_limit * 2
 
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore Docker-managed attributes that don't affect functionality
+      memory,
+      memory_swap,
+    ]
+    replace_triggered_by = [
+      docker_image.homeassistant.image_id,
+    ]
+  }
+
   # Health check
   healthcheck {
     test         = ["CMD", "curl", "-f", "http://localhost:8123/api/"]

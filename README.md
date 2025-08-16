@@ -8,6 +8,8 @@ A secure, containerized IoT platform for Raspberry Pi 5 using Terraform and Dock
 - **Containerized Services**: Docker containers with security hardening
 - **Remote Management**: SSH-based deployment from client machine
 - **Modular Design**: Independent service modules for easy maintenance
+- **Smart Lifecycle Management**: Prevents unnecessary container recreation
+- **Connection Reliability**: SSH keepalive for stable remote operations
 
 ## Prerequisites
 
@@ -35,8 +37,8 @@ docker context create raspberrypi-5 --docker "host=ssh://raspberrypi-5"
 3. **Deploy Infrastructure**
 ```bash
 terraform init
-terraform plan
-terraform apply
+terraform plan    # Safe to run repeatedly
+terraform apply   # Only updates what changed
 ```
 
 ## Services
@@ -105,14 +107,30 @@ docker ps -a
 # View container logs
 docker logs <container-name>
 
-# Restart service
+# Apply only necessary changes (recommended)
+terraform plan && terraform apply
+
+# Force container replacement (rarely needed)
 terraform apply -replace=module.<service>.docker_container.<container>
+```
+
+### Terraform Issues
+```bash
+# Check what Terraform wants to change
+terraform plan
+
+# Target specific module if needed
+terraform apply -target=module.homepage
+
+# Refresh state if containers changed outside Terraform
+terraform refresh
 ```
 
 ### Network Issues
 - Ensure SSH access is working
 - Check Docker context: `docker context ls`
 - Verify Pi-hole DNS on port 8080 (not 80)
+- Homepage host validation resolved automatically
 
 ## Configuration Variables
 
