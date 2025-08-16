@@ -248,6 +248,31 @@ variable "promtail_enabled" {
   default     = true
 }
 
+# Homepage Configuration Variables
+variable "mac_mini_hostname" {
+  description = "Mac Mini hostname for service discovery"
+  type        = string
+  default     = "rainforest-mini"
+}
+
+variable "homepage_show_docker_stats" {
+  description = "Show Docker container statistics in homepage"
+  type        = bool
+  default     = true
+}
+
+variable "homepage_enable_kubernetes_widgets" {
+  description = "Enable Kubernetes cluster widgets in homepage"
+  type        = bool
+  default     = true
+}
+
+variable "homepage_title" {
+  description = "Homepage dashboard title"
+  type        = string
+  default     = "Rainforest IoT & Homelab Dashboard"
+}
+
 # External Monitoring Targets
 variable "mac_mini_ip" {
   description = "Mac mini IP address for monitoring"

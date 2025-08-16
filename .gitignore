@@ -39,6 +39,9 @@ terraform.rc
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform
 
+# Generated build artifacts
+build/
+
 configs/homeassistant
 configs/teleport/data
 data
