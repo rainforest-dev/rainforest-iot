@@ -1,0 +1,176 @@
+---
+# Validation Playbook for Homelab Setup
+- name: Validate Homelab Infrastructure
+  hosts: all
+  gather_facts: yes
+  vars:
+    validation_tests:
+      - system_health
+      - docker_status
+      - k3s_cluster
+      - network_connectivity
+      - security_checks
+      
+  tasks:
+    - name: Start validation process
+      debug:
+        msg:
+          - "🔍 Starting Homelab Infrastructure Validation"
+          - "Target: {{ inventory_hostname }}"
+          - "Tests: {{ validation_tests | join(', ') }}"
+          - ""
+          
+    # System Health Checks
+    - name: Check system uptime
+      command: uptime
+      register: system_uptime
+      changed_when: false
+      
+    - name: Check memory usage
+      shell: |
+        free -h | grep Mem | awk '{print "Used: "$3"/"$2}'
+      register: memory_usage
+      changed_when: false
+      
+    - name: Check disk usage
+      shell: |
+        df -h / | tail -1 | awk '{print "Used: "$3"/"$2" ("$5")"}'
+      register: disk_usage
+      changed_when: false
+      
+    - name: Check CPU load
+      shell: |
+        cat /proc/loadavg | awk '{print "Load: "$1" "$2" "$3}'
+      register: cpu_load
+      changed_when: false
+      
+    # Docker Health Checks
+    - name: Check Docker service status
+      systemd:
+        name: docker
+      register: docker_service
+      
+    - name: List running Docker containers
+      shell: docker ps
+      register: docker_containers
+      changed_when: false
+      become: yes
+      
+    # K3s Health Checks
+    - name: Check if K3s is installed
+      stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+      
+    - name: Check K3s service status
+      command: systemctl is-active k3s
+      register: k3s_service_status
+      failed_when: false
+      changed_when: false
+      when: k3s_binary.stat.exists
+      
+    - name: Check K3s nodes
+      command: k3s kubectl get nodes -o wide
+      register: k3s_nodes
+      changed_when: false
+      become: yes
+      when: k3s_binary.stat.exists and k3s_service_status.stdout == "active"
+      
+    - name: Check K3s pods
+      command: k3s kubectl get pods -A
+      register: k3s_pods
+      changed_when: false
+      become: yes
+      when: k3s_binary.stat.exists and k3s_service_status.stdout == "active"
+      
+    # Network Connectivity Tests
+    - name: Test internet connectivity
+      uri:
+        url: https://google.com
+        method: HEAD
+        timeout: 10
+      register: internet_test
+      
+    - name: Test DNS resolution
+      command: dig +short google.com
+      register: dns_test
+      changed_when: false
+      failed_when: false
+      
+    # Security Checks
+    - name: Check SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "PermitRootLogin"
+        line: "PermitRootLogin no"
+        state: present
+      check_mode: yes
+      register: ssh_security
+      
+    - name: Check firewall status
+      command: ufw status
+      register: firewall_status
+      changed_when: false
+      become: yes
+      ignore_errors: yes
+      
+    - name: Check for security updates
+      shell: apt list --upgradable 2>/dev/null | grep -i security | wc -l
+      register: security_updates
+      changed_when: false
+      become: yes
+      
+    # Generate Validation Report
+    - name: Generate validation report
+      debug:
+        msg:
+          - "🏠 HOMELAB INFRASTRUCTURE VALIDATION REPORT"
+          - "================================================"
+          - ""
+          - "📊 SYSTEM HEALTH:"
+          - "  Uptime: {{ system_uptime.stdout }}"
+          - "  Memory: {{ memory_usage.stdout }}"
+          - "  Disk: {{ disk_usage.stdout }}"
+          - "  CPU: {{ cpu_load.stdout }}"
+          - ""
+          - "🐳 DOCKER STATUS:"
+          - "  Service: {{ 'Active' if docker_service.status.ActiveState == 'active' else 'Inactive' }}"
+          - "  Container count: {{ docker_containers.stdout_lines | length }}"
+          - ""
+          - "☸️  K3S CLUSTER:"
+          - "  Service: {{ 'Active' if (k3s_service_status is defined and k3s_service_status.stdout == 'active') else 'Not installed/running' }}"
+          - "  Nodes: {{ k3s_nodes.stdout_lines | length if k3s_nodes is defined else 0 }}"
+          - ""
+          - "🌐 NETWORK:"
+          - "  Internet: {{ 'Connected' if internet_test.status == 200 else 'Failed' }}"
+          - "  DNS: {{ 'Working' if dns_test.rc == 0 else 'Issues detected' }}"
+          - ""
+          - "🔒 SECURITY:"
+          - "  SSH Root Login: {{ 'Disabled' if not ssh_security.changed else 'ENABLED (Risk!)' }}"
+          - "  Firewall: {{ firewall_status.stdout.split('\\n')[0] if firewall_status.rc == 0 else 'Not configured' }}"
+          - "  Security Updates: {{ security_updates.stdout }} pending"
+          - ""
+          - "✅ Validation Complete"
+          
+    - name: Create validation summary file
+      copy:
+        content: |
+          # Homelab Validation Report - {{ ansible_date_time.iso8601 }}
+          
+          ## System Status
+          - Host: {{ inventory_hostname }}
+          - Uptime: {{ system_uptime.stdout }}
+          - Memory: {{ memory_usage.stdout }}
+          - Disk: {{ disk_usage.stdout }}
+          
+          ## Services
+          - Docker: {{ 'Running' if docker_service.status.ActiveState == 'active' else 'Stopped' }}
+          - K3s: {{ 'Running' if (k3s_service_status is defined and k3s_service_status.stdout == 'active') else 'Not running' }}
+          
+          ## Security
+          - Security Updates: {{ security_updates.stdout }} pending
+          - Firewall: {{ firewall_status.stdout.split('\n')[0] if firewall_status.rc == 0 else 'Not configured' }}
+          
+          Generated by Ansible on {{ ansible_date_time.iso8601 }}
+        dest: "/tmp/homelab-validation-{{ ansible_date_time.epoch }}.md"
+        mode: '0644'
