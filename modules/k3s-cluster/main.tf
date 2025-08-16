@@ -130,23 +130,32 @@ resource "kubernetes_network_policy" "monitoring_network_policy" {
     }
     
     egress {
-      # Allow DNS
-      to {}
+      # Allow DNS - to kube-system for CoreDNS
+      to {
+        namespace_selector {
+          match_labels = {
+            "kubernetes.io/metadata.name" = "kube-system"
+          }
+        }
+      }
       ports {
-        port     = "53"
+        port     = 53
         protocol = "TCP"
       }
       ports {
-        port     = "53"
+        port     = 53
         protocol = "UDP"
       }
     }
     
     egress {
-      # Allow HTTPS for external services
-      to {}
+      # Allow Kubernetes API server access  
       ports {
-        port     = "443"
+        port     = 443
+        protocol = "TCP"
+      }
+      ports {
+        port     = 6443
         protocol = "TCP"
       }
     }
