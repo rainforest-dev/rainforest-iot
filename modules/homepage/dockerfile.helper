@@ -1,6 +1,0 @@
-FROM busybox:latest
-
-COPY ./*.yaml /config/
-
-CMD [ "sh", "-c", "cp /config/* /data/" ]
-

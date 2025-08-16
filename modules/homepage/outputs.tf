@@ -13,6 +13,11 @@ output "service_url" {
   value       = "http://${var.hostname}:${var.external_port}"
 }
 
+output "config_directory" {
+  description = "Homepage configuration build directory"
+  value       = local.build_dir
+}
+
 output "volume_name" {
   description = "Homepage configuration volume name"
   value       = docker_volume.configuration.name

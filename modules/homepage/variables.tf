@@ -30,3 +30,45 @@ variable "log_opts" {
     "max-file" = "3"
   }
 }
+
+variable "mac_mini_hostname" {
+  description = "Mac Mini hostname for service discovery"
+  type        = string
+  default     = "macmini.local"
+}
+
+variable "homepage_title" {
+  description = "Homepage dashboard title"
+  type        = string
+  default     = "Rainforest IoT & Homelab Dashboard"
+}
+
+variable "homepage_enable_kubernetes_widgets" {
+  description = "Enable Kubernetes cluster widgets in homepage"
+  type        = bool
+  default     = true
+}
+
+variable "grafana_port" {
+  description = "Grafana service port"
+  type        = number
+  default     = 30080
+}
+
+variable "prometheus_port" {
+  description = "Prometheus service port"
+  type        = number
+  default     = 30090
+}
+
+variable "alertmanager_port" {
+  description = "AlertManager service port"
+  type        = number
+  default     = 30093
+}
+
+variable "memory_limit" {
+  description = "Memory limit for Homepage container (MB)"
+  type        = number
+  default     = 256
+}
