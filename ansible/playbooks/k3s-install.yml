@@ -6,6 +6,10 @@
   vars:
     k3s_version: "v1.33.3+k3s1"
     k3s_node_name: "{{ inventory_hostname }}"
+    k3s_tls_sans:
+      - "{{ inventory_hostname }}.local"
+      - "{{ inventory_hostname }}"
+      - "localhost"
     
   tasks:
     - name: Check if running on Raspberry Pi
@@ -104,6 +108,26 @@
         state: started
         enabled: yes
         daemon_reload: yes
+
+    - name: Ensure in-Pi kubeconfig uses localhost (undo any previous .local)
+      replace:
+        path: "/etc/rancher/k3s/k3s.yaml"
+        regexp: 'server: https://[^:]+:6443'
+        replace: 'server: https://127.0.0.1:6443'
+
+    - name: Ensure K3s config with SANs
+      template:
+        src: "../templates/k3s-config.yaml.j2"
+        dest: "/etc/rancher/k3s/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - rotate k3s certs
+        - restart k3s
+
+    - name: Apply any pending handlers before readiness checks
+      meta: flush_handlers
         
     - name: Wait for K3s API server to be ready
       wait_for:
@@ -111,7 +135,7 @@
         host: localhost
         timeout: 300
         delay: 10
-        
+
     - name: Wait for K3s cluster to be fully ready
       shell: k3s kubectl get nodes --no-headers | grep -c Ready
       register: ready_nodes
@@ -119,6 +143,33 @@
       retries: 30
       delay: 10
       changed_when: false
+
+    - name: Check current API cert SANs for .local entry
+      shell: |
+        set -o pipefail
+        openssl x509 -in /var/lib/rancher/k3s/server/tls/serving-kube-apiserver.crt -noout -text | grep -Eo 'DNS:[^,]+'
+      register: current_sans
+      changed_when: false
+      failed_when: false
+
+    - name: Rotate certs if .local SAN missing
+      when: current_sans.stdout is defined and ('DNS:' ~ inventory_hostname ~ '.local') not in current_sans.stdout
+      block:
+        - name: Rotate K3s API server certificate (missing .local SAN)
+          command: k3s certificate rotate -s api-server
+        - name: Restart K3s after forced rotation
+          systemd:
+            name: k3s
+            state: restarted
+            enabled: yes
+        - name: Wait for API after forced rotation
+          wait_for:
+            port: 6443
+            host: localhost
+            timeout: 300
+            delay: 10
+
+    # Keep in-Pi kubeconfig using localhost for reliability; external clients use .local
       
     - name: Get K3s cluster status
       command: k3s kubectl get nodes -o wide
@@ -159,8 +210,8 @@
     - name: Update kubeconfig server address
       replace:
         path: "/home/{{ ansible_user }}/.kube/config"
-        regexp: 'https://127\.0\.0\.1:6443'
-        replace: "https://{{ inventory_hostname }}:6443"
+        regexp: 'server: https://[^:]+:6443'
+        replace: "server: https://{{ inventory_hostname }}.local:6443"
         
     - name: Ensure local .kube directory exists
       file:
@@ -187,6 +238,9 @@
 
       
   handlers:
+    - name: rotate k3s certs
+      become: yes
+      command: k3s certificate rotate -s api-server
     - name: restart k3s
       systemd:
         name: k3s

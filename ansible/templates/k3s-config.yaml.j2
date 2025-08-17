@@ -1,0 +1,14 @@
+# Managed by Ansible
+# Subject Alternative Names for the K3s API server certificate
+# Ensure names you access the API with are listed here.
+# Example includes mDNS .local and hostname.
+tls-san:
+{% for san in k3s_tls_sans %}
+  - {{ san }}
+{% endfor %}
+
+# Disable built-in components we do not need on this single-node setup
+# Disabling traefik (ingress) and servicelb frees host ports 80/443 for Docker services
+disable:
+  - traefik
+  - servicelb
