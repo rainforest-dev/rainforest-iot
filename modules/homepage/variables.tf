@@ -40,7 +40,13 @@ variable "log_opts" {
 variable "mac_mini_hostname" {
   description = "Mac Mini hostname for service discovery"
   type        = string
-  default     = "macmini.local"
+  default     = "rainforest-mini.local"
+}
+
+variable "mac_mini_ip" {
+  description = "Mac Mini IP address for Docker connection"
+  type        = string
+  default     = "100.86.67.66"
 }
 
 variable "homepage_title" {

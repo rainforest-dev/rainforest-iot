@@ -12,6 +12,7 @@ terraform {
 locals {
   template_vars = {
     mac_mini_hostname     = var.mac_mini_hostname
+    mac_mini_ip          = var.mac_mini_ip
     raspberry_pi_hostname = var.raspberry_pi_hostname
     homepage_title        = var.homepage_title
     grafana_port         = var.grafana_port
@@ -22,6 +23,11 @@ locals {
   
   # Build directory for generated files
   build_dir = "${path.root}/build/homepage"
+
+  # Normalize hostnames for allowed hosts logic
+  # Use split to derive the short hostname robustly (works if input is short or FQDN)
+  short_hostname = element(split(".", var.raspberry_pi_hostname), 0)
+  allowed_hosts  = "${local.short_hostname},${local.short_hostname}.local"
 }
 
 # Ensure build directory exists
@@ -82,7 +88,7 @@ resource "docker_image" "homepage" {
 # Helper container to create configs directly in volume
 resource "docker_container" "config_updater" {
   image    = "alpine:latest"
-  name     = "homepage-config-updater"
+  name     = "homepage-config-updater-${substr(md5(join("", [local_file.services_config.content, local_file.docker_config.content])), 0, 8)}"
   must_run = false
   
   command = [
@@ -138,7 +144,8 @@ resource "docker_container" "homepage" {
     "HOMEPAGE_VAR_SEARCH_PROVIDER=duckduckgo",
     "HOMEPAGE_VAR_HEADER_STYLE=clean",
     "HOMEPAGE_VAR_DISABLE_GUEST=false",
-    "HOMEPAGE_ALLOWED_HOSTS=raspberrypi-5,raspberrypi-5.local,${var.raspberry_pi_hostname},${var.raspberry_pi_hostname}.local"
+    # Allow both short hostname and .local FQDN to avoid 404 from allowed hosts check
+    "HOMEPAGE_ALLOWED_HOSTS=${local.allowed_hosts}"
   ]
 
   # Health check
@@ -168,12 +175,12 @@ resource "docker_container" "homepage" {
     read_only      = true
   }
 
-  # TODO: Add Kubernetes widgets after fixing kubeconfig mount issue
-  # volumes {
-  #   container_path = "/app/config/kube"
-  #   host_path      = "/home/${var.raspberry_pi_user}/.kube/config"
-  #   read_only      = true
-  # }
+  # Kubernetes configuration for widgets (Pi 5 cluster)
+  volumes {
+    container_path = "/tmp/kubeconfig.yaml"
+    host_path      = "/home/${var.raspberry_pi_user}/.kube/config-raspberrypi-5"
+    read_only      = true
+  }
 
 
   # Logging configuration
