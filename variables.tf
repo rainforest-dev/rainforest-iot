@@ -252,7 +252,7 @@ variable "promtail_enabled" {
 variable "mac_mini_hostname" {
   description = "Mac Mini hostname for service discovery"
   type        = string
-  default     = "rainforest-mini"
+  default     = "rainforest-mini.local"
 }
 
 variable "homepage_show_docker_stats" {

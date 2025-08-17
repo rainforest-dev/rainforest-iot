@@ -10,6 +10,12 @@ variable "raspberry_pi_hostname" {
   default     = "raspberrypi-5"
 }
 
+variable "raspberry_pi_user" {
+  description = "Raspberry Pi SSH user for kubeconfig path"
+  type        = string
+  default     = "rainforest"
+}
+
 variable "external_port" {
   description = "External port for Homepage dashboard"
   type        = number

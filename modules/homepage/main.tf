@@ -168,6 +168,13 @@ resource "docker_container" "homepage" {
     read_only      = true
   }
 
+  # TODO: Add Kubernetes widgets after fixing kubeconfig mount issue
+  # volumes {
+  #   container_path = "/app/config/kube"
+  #   host_path      = "/home/${var.raspberry_pi_user}/.kube/config"
+  #   read_only      = true
+  # }
+
 
   # Logging configuration
   log_opts = var.log_opts

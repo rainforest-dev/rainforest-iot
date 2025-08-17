@@ -89,11 +89,12 @@
         path: /usr/local/bin/k3s
       register: k3s_binary
       
-    - name: Install K3s
+    - name: Install K3s with proper configuration
       shell: |
         INSTALL_K3S_VERSION={{ k3s_version }} \
         K3S_NODE_NAME={{ k3s_node_name }} \
-        /tmp/k3s-install.sh
+        K3S_KUBECONFIG_MODE="644" \
+        /tmp/k3s-install.sh --write-kubeconfig-mode=644
       when: not k3s_binary.stat.exists
       register: k3s_install_result
       

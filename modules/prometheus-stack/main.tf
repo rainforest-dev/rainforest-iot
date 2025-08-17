@@ -94,12 +94,12 @@ resource "helm_release" "prometheus_stack" {
             }
           }
           
-          # Additional scrape configs
-          additionalScrapeConfigsSecret = {
-            enabled = true
-            name    = kubernetes_config_map.prometheus_config.metadata[0].name
-            key     = "additional-scrape-configs.yaml"
-          }
+          # Additional scrape configs - temporarily disabled due to YAML format issue
+          # additionalScrapeConfigs = {
+          #   enabled = true
+          #   name    = kubernetes_config_map.prometheus_config.metadata[0].name
+          #   key     = "additional-scrape-configs.yaml"
+          # }
           
           # External access
           serviceMonitorSelectorNilUsesHelmValues = false
