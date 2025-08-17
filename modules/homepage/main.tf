@@ -27,7 +27,7 @@ locals {
   # Normalize hostnames for allowed hosts logic
   # Use split to derive the short hostname robustly (works if input is short or FQDN)
   short_hostname = element(split(".", var.raspberry_pi_hostname), 0)
-  allowed_hosts  = "${local.short_hostname},${local.short_hostname}.local"
+  allowed_hosts  = "${local.short_hostname},${local.short_hostname}.local,${local.short_hostname}:${var.external_port},${local.short_hostname}.local:${var.external_port}"
 }
 
 # Ensure build directory exists
@@ -80,9 +80,69 @@ resource "docker_volume" "configuration" {
   name = "homepage_configuration"
 }
 
+# Create volume for kubeconfig with IP-based server URL
+resource "docker_volume" "kubeconfig" {
+  name = "homepage_kubeconfig"
+}
+
 # Homepage Docker image
 resource "docker_image" "homepage" {
   name = "ghcr.io/gethomepage/homepage:latest"
+}
+
+# Copy Raspberry Pi kubeconfig content and rewrite with IP
+resource "local_file" "kubeconfig_pi5_content" {
+  content = replace(
+    file(var.raspberry_pi_kubeconfig_path),
+    "https://raspberrypi-5.local:6443",
+    "https://192.168.0.134:6443"
+  )
+  filename = "${local.build_dir}/kubeconfig-pi5.yaml"
+  depends_on = [null_resource.create_build_dir]
+}
+
+# Copy Mac Mini kubeconfig content and rewrite with IP
+resource "local_file" "kubeconfig_mac_content" {
+  content = replace(
+    replace(
+      file(var.mac_mini_kubeconfig_path),
+      "https://127.0.0.1:6443",
+      "https://${var.mac_mini_ip}:6443"
+    ),
+    "https://127.0.0.1:26443",
+    "https://${var.mac_mini_ip}:26443"
+  )
+  filename = "${local.build_dir}/kubeconfig-mac.yaml"
+  depends_on = [null_resource.create_build_dir]
+}
+
+# Helper container to create both kubeconfig files with IP instead of mDNS hostname
+resource "docker_container" "kubeconfig_updater" {
+  image    = "alpine:latest"
+  name     = "homepage-kubeconfig-updater-${substr(md5(join("", [local_file.kubeconfig_pi5_content.content, local_file.kubeconfig_mac_content.content])), 0, 8)}"
+  must_run = false
+  
+  command = [
+    "sh", "-c", 
+    <<-EOF
+    echo '${base64encode(local_file.kubeconfig_pi5_content.content)}' | base64 -d > /target/kubeconfig-pi5.yaml &&
+    echo '${base64encode(local_file.kubeconfig_mac_content.content)}' | base64 -d > /target/kubeconfig-mac.yaml &&
+    chmod 644 /target/*.yaml &&
+    echo "Kubeconfig files updated with IP addresses:" &&
+    echo "Pi5 cluster:" && grep server /target/kubeconfig-pi5.yaml &&
+    echo "Mac Mini cluster:" && grep server /target/kubeconfig-mac.yaml
+    EOF
+  ]
+
+  volumes {
+    container_path = "/target"
+    volume_name    = docker_volume.kubeconfig.name
+  }
+  
+  depends_on = [
+    local_file.kubeconfig_pi5_content,
+    local_file.kubeconfig_mac_content
+  ]
 }
 
 # Helper container to create configs directly in volume
@@ -121,7 +181,7 @@ resource "docker_container" "config_updater" {
 }
 
 resource "docker_container" "homepage" {
-  depends_on = [docker_container.config_updater]
+  depends_on = [docker_container.config_updater, docker_container.kubeconfig_updater]
   image      = docker_image.homepage.image_id
   name       = "homepage"
   restart    = "unless-stopped"
@@ -176,9 +236,10 @@ resource "docker_container" "homepage" {
   }
 
   # Kubernetes configuration for widgets (Pi 5 cluster)
+  # Note: Uses rewritten kubeconfig with IP instead of mDNS hostname
   volumes {
-    container_path = "/tmp/kubeconfig.yaml"
-    host_path      = "/home/${var.raspberry_pi_user}/.kube/config-raspberrypi-5"
+    container_path = "/tmp/kube"
+    volume_name    = "homepage_kubeconfig"
     read_only      = true
   }
 

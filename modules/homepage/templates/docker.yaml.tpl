@@ -2,6 +2,6 @@ pi5-docker:
   socket: /var/run/docker.sock
   
 macmini-docker:
-  host: ${mac_mini_hostname}
+  host: ${mac_mini_ip}
   port: 2375
-  # Uses existing dockerproxy container from homelab
+  # Uses Mac Mini IP directly to avoid mDNS issues in container

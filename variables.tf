@@ -173,6 +173,12 @@ variable "k8s_config_path" {
   default     = "~/.kube/config"
 }
 
+variable "mac_mini_kubeconfig_path" {
+  description = "Path to Mac Mini kubeconfig file"
+  type        = string
+  default     = "~/.kube/config"
+}
+
 variable "k8s_config_context" {
   description = "Kubernetes context to use"
   type        = string

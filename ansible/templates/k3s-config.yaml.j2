@@ -7,8 +7,5 @@ tls-san:
   - {{ san }}
 {% endfor %}
 
-# Disable built-in components we do not need on this single-node setup
-# Disabling traefik (ingress) and servicelb frees host ports 80/443 for Docker services
-disable:
-  - traefik
-  - servicelb
+# Enable built-in components for ingress support
+# Traefik (ingress) and servicelb enabled to support K8s ingress for Docker services

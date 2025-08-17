@@ -66,11 +66,16 @@ module "homepage" {
   
   # New template variables
   mac_mini_hostname = var.mac_mini_hostname
+  mac_mini_ip = var.mac_mini_ip
   homepage_title = var.homepage_title
   homepage_enable_kubernetes_widgets = var.homepage_enable_kubernetes_widgets
   grafana_port = var.grafana_port
   prometheus_port = var.prometheus_port
   alertmanager_port = var.alertmanager_port
+  
+  # Kubeconfig paths for dual cluster support
+  mac_mini_kubeconfig_path = var.mac_mini_kubeconfig_path
+  raspberry_pi_kubeconfig_path = var.k8s_config_path
 }
 
 module "watchtower" {
@@ -246,4 +251,18 @@ module "loki_stack" {
   # Integration with Prometheus (disabled to avoid CRD issues)
   enable_prometheus_monitoring = false
   alertmanager_url = ""
+}
+
+# Homepage ingress (when K8s is enabled) - points to existing Docker container
+module "homepage_ingress" {
+  count  = var.enable_k8s_cluster ? 1 : 0
+  source = "./modules/homepage-ingress"
+  depends_on = [module.k3s_cluster]
+
+  providers = {
+    kubernetes = kubernetes.k3s
+  }
+
+  raspberry_pi_hostname = var.raspberry_pi_hostname
+  raspberry_pi_ip = "192.168.0.134"  # Pi's actual IP address
 }

@@ -4,19 +4,22 @@
         description: "AI Chat Interface"
         icon: open-webui.png
         namespace: homelab
-        app: homelab-open-webui
+        app: open-webui
+        cluster: mac-mini
     - Flowise:
         href: https://flowise.rainforest.tools/
         description: "AI Workflow Builder"
         icon: flowise.png
         namespace: homelab  
-        app: homelab-flowise
+        app: flowise
+        cluster: mac-mini
     - n8n:
         href: https://n8n.rainforest.tools/
         description: "Workflow Automation"
         icon: n8n.png
         namespace: homelab
-        app: homelab-n8n
+        app: n8n
+        cluster: mac-mini
 
 - "Mac Mini M4 (Media & Files)":
     - Calibre Web:
@@ -29,8 +32,8 @@
         href: http://${mac_mini_hostname}:3333
         description: "Network Speed Test"
         icon: openspeedtest.png
-        namespace: homelab
-        app: homelab-openspeedtest
+        server: macmini-docker
+        container: homelab-openspeedtest
 
 - "Raspberry Pi 5 (IoT Platform)":
     - HomeAssistant:
@@ -58,16 +61,19 @@
         description: "Dashboards & Visualization"
         icon: grafana.png
         namespace: monitoring
-        app: prometheus-grafana
+        app: grafana
+        cluster: raspberrypi-5
     - Prometheus:
         href: http://${raspberry_pi_hostname}:${prometheus_port}
         description: "Metrics Collection"
         icon: prometheus.png
         namespace: monitoring
-        app: prometheus-server
+        app: prometheus
+        cluster: raspberrypi-5
     - AlertManager:
         href: http://${raspberry_pi_hostname}:${alertmanager_port}
         description: "Alert Management"
         icon: alertmanager.png
         namespace: monitoring
-        app: prometheus-alertmanager
+        app: alertmanager
+        cluster: raspberrypi-5

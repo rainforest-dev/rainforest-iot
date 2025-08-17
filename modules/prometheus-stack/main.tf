@@ -76,6 +76,13 @@ resource "helm_release" "prometheus_stack" {
       # Prometheus configuration
       prometheus = {
         prometheusSpec = {
+          # Add pod labels for Homepage integration
+          podMetadata = {
+            labels = {
+              app = "prometheus"
+            }
+          }
+          
           # Resource limits for Pi 5
           resources = {
             requests = {
@@ -129,6 +136,11 @@ resource "helm_release" "prometheus_stack" {
       # Grafana configuration
       grafana = {
         enabled = var.grafana_enabled
+        
+        # Add pod labels for Homepage integration
+        podLabels = {
+          app = "grafana"
+        }
         
         # Resource limits
         resources = {
@@ -236,6 +248,13 @@ resource "helm_release" "prometheus_stack" {
         enabled = var.alertmanager_enabled
         
         alertmanagerSpec = {
+          # Add pod labels for Homepage integration
+          podMetadata = {
+            labels = {
+              app = "alertmanager"
+            }
+          }
+          
           resources = {
             requests = {
               cpu    = var.alertmanager_cpu_request
