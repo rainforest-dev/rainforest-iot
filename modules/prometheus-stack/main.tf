@@ -13,15 +13,15 @@ terraform {
   }
 }
 
-# Create ConfigMap for additional scrape configs
-resource "kubernetes_config_map" "prometheus_config" {
+# Create Secret for additional scrape configs (Prometheus operator expects Secret, not ConfigMap)
+resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   metadata {
-    name      = "prometheus-additional-scrape-configs"
+    name      = "additional-scrape-configs"
     namespace = var.namespace
   }
 
   data = {
-    "additional-scrape-configs.yaml" = yamlencode([
+    "prometheus-additional.yaml" = yamlencode([
       {
         job_name = "mac-mini-docker"
         static_configs = [{
@@ -40,16 +40,26 @@ resource "kubernetes_config_map" "prometheus_config" {
       {
         job_name = "pi-hole"
         static_configs = [{
-          targets = ["${var.pihole_endpoint}"]
+          targets = [var.pihole_endpoint]
         }]
         metrics_path = "/admin/api.php"
-        params = {
-          "auth" = [var.pihole_api_token]
-        }
         scrape_interval = "60s"
+        params = {
+          auth = [var.pihole_api_token != "" ? var.pihole_api_token : ""]
+        }
+      },
+      {
+        job_name = "homeassistant"
+        static_configs = [{
+          targets = ["${var.external_hostname}:8123"]
+        }]
+        metrics_path = "/api/prometheus"
+        scrape_interval = "30s"
       }
     ])
   }
+
+  type = "Opaque"
 }
 
 # Install kube-prometheus-stack via Helm
@@ -94,12 +104,12 @@ resource "helm_release" "prometheus_stack" {
             }
           }
           
-          # Additional scrape configs - temporarily disabled due to YAML format issue
-          # additionalScrapeConfigs = {
-          #   enabled = true
-          #   name    = kubernetes_config_map.prometheus_config.metadata[0].name
-          #   key     = "additional-scrape-configs.yaml"
-          # }
+          # Additional scrape configs for comprehensive monitoring
+          additionalScrapeConfigsSecret = {
+            enabled = true
+            name = kubernetes_secret.prometheus_additional_scrape_configs.metadata[0].name
+            key  = "prometheus-additional.yaml"
+          }
           
           # External access
           serviceMonitorSelectorNilUsesHelmValues = false
@@ -334,7 +344,7 @@ resource "helm_release" "prometheus_stack" {
     })
   ]
 
-  depends_on = [kubernetes_config_map.prometheus_config]
+  depends_on = [kubernetes_secret.prometheus_additional_scrape_configs]
 }
 
 # Create custom alerting rules for homelab
