@@ -45,6 +45,8 @@ resource "helm_release" "loki_stack" {
           enabled = true
           storageClassName = var.storage_class
           size = var.loki_storage_size
+          # Ensure PVC mounts at the same path used in the Loki config (/loki)
+          mountPath = "/loki"
         }
         
         # Loki configuration
@@ -57,11 +59,11 @@ resource "helm_release" "loki_stack" {
           }
           
           common = {
-            path_prefix = "/loki"
+            path_prefix = "/data"
             storage = {
               filesystem = {
-                chunks_directory = "/loki/chunks"
-                rules_directory = "/loki/rules"
+                chunks_directory = "/data/chunks"
+                rules_directory = "/data/rules"
               }
             }
             replication_factor = 1
@@ -90,18 +92,18 @@ resource "helm_release" "loki_stack" {
           
           storage_config = {
             boltdb_shipper = {
-              active_index_directory = "/loki/boltdb-shipper-active"
-              cache_location = "/loki/boltdb-shipper-cache"
+              active_index_directory = "/data/boltdb-shipper-active"
+              cache_location = "/data/boltdb-shipper-cache"
               cache_ttl = "24h"
               shared_store = "filesystem"
             }
             filesystem = {
-              directory = "/loki/chunks"
+              directory = "/data/chunks"
             }
           }
           
           compactor = {
-            working_directory = "/loki/boltdb-shipper-compactor"
+            working_directory = "/data/boltdb-shipper-compactor"
             shared_store = "filesystem"
           }
           
@@ -127,10 +129,10 @@ resource "helm_release" "loki_stack" {
             storage = {
               type = "local"
               local = {
-                directory = "/loki/rules"
+                directory = "/data/rules"
               }
             }
-            rule_path = "/loki/rules-temp"
+            rule_path = "/data/rules-temp"
             alertmanager_url = var.alertmanager_url
           }
         }
@@ -161,7 +163,8 @@ resource "helm_release" "loki_stack" {
           lokiAddress = "http://loki:3100/loki/api/v1/push"
           
           snippets = {
-            scrapeConfigs = [
+            # loki-stack's promtail chart expects scrapeConfigs as a YAML string (templated with tpl)
+            scrapeConfigs = yamlencode([
               {
                 job_name = "kubernetes-pods"
                 pipeline_stages = [
@@ -198,6 +201,14 @@ resource "helm_release" "loki_stack" {
                     regex = "^;*([^;]+)(;.*)?$"
                     action = "replace"
                     target_label = "component"
+                  },
+                  # Tell promtail where to read logs from (k8s/containerd paths)
+                  {
+                    action = "replace"
+                    source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+                    target_label = "__path__"
+                    separator = "/"
+                    replacement = "/var/log/pods/*$1/*$2/*.log"
                   }
                 ]
               },
@@ -227,7 +238,7 @@ resource "helm_release" "loki_stack" {
                   }
                 ]
               }
-            ]
+            ])
           }
         }
         
