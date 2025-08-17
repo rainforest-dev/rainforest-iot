@@ -1,8 +1,8 @@
 # Raspberry Pi connection settings
-raspberry_pi_hostname = "raspberrypi-5"  # or use IP address like "192.168.1.100"
+raspberry_pi_hostname = "raspberrypi-5.local"  # or use IP address like "192.168.1.100"
 raspberry_pi_user = "rainforest"
 raspberry_pi_port = 22
-# raspberry_pi_host = "ssh://rainforest@raspberrypi-5:22"  # Optional: override computed connection string
+# raspberry_pi_host = "ssh://rainforest@raspberrypi-5.local:22"  # Optional: override computed connection string
 
 # System configuration
 timezone = "Asia/Taipei"

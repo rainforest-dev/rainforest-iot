@@ -185,6 +185,13 @@ variable "k8s_insecure_skip_tls_verify" {
   default     = false
 }
 
+# Kubernetes API hostname used for provider connection (must match API server certificate SANs)
+variable "k8s_api_hostname" {
+  description = "Hostname or IP for Kubernetes API server (SNI must match certificate)"
+  type        = string
+  default     = "raspberrypi-5"
+}
+
 # Monitoring Stack Chart Versions
 variable "prometheus_chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"

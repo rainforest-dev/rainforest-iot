@@ -196,6 +196,12 @@ variable "mac_mini_ip" {
   default     = "100.86.67.66"
 }
 
+variable "mac_mini_hostname" {
+  description = "Mac mini hostname for monitoring"
+  type        = string
+  default     = "rainforest-mini.local"
+}
+
 variable "mac_mini_docker_endpoint" {
   description = "Mac mini Docker endpoint for monitoring"
   type        = string

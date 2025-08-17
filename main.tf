@@ -9,7 +9,6 @@ provider "docker" {
 # Kubernetes provider for K3s cluster
 provider "kubernetes" {
   alias                  = "k3s"
-  host                   = "https://${var.raspberry_pi_hostname}:6443"
   config_path            = var.k8s_config_path
   config_context         = var.k8s_config_context
   insecure               = var.k8s_insecure_skip_tls_verify
@@ -19,7 +18,6 @@ provider "kubernetes" {
 provider "helm" {
   alias = "k3s"
   kubernetes {
-    host                   = "https://${var.raspberry_pi_hostname}:6443"
     config_path            = var.k8s_config_path
     config_context         = var.k8s_config_context
     insecure               = var.k8s_insecure_skip_tls_verify
@@ -175,6 +173,7 @@ module "prometheus_stack" {
 
   # External monitoring targets
   mac_mini_ip = var.mac_mini_ip
+  mac_mini_hostname = var.mac_mini_hostname
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_endpoint = "${var.raspberry_pi_hostname}:${var.pihole_web_port}"
   pihole_api_token = var.pihole_api_token
