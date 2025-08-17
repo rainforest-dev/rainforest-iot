@@ -25,6 +25,19 @@ The deployment uses a clean 3-layer architecture with automatic dependency manag
 - **Kubeconfig management** with automatic local fetch for Terraform
 - **Namespace and storage setup** for monitoring workloads
 
+### K3s API access naming (required)
+To make Terraform/kubectl work from any machine on the same LAN (and optionally via Tailscale), Ansible enforces:
+
+- __Certificate SANs__: Manage `/etc/rancher/k3s/config.yaml` to include:
+  - `raspberrypi-5.local`
+  - `raspberrypi-5`
+  - `localhost`
+- __Kubeconfig server URL__: Normalize `/etc/rancher/k3s/k3s.yaml` to `server: https://raspberrypi-5.local:6443` and fetch to controller as `~/.kube/config-raspberrypi-5`.
+
+Notes:
+- `.local` relies on mDNS. Ensure Bonjour (macOS) or Avahi/`nss-mdns` (Linux) is available on client machines.
+- If accessing over Tailscale, add your MagicDNS name to K3s `tls-san`, rotate certs, and use that name in kubeconfig.
+
 ### Deploy Infrastructure
 ```bash
 # Deploy infrastructure layer
@@ -70,17 +83,17 @@ terraform apply  # Deploy everything with proper sequencing
 ### Post-Layer 2 Verification
 ```bash
 # Check Docker services
-ssh rainforest@raspberrypi-5 'docker ps'
+ssh rainforest@raspberrypi-5.local 'docker ps'
 
 # Check Kubernetes monitoring
 kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
 
 # Access all services
-echo "Pi-hole: http://raspberrypi-5:8080/admin"
-echo "Homepage: http://raspberrypi-5:80"
-echo "Grafana: http://raspberrypi-5:30080 (admin/admin123)"
-echo "Prometheus: http://raspberrypi-5:30090"
-echo "AlertManager: http://raspberrypi-5:30093"
+echo "Pi-hole: http://raspberrypi-5.local:8080/admin"
+echo "Homepage: http://raspberrypi-5.local:80"
+echo "Grafana: http://raspberrypi-5.local:30080 (admin/admin123)"
+echo "Prometheus: http://raspberrypi-5.local:30090"
+echo "AlertManager: http://raspberrypi-5.local:30093"
 ```
 
 ## Architecture Benefits

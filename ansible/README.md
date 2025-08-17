@@ -90,6 +90,25 @@ ansible-playbook playbooks/k3s-install.yml
 terraform apply  # Docker services + K8s monitoring
 ```
 
+## **K3s API access naming (.local and TLS SANs)**
+
+Ansible ensures kubectl/Terraform can access the API from any LAN machine by:
+
+- __Managing K3s certificate SANs__: Deploys `/etc/rancher/k3s/config.yaml` with `tls-san` including:
+  - `{{ inventory_hostname }}.local`
+  - `{{ inventory_hostname }}`
+  - `localhost`
+  Cert changes trigger a handler to rotate certs and restart K3s.
+
+- __Normalizing kubeconfig server__: Rewrites the server URL to `https://{{ inventory_hostname }}.local:6443` in:
+  - `/etc/rancher/k3s/k3s.yaml` (on the Pi)
+  - `/home/{{ ansible_user }}/.kube/config` (on the Pi)
+  Then fetches it to the controller as `~/.kube/config-{{ inventory_hostname }}`.
+
+Notes:
+- `.local` relies on mDNS. Ensure Bonjour (macOS) or Avahi/`nss-mdns` (Linux) on client machines.
+- For Tailscale access, add your MagicDNS name to `k3s_tls_sans` and update kubeconfig accordingly.
+
 ## **Inventory Structure**
 
 ```yaml
