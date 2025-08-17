@@ -13,6 +13,35 @@ terraform {
   }
 }
 
+# Grafana dashboards as ConfigMaps for sidecar auto-import
+resource "kubernetes_config_map" "grafana_dashboard_homelab_overview" {
+  metadata {
+    name      = "grafana-homelab-overview"
+    namespace = var.namespace
+    labels = {
+      grafana_dashboard = "1"
+    }
+  }
+
+  data = {
+    "homelab-overview.json" = file("${path.module}/dashboards/homelab-overview.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_kubernetes_cluster" {
+  metadata {
+    name      = "grafana-kubernetes-cluster"
+    namespace = var.namespace
+    labels = {
+      grafana_dashboard = "1"
+    }
+  }
+
+  data = {
+    "kubernetes-cluster.json" = file("${path.module}/dashboards/kubernetes-cluster.json")
+  }
+}
+
 # Create Secret for additional scrape configs (Prometheus operator expects Secret, not ConfigMap)
 resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   metadata {
@@ -21,42 +50,13 @@ resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   }
 
   data = {
-    "prometheus-additional.yaml" = yamlencode([
-      {
-        job_name = "mac-mini-docker"
-        static_configs = [{
-          targets = [var.mac_mini_docker_endpoint]
-        }]
-        metrics_path = "/metrics"
-        scrape_interval = "30s"
-      },
-      {
-        job_name = "mac-mini-node"
-        static_configs = [{
-          targets = ["${var.mac_mini_ip}:9100"]
-        }]
-        scrape_interval = "30s"
-      },
-      {
-        job_name = "pi-hole"
-        static_configs = [{
-          targets = [var.pihole_endpoint]
-        }]
-        metrics_path = "/admin/api.php"
-        scrape_interval = "60s"
-        params = {
-          auth = [var.pihole_api_token != "" ? var.pihole_api_token : ""]
-        }
-      },
-      {
-        job_name = "homeassistant"
-        static_configs = [{
-          targets = ["${var.external_hostname}:8123"]
-        }]
-        metrics_path = "/api/prometheus"
-        scrape_interval = "30s"
-      }
-    ])
+    "prometheus-additional.yaml" = templatefile("${path.module}/templates/additional-scrape-configs.yaml.tpl", {
+      mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
+      mac_mini_ip              = var.mac_mini_ip
+      pihole_endpoint          = var.pihole_endpoint
+      pihole_api_token         = var.pihole_api_token
+      external_hostname        = var.external_hostname
+    })
   }
 
   type = "Opaque"
@@ -189,6 +189,8 @@ resource "helm_release" "prometheus_stack" {
         # Sidecar resource limits
         sidecar = {
           dashboards = {
+            enabled = true
+            label   = "grafana_dashboard"
             resources = {
               requests = {
                 cpu    = "50m"
