@@ -9,6 +9,7 @@ This document describes the setup and configuration of Homebridge on the Raspber
 ### 1. Homebridge Module (`modules/homebridge/`)
 
 The Homebridge module provisions:
+
 - Docker container running `homebridge/homebridge:latest`
 - Host networking mode (required for HomeKit discovery)
 - Web UI on port 8581
@@ -44,6 +45,7 @@ resource "null_resource" "homebridge_firewall_rule" {
 ```
 
 **Benefits:**
+
 - Automatically opens port 8581 when Homebridge is deployed
 - Removes the firewall rule when Homebridge is destroyed
 - Eliminates manual firewall configuration
@@ -67,29 +69,32 @@ Homebridge is automatically added to the homepage dashboard:
 
 The Homebridge module accepts these variables:
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `hostname` | Raspberry Pi hostname | `raspberrypi-5` | No |
-| `pi_hostname` | SSH hostname for connection | - | Yes |
-| `pi_user` | SSH user for connection | - | Yes |
-| `pi_port` | SSH port for connection | `22` | No |
-| `memory_limit` | Container memory limit (MB) | `512` | No |
-| `web_port` | Web UI port | `8581` | No |
-| `timezone` | Container timezone | `Asia/Taipei` | No |
-| `log_opts` | Docker logging options | See defaults | No |
+| Variable       | Description                 | Default         | Required |
+| -------------- | --------------------------- | --------------- | -------- |
+| `hostname`     | Raspberry Pi hostname       | `raspberrypi-5` | No       |
+| `pi_hostname`  | SSH hostname for connection | -               | Yes      |
+| `pi_user`      | SSH user for connection     | -               | Yes      |
+| `pi_port`      | SSH port for connection     | `22`            | No       |
+| `memory_limit` | Container memory limit (MB) | `512`           | No       |
+| `web_port`     | Web UI port                 | `8581`          | No       |
+| `timezone`     | Container timezone          | `Asia/Taipei`   | No       |
+| `log_opts`     | Docker logging options      | See defaults    | No       |
 
 ## Initial Setup Process
 
 1. **Infrastructure Deployment**
+
    ```bash
    terraform apply
    ```
 
 2. **Access Web UI**
+
    - URL: `http://raspberrypi-5.local:8581`
    - The firewall rule is automatically configured
 
 3. **Complete Homebridge Setup**
+
    - Use the PIN from container logs: `207-91-627`
    - Or scan QR code: `X-HM://0023TB70RQ9G9`
 
@@ -101,16 +106,19 @@ The Homebridge module accepts these variables:
 ## Wake-on-LAN Configuration
 
 ### Prerequisites
+
 - Target PC must have WoL enabled in BIOS/UEFI
 - Network adapter must support WoL
 - PC must be connected via Ethernet
 - Need PC's MAC address
 
 ### Recommended Plugins
+
 1. **homebridge-wol** - Simple wake switch
 2. **homebridge-computer** - Advanced PC control with status monitoring
 
 ### Configuration Example
+
 ```json
 {
   "platforms": [
@@ -132,6 +140,7 @@ The Homebridge module accepts these variables:
 ## HomeKit Integration
 
 1. **Add Bridge to Home App**
+
    - Open iOS Home app
    - Tap "+" → Add Accessory
    - Scan QR code or enter PIN manually
@@ -146,18 +155,20 @@ The Homebridge module accepts these variables:
 ### Common Issues
 
 1. **Web UI Not Accessible**
+
    ```bash
    # Check container status
    docker ps --filter name=homebridge
-   
+
    # Check firewall status
    sudo ufw status | grep 8581
-   
+
    # View container logs
    docker logs homebridge
    ```
 
 2. **HomeKit Pairing Issues**
+
    - Ensure host networking is enabled
    - Check that port 51826 is accessible
    - Restart container if needed
@@ -168,6 +179,7 @@ The Homebridge module accepts these variables:
    - Test with wakeonlan utility first
 
 ### Log Locations
+
 - Container logs: `docker logs homebridge`
 - Homebridge logs: Inside container at `/homebridge/logs/`
 - Configuration: `/homebridge/config.json`
@@ -175,11 +187,13 @@ The Homebridge module accepts these variables:
 ## Security Considerations
 
 1. **Network Security**
+
    - Homebridge uses host networking (required for HomeKit)
    - Web UI is accessible on local network only
    - Consider VPN for remote access
 
 2. **HomeKit Security**
+
    - Uses encrypted communication
    - Requires device pairing
    - PIN-based authentication
@@ -192,6 +206,7 @@ The Homebridge module accepts these variables:
 ## Backup and Recovery
 
 ### Configuration Backup
+
 ```bash
 # Backup Homebridge configuration
 docker cp homebridge:/homebridge/config.json ~/homebridge-config-backup.json
@@ -201,6 +216,7 @@ docker run --rm -v homebridge_data:/data -v $(pwd):/backup alpine tar czf /backu
 ```
 
 ### Recovery
+
 ```bash
 # Restore configuration
 docker cp ~/homebridge-config-backup.json homebridge:/homebridge/config.json
@@ -212,11 +228,13 @@ docker restart homebridge
 ## Integration with Other Services
 
 ### HomeAssistant Integration
+
 - Can discover Homebridge devices
 - Allows advanced automation
 - Provides additional device types
 
 ### Monitoring Integration
+
 - Container health checks via Docker
 - Homepage dashboard integration
 - Prometheus metrics (if configured)
@@ -224,6 +242,7 @@ docker restart homebridge
 ## Updates and Maintenance
 
 ### Container Updates
+
 ```bash
 # Terraform will handle updates
 terraform apply
@@ -234,6 +253,7 @@ docker restart homebridge
 ```
 
 ### Plugin Updates
+
 - Updates managed via Web UI
 - Automatic update notifications
 - Backup before major updates

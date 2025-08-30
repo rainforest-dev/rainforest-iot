@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      source                = "kreuzwerker/docker"
+      version               = "~> 3.0"
       configuration_aliases = [docker]
     }
   }
@@ -23,7 +23,7 @@ resource "docker_container" "homebridge" {
   network_mode = "host"
 
   # Resource limits for stability
-  memory = var.memory_limit
+  memory      = var.memory_limit
   memory_swap = var.memory_limit * 2
 
   # Lifecycle management to prevent unnecessary recreation
@@ -45,7 +45,7 @@ resource "docker_container" "homebridge" {
     "PUID=1000",
     "HOMEBRIDGE_CONFIG_UI=1",
     "HOMEBRIDGE_CONFIG_UI_PORT=${var.web_port}",
-    "HOMEBRIDGE_INSECURE=1"  # Allow setup mode for easier initial configuration
+    "HOMEBRIDGE_INSECURE=1" # Allow setup mode for easier initial configuration
   ]
 
   # Health check for Homebridge web UI

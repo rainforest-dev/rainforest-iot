@@ -19,7 +19,7 @@ variable "raspberry_pi_port" {
 variable "raspberry_pi_host" {
   description = "Complete SSH connection string for Raspberry Pi"
   type        = string
-  default     = ""  # Will be computed from hostname, user, and port
+  default     = "" # Will be computed from hostname, user, and port
 }
 
 variable "timezone" {
@@ -54,8 +54,8 @@ variable "homepage_port" {
 
 variable "openspeedtest_ports" {
   description = "External ports for OpenSpeedTest"
-  type        = object({
-    http = number
+  type = object({
+    http  = number
     https = number
   })
   default = {
@@ -79,7 +79,7 @@ variable "homebridge_memory" {
 variable "watchtower_poll_interval" {
   description = "Watchtower polling interval in seconds"
   type        = number
-  default     = 86400  # 24 hours
+  default     = 86400 # 24 hours
 }
 
 variable "log_max_size" {
@@ -329,21 +329,21 @@ variable "monitoring_resource_limits" {
     prometheus_memory_limit   = string
     prometheus_storage_size   = string
     prometheus_retention      = string
-    
+
     # Grafana settings
     grafana_cpu_request    = string
     grafana_cpu_limit      = string
     grafana_memory_request = string
     grafana_memory_limit   = string
     grafana_storage_size   = string
-    
+
     # AlertManager settings
     alertmanager_cpu_request    = string
     alertmanager_cpu_limit      = string
     alertmanager_memory_request = string
     alertmanager_memory_limit   = string
     alertmanager_storage_size   = string
-    
+
     # Loki settings
     loki_cpu_request    = string
     loki_cpu_limit      = string
@@ -351,7 +351,7 @@ variable "monitoring_resource_limits" {
     loki_memory_limit   = string
     loki_storage_size   = string
     loki_retention      = string
-    
+
     # Promtail settings
     promtail_cpu_request    = string
     promtail_cpu_limit      = string
@@ -366,21 +366,21 @@ variable "monitoring_resource_limits" {
     prometheus_memory_limit   = "512Mi"
     prometheus_storage_size   = "10Gi"
     prometheus_retention      = "7d"
-    
+
     # Grafana settings
     grafana_cpu_request    = "100m"
     grafana_cpu_limit      = "200m"
     grafana_memory_request = "128Mi"
     grafana_memory_limit   = "256Mi"
     grafana_storage_size   = "2Gi"
-    
+
     # AlertManager settings
     alertmanager_cpu_request    = "50m"
     alertmanager_cpu_limit      = "100m"
     alertmanager_memory_request = "64Mi"
     alertmanager_memory_limit   = "128Mi"
     alertmanager_storage_size   = "1Gi"
-    
+
     # Loki settings
     loki_cpu_request    = "100m"
     loki_cpu_limit      = "300m"
@@ -388,7 +388,7 @@ variable "monitoring_resource_limits" {
     loki_memory_limit   = "512Mi"
     loki_storage_size   = "10Gi"
     loki_retention      = "168h"
-    
+
     # Promtail settings
     promtail_cpu_request    = "50m"
     promtail_cpu_limit      = "100m"

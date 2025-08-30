@@ -2,11 +2,11 @@
 output "service_urls" {
   description = "URLs to access deployed services"
   value = {
-  homeassistant = module.homeassistant.service_url
-  homebridge    = module.homebridge.service_url
-  homepage      = module.homepage.service_url
-  pihole        = module.pi-hole.service_url
-  openspeedtest = module.openspeedtest.service_urls
+    homeassistant = module.homeassistant.service_url
+    homebridge    = module.homebridge.service_url
+    homepage      = module.homepage.service_url
+    pihole        = module.pi-hole.service_url
+    openspeedtest = module.openspeedtest.service_urls
   }
 }
 
@@ -27,11 +27,11 @@ output "container_info" {
 output "connection_info" {
   description = "Connection details for the Raspberry Pi"
   value = {
-    hostname     = var.raspberry_pi_hostname
-    user         = var.raspberry_pi_user
-    port         = var.raspberry_pi_port
-    timezone     = var.timezone
-    docker_host  = "ssh://${var.raspberry_pi_user}@${var.raspberry_pi_hostname}:${var.raspberry_pi_port}"
+    hostname    = var.raspberry_pi_hostname
+    user        = var.raspberry_pi_user
+    port        = var.raspberry_pi_port
+    timezone    = var.timezone
+    docker_host = "ssh://${var.raspberry_pi_user}@${var.raspberry_pi_hostname}:${var.raspberry_pi_port}"
   }
   sensitive = false
 }
@@ -51,9 +51,9 @@ output "volume_info" {
 output "kubernetes_services" {
   description = "Kubernetes service access URLs"
   value = var.enable_k8s_cluster ? {
-    prometheus    = "http://${var.raspberry_pi_hostname}:${var.prometheus_port}"
-    grafana       = "http://${var.raspberry_pi_hostname}:${var.grafana_port}"
-    alertmanager  = "http://${var.raspberry_pi_hostname}:${var.alertmanager_port}"
+    prometheus   = "http://${var.raspberry_pi_hostname}:${var.prometheus_port}"
+    grafana      = "http://${var.raspberry_pi_hostname}:${var.grafana_port}"
+    alertmanager = "http://${var.raspberry_pi_hostname}:${var.alertmanager_port}"
     loki         = var.loki_enabled ? "http://${var.raspberry_pi_hostname}:${var.loki_port}" : null
   } : null
 }
@@ -86,10 +86,10 @@ output "wol_setup_info" {
 output "homekit_setup_info" {
   description = "HomeKit setup instructions and access information"
   value = {
-    homebridge_setup_url = "http://${var.raspberry_pi_hostname}:${var.homebridge_web_port}"
+    homebridge_setup_url    = "http://${var.raspberry_pi_hostname}:${var.homebridge_web_port}"
     homeassistant_setup_url = "http://${var.raspberry_pi_hostname}:8123"
     pc_info = {
-      note = "Configure PC details (MAC address, hostname) via Homebridge web UI"
+      note       = "Configure PC details (MAC address, hostname) via Homebridge web UI"
       wol_status = "✅ Wake-on-LAN enabled on rainforest-ubuntu via SSH"
     }
     setup_instructions = [
