@@ -10,7 +10,7 @@ A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture wi
 - **Kubeconfig management** with automatic local fetch
 
 **🐳 Layer 2 (Terraform)** - Workloads  
-- **Docker services**: HomeAssistant, Pi-hole, Homepage, Watchtower
+- **Docker services**: HomeAssistant, Homebridge, Pi-hole, Homepage, Watchtower
 - **Kubernetes monitoring**: Prometheus, Grafana, Loki with dependency management
 - **Remote Helm deployment** with automatic CRD handling
 
@@ -64,6 +64,7 @@ terraform apply   # Deploy with automatic sequencing
 | Service | Description | Port | Status |
 |---------|-------------|------|--------|
 | **HomeAssistant** | Home automation platform | 8123 | ✅ Active |
+| **Homebridge** | HomeKit bridge for non-HomeKit devices | 8581 | ✅ Active |
 | **Homepage** | Dashboard and service portal | 80 | ✅ Active |
 | **Pi-hole** | DNS-based ad blocker | 8080 | ✅ Active |
 | **Watchtower** | Automatic container updates | - | ✅ Active |
@@ -88,6 +89,17 @@ terraform apply   # Deploy with automatic sequencing
 docker exec -it homeassistant bash
 wget -O - https://get.hacs.xyz | bash -
 ```
+
+### Homebridge Setup
+1. Access Homebridge at `http://your-pi-hostname:8581`
+2. Complete the setup wizard (auto-generates PIN and QR codes)
+3. Install Wake-on-LAN plugin:
+   - Go to Plugins tab
+   - Search for "homebridge-wol"
+   - Configure with your PC's MAC address
+4. Add to iOS Home app using the QR code or PIN
+
+See detailed setup guide: [docs/homebridge-setup.md](docs/homebridge-setup.md)
 
 ### USB Device Support
 For Zigbee/Z-Wave dongles, set in `terraform.tfvars`:
