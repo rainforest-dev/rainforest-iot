@@ -107,3 +107,17 @@ output "homekit_setup_info" {
   }
   sensitive = false
 }
+
+# HomeAssistant HACS Setup
+output "homeassistant_hacs_info" {
+  description = "HomeAssistant HACS setup status and access information"
+  value = var.enable_hacs ? {
+    hacs_enabled  = module.homeassistant.container_status.hacs_enabled
+    access_url    = "http://${var.raspberry_pi_hostname}:8123"
+    setup_note    = "HACS will be automatically installed. After first boot, complete HACS setup in HomeAssistant UI."
+    documentation = "See docs/homeassistant-hacs-setup.md for detailed setup instructions"
+    } : {
+    hacs_enabled = false
+    status       = "HACS installation disabled"
+  }
+}

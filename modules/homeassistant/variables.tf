@@ -16,6 +16,12 @@ variable "enable_usb_devices" {
   default     = false
 }
 
+variable "enable_hacs" {
+  description = "Enable HACS (Home Assistant Community Store) installation"
+  type        = bool
+  default     = true
+}
+
 variable "timezone" {
   description = "Timezone for the container"
   type        = string

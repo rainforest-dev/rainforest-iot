@@ -23,7 +23,7 @@ resource "docker_container" "homeassistant" {
   network_mode = "host"
 
   # Resource limits for stability
-  memory = var.memory_limit
+  memory      = var.memory_limit
   memory_swap = var.memory_limit * 2
 
   # Lifecycle management to prevent unnecessary recreation
@@ -52,6 +52,12 @@ resource "docker_container" "homeassistant" {
     add = ["NET_ADMIN", "NET_RAW", "SYS_ADMIN"]
   }
 
+  # Environment variables for HomeAssistant
+  env = [
+    "TZ=${var.timezone}",
+    "HACS_ENABLED=${var.enable_hacs ? "true" : "false"}"
+  ]
+
   # USB device access for Zigbee/Z-Wave dongles
   dynamic "devices" {
     for_each = var.enable_usb_devices ? [1] : []
@@ -60,7 +66,7 @@ resource "docker_container" "homeassistant" {
       container_path = "/dev/ttyUSB0"
     }
   }
-  
+
   dynamic "devices" {
     for_each = var.enable_usb_devices ? [1] : []
     content {
@@ -88,4 +94,37 @@ resource "docker_container" "homeassistant" {
 
   # Logging configuration
   log_opts = var.log_opts
+}
+
+# HACS (Home Assistant Community Store) installation
+resource "null_resource" "hacs_installation" {
+  count = var.enable_hacs ? 1 : 0
+
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    hacs_enabled = var.enable_hacs
+  }
+
+  # Wait for HomeAssistant to be ready
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Install HACS
+  provisioner "local-exec" {
+    command = <<-EOT
+      docker exec homeassistant bash -c '
+        if [ ! -d "/config/custom_components/hacs" ]; then
+          echo "Installing HACS..."
+          cd /config
+          wget -O - https://get.hacs.xyz | bash -
+          echo "HACS installation completed. Restart HomeAssistant to activate."
+        else
+          echo "HACS already installed"
+        fi
+      '
+    EOT
+  }
+
+  depends_on = [docker_container.homeassistant]
 }

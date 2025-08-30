@@ -25,5 +25,6 @@ output "container_status" {
     memory_limit   = docker_container.homeassistant.memory
     network_mode   = docker_container.homeassistant.network_mode
     usb_enabled    = var.enable_usb_devices
+    hacs_enabled   = var.enable_hacs
   }
 }

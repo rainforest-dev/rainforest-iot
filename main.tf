@@ -35,6 +35,7 @@ module "homeassistant" {
   hostname           = var.raspberry_pi_hostname
   memory_limit       = var.homeassistant_memory
   enable_usb_devices = var.enable_usb_devices
+  enable_hacs        = var.enable_hacs
   timezone           = var.timezone
   log_opts           = local.common_log_opts
 }
