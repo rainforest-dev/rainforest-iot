@@ -60,9 +60,10 @@ kubectl get pods -A --kubeconfig ~/.kube/config-raspberrypi-5
 
 ### What Gets Deployed
 **Docker Services:**
-- **HomeAssistant**: Smart home automation platform
+- **HomeAssistant**: Smart home automation platform with HACS support
+- **Homebridge**: HomeKit bridge for non-HomeKit devices with automated firewall management
 - **Pi-hole**: Network-wide DNS ad blocking with Tailscale support
-- **Homepage**: Service dashboard
+- **Homepage**: Service dashboard with integrated monitoring
 - **Watchtower**: Container auto-updates
 - **OpenSpeedTest**: Network speed testing
 
@@ -89,6 +90,8 @@ ssh rainforest@raspberrypi-5.local 'docker ps'
 kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
 
 # Access all services
+echo "HomeAssistant: http://raspberrypi-5.local:8123"
+echo "Homebridge: http://raspberrypi-5.local:8581"
 echo "Pi-hole: http://raspberrypi-5.local:8080/admin"
 echo "Homepage: http://raspberrypi-5.local:80"
 echo "Grafana: http://raspberrypi-5.local:30080 (admin/admin123)"
@@ -124,10 +127,17 @@ echo "AlertManager: http://raspberrypi-5.local:30093"
 ```hcl
 # Layer control
 enable_k8s_cluster = true   # Enable Kubernetes monitoring
+enable_hacs = true          # Enable HACS for HomeAssistant
+enable_prometheus = true    # Enable Prometheus monitoring stack
+enable_loki = true          # Enable Loki logging stack
 
 # Kubeconfig management (set by Ansible)
 k8s_config_path = "~/.kube/config-raspberrypi-5"
 k8s_insecure_skip_tls_verify = false
+
+# Service configuration
+homebridge_web_port = 8581  # Homebridge web UI port
+grafana_admin_password = "admin123"  # Change in production
 
 # Monitoring resource limits (optimized for Pi 5)
 monitoring_resource_limits = {

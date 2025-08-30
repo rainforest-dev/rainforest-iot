@@ -1,5 +1,45 @@
 # Infrastructure Changelog
 
+## 2025-08-30 - HACS Integration & Documentation Updates
+
+### Added
+
+- **HACS (Home Assistant Community Store) Support**
+  - Automatic installation when `enable_hacs = true` (default)
+  - Integration with HomeAssistant container startup process
+  - Comprehensive setup documentation in `docs/homeassistant-hacs-setup.md`
+
+- **Enhanced Terraform Configuration**
+  - Updated `terraform.tfvars.example` with all current variables
+  - Added Kubernetes monitoring configuration options
+  - Included Homebridge configuration variables
+  - Added homepage dashboard customization options
+
+- **Improved Documentation Structure**
+  - Updated README.md with HACS installation instructions
+  - Enhanced deployment guide with current service architecture
+  - Added monitoring service URLs and configuration details
+
+### Technical Implementation
+
+#### HACS Installation Process
+- Automatic download and installation via container init script
+- Configuration persistence in HomeAssistant volume
+- GitHub OAuth integration for community store access
+
+#### Documentation Improvements
+- Comprehensive variable documentation in `terraform.tfvars.example`
+- Updated service port mappings
+- Enhanced troubleshooting sections
+
+### Files Modified
+- `terraform.tfvars.example` - Added missing variables and configurations
+- `README.md` - Updated with HACS support and current features
+- `docs/deployment-guide.md` - Enhanced with current architecture
+- `docs/homeassistant-hacs-setup.md` - Comprehensive HACS documentation
+
+---
+
 ## 2025-08-31 - Homebridge Firewall Automation & Homepage Integration
 
 ### Added

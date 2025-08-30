@@ -91,12 +91,10 @@ terraform apply   # Deploy with automatic sequencing
 
 1. Access HomeAssistant at `http://your-pi-hostname:8123`
 2. Complete initial setup
-3. Install HACS (optional):
-
-```bash
-docker exec -it homeassistant bash
-wget -O - https://get.hacs.xyz | bash -
-```
+3. **HACS Installation**: Automatically installed when `enable_hacs = true` (default)
+   - Navigate to Settings → Devices & Services
+   - Add HACS integration and authenticate with GitHub
+   - See [docs/homeassistant-hacs-setup.md](docs/homeassistant-hacs-setup.md) for details
 
 ### Homebridge Setup
 
@@ -116,6 +114,7 @@ For Zigbee/Z-Wave dongles, set in `terraform.tfvars`:
 
 ```hcl
 enable_usb_devices = true
+enable_hacs = true  # Enable HACS installation (default)
 ```
 
 ## Maintenance
@@ -195,15 +194,17 @@ raspberry_pi_port = 22                   # SSH port
 ### Hardware Options
 
 ```hcl
-enable_usb_devices = true    # Enable for Zigbee/Z-Wave dongles
-homeassistant_memory = 1024  # Memory limit in MB
+enable_usb_devices = true     # Enable for Zigbee/Z-Wave dongles
+homeassistant_memory = 1024   # Memory limit in MB
+homebridge_memory = 512       # Homebridge memory limit in MB
 ```
 
 ### Network Ports
 
 ```hcl
 homepage_port = 80           # Dashboard port
-pihole_web_port = 8080      # Pi-hole admin interface
+pihole_web_port = 8080       # Pi-hole admin interface
+homebridge_web_port = 8581   # Homebridge web UI
 openspeedtest_ports = {
   http  = 3000
   https = 3001
