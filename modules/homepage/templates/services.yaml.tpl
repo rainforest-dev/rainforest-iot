@@ -42,6 +42,12 @@
         icon: home-assistant.png
         server: pi5-docker
         container: homeassistant
+    - Homebridge:
+        href: http://${raspberry_pi_hostname}:8581
+        description: "HomeKit Bridge"
+        icon: homebridge.png
+        server: pi5-docker
+        container: homebridge
     - Pi-hole:
         href: http://${raspberry_pi_hostname}:8080/admin
         description: "DNS Ad Blocker"
