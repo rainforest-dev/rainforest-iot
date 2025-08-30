@@ -39,6 +39,23 @@ module "homeassistant" {
   log_opts = local.common_log_opts
 }
 
+module "homebridge" {
+  source = "./modules/homebridge"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+  
+  hostname = var.raspberry_pi_hostname
+  pi_hostname = var.raspberry_pi_hostname
+  pi_user = var.raspberry_pi_user
+  pi_port = var.raspberry_pi_port
+  memory_limit = var.homebridge_memory
+  web_port = var.homebridge_web_port
+  timezone = var.timezone
+  log_opts = local.common_log_opts
+}
+
 # module "acton-3" {
 #   source = "./modules/acton-3"
 

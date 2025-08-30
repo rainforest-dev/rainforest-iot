@@ -64,6 +64,18 @@ variable "openspeedtest_ports" {
   }
 }
 
+variable "homebridge_web_port" {
+  description = "External port for Homebridge web interface"
+  type        = number
+  default     = 8581
+}
+
+variable "homebridge_memory" {
+  description = "Memory limit for Homebridge container (MB)"
+  type        = number
+  default     = 512
+}
+
 variable "watchtower_poll_interval" {
   description = "Watchtower polling interval in seconds"
   type        = number
