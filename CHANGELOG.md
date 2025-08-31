@@ -1,5 +1,56 @@
 # Infrastructure Changelog
 
+## 2025-08-31 - Homebridge v2 & Wake-on-LAN Ansible Automation
+
+### Added
+
+- **Homebridge v2.0 Beta Support**
+  - Updated Docker image to `homebridge/homebridge:beta-2025-08-30`
+  - Enhanced compatibility with HomeKit v2 protocol
+  - Improved web UI with v2 features
+
+- **Automated Wake-on-LAN Setup with Ansible**
+  - New playbooks for SSH key management: `ansible/playbooks/setup-homebridge-wol.yml`
+  - Comprehensive WoL configuration: `ansible/playbooks/homebridge-ssh-setup.yml`
+  - Multi-target machine inventory: `ansible/inventory-wol.yml`
+  - Automated SSH key generation in Homebridge container
+  - Public key distribution to target machines
+  - SSH connection and sudo access validation
+
+- **Enhanced Documentation**
+  - Updated `docs/homebridge-wol-manual-setup.md` with Ansible automation guide
+  - Added automated setup instructions to main README
+  - Comprehensive troubleshooting for SSH key authentication
+
+### Technical Implementation
+
+#### Homebridge v2 Migration
+- Container runs with official v2 beta image
+- Maintains backward compatibility with existing configurations
+- SSH key setup automated for root user in container
+
+#### Ansible Wake-on-LAN Automation
+- Generates Ed25519 SSH keys inside Homebridge container (`/root/.ssh/`)
+- Distributes public keys to multiple target machines
+- Tests SSH connectivity and sudo access
+- Supports scalable multi-machine deployments
+
+#### Security Enhancements  
+- Proper SSH key authentication between services
+- StrictHostKeyChecking configuration for container environments
+- Passwordless sudo access limited to shutdown commands
+
+### Breaking Changes
+- Homebridge container image changed from `latest` to `beta-2025-08-30`
+- Previous manual SSH setups may need to be redone with Ansible playbooks
+
+### Migration Notes
+- Existing Homebridge configurations are preserved during v2 upgrade
+- Run Ansible WoL setup playbook to configure SSH keys for existing deployments
+- Update terraform configuration to use new beta image tag
+
+---
+
 ## 2025-08-30 - HACS Integration & Documentation Updates
 
 ### Added

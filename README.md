@@ -65,6 +65,13 @@ terraform plan    # Safe to run repeatedly
 terraform apply   # Deploy with automatic sequencing
 ```
 
+3. **Configure Services (Optional)**
+
+```bash
+# Set up Wake-on-LAN for Homebridge (automated)
+ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge-wol.yml
+```
+
 ## Services
 
 | Service           | Description                            | Port      | Status    |
@@ -100,13 +107,18 @@ terraform apply   # Deploy with automatic sequencing
 
 1. Access Homebridge at `http://your-pi-hostname:8581`
 2. Complete the setup wizard (auto-generates PIN and QR codes)
-3. Install Wake-on-LAN plugin:
-   - Go to Plugins tab
-   - Search for "homebridge-wol"
-   - Configure with your PC's MAC address
-4. Add to iOS Home app using the QR code or PIN
+3. **Wake-on-LAN Setup**: Use automated Ansible playbook (recommended)
+   ```bash
+   # Automated SSH key setup for WoL functionality
+   ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge-wol.yml
+   ```
+4. Install Wake-on-LAN plugin via web UI:
+   - Go to Plugins tab → Search "homebridge-wol" → Install
+5. Add to iOS Home app using the QR code or PIN
 
-See detailed setup guide: [docs/homebridge-setup.md](docs/homebridge-setup.md)
+**Detailed Setup Guides:**
+- [Homebridge Infrastructure & Configuration](docs/homebridge-setup.md)
+- [Wake-on-LAN Setup Guide](docs/homebridge-wol-manual-setup.md) - **Automated + Manual methods**
 
 ### USB Device Support
 

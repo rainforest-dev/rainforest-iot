@@ -1,0 +1,202 @@
+---
+# Ansible playbook to set up SSH keys for Homebridge WoL functionality
+# This playbook configures SSH key authentication between Homebridge container and target machines
+
+- name: Configure Homebridge SSH Keys for Wake-on-LAN
+  hosts: raspberry_pi
+  become: false
+  gather_facts: true
+  vars:
+    homebridge_container_name: "homebridge"
+    target_machines:
+      - hostname: "192.168.100.10"
+        user: "rainforest" 
+        mac_address: "d8:43:ae:cb:e3:75"
+        name: "rainforest-ubuntu"
+      # Add more target machines here as needed
+      # - hostname: "192.168.100.20"
+      #   user: "user2"
+      #   mac_address: "aa:bb:cc:dd:ee:ff"
+      #   name: "machine2"
+
+  tasks:
+    - name: Check if Homebridge container is running
+      community.docker.docker_container_info:
+        name: "{{ homebridge_container_name }}"
+      register: homebridge_info
+      failed_when: not homebridge_info.exists or not homebridge_info.container.State.Running
+
+    - name: Create SSH directory in Homebridge container
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: mkdir -p /root/.ssh
+      register: ssh_dir_result
+      changed_when: ssh_dir_result.rc == 0
+
+    - name: Check if SSH key exists in container
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: test -f /root/.ssh/id_ed25519
+      register: ssh_key_check
+      failed_when: false
+      changed_when: false
+
+    - name: Generate SSH key in Homebridge container
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N '' -C 'homebridge@{{ inventory_hostname }}'
+      when: ssh_key_check.rc != 0
+      register: ssh_keygen_result
+      changed_when: ssh_keygen_result.rc == 0
+
+    - name: Get public key from Homebridge container
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: cat /root/.ssh/id_ed25519.pub
+      register: homebridge_pubkey
+      changed_when: false
+
+    - name: Display generated public key
+      debug:
+        msg: "Homebridge public key: {{ homebridge_pubkey.stdout }}"
+
+    - name: Add Homebridge public key to target machines
+      authorized_key:
+        user: "{{ item.user }}"
+        key: "{{ homebridge_pubkey.stdout }}"
+        comment: "homebridge-wol-{{ item.name }}"
+        state: present
+      delegate_to: "{{ item.hostname }}"
+      become: true
+      become_user: "{{ item.user }}"
+      loop: "{{ target_machines }}"
+      vars:
+        ansible_ssh_host: "{{ item.hostname }}"
+        ansible_ssh_user: "{{ item.user }}"
+
+    - name: Test SSH connection from Homebridge container to target machines
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 {{ item.user }}@{{ item.hostname }} 'hostname'
+      register: ssh_test_results
+      loop: "{{ target_machines }}"
+      changed_when: false
+      failed_when: ssh_test_results.rc != 0
+
+    - name: Test sudo access on target machines
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: ssh -o StrictHostKeyChecking=no {{ item.user }}@{{ item.hostname }} 'sudo shutdown --help'
+      register: sudo_test_results
+      loop: "{{ target_machines }}"
+      changed_when: false
+      failed_when: sudo_test_results.rc != 0
+
+    - name: Update Homebridge configuration with WoL accessories
+      community.docker.docker_container_exec:
+        container: "{{ homebridge_container_name }}"
+        command: >
+          jq '.accessories += [{{ target_machines | map(attribute='homebridge_config') | join(',') }}]'
+          /homebridge/config.json
+      vars:
+        homebridge_config: |
+          {
+            "accessory": "NetworkDevice",
+            "name": "{{ item.name }}",
+            "manufacturer": "homebridge-wol",
+            "model": "NetworkDevice", 
+            "mac": "{{ item.mac_address }}",
+            "host": "{{ item.hostname }}",
+            "broadcastAddress": "{{ item.hostname | regex_replace('\\.[^.]+$', '.255') }}",
+            "pingInterval": 2,
+            "pingsToChange": 5,
+            "pingTimeout": 1,
+            "wakeGraceTime": 45,
+            "shutdownGraceTime": 15,
+            "shutdownCommand": "ssh -o StrictHostKeyChecking=no {{ item.user }}@{{ item.hostname }} 'sudo shutdown -h now'",
+            "logLevel": "Debug"
+          }
+      when: false  # Disabled for safety - manual config recommended
+
+  handlers:
+    - name: Restart Homebridge container
+      community.docker.docker_container:
+        name: "{{ homebridge_container_name }}"
+        restart: true
+      listen: "restart homebridge"
+
+---
+# Separate play to configure target machines for WoL
+- name: Configure Target Machines for Wake-on-LAN
+  hosts: target_machines
+  become: true
+  gather_facts: true
+  vars:
+    wol_interface: "{{ ansible_default_ipv4.interface }}"
+    
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - ethtool
+          - wakeonlan
+        state: present
+
+    - name: Check if NetworkManager is managing the interface
+      command: nmcli device show {{ wol_interface }}
+      register: nm_check
+      failed_when: false
+      changed_when: false
+
+    - name: Enable Wake-on-LAN via NetworkManager
+      command: nmcli connection modify '{{ ansible_default_ipv4.interface }}' 802-3-ethernet.wake-on-lan magic
+      when: nm_check.rc == 0
+      become: true
+
+    - name: Restart NetworkManager connection
+      command: nmcli connection up '{{ ansible_default_ipv4.interface }}'
+      when: nm_check.rc == 0
+      become: true
+
+    - name: Create systemd service for WoL (fallback)
+      template:
+        dest: /etc/systemd/system/wol-enable.service
+        content: |
+          [Unit]
+          Description=Enable Wake-on-LAN
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/sbin/ethtool -s {{ wol_interface }} wol g
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+      when: nm_check.rc != 0
+      notify: Enable WoL service
+
+    - name: Ensure user can shutdown without password
+      lineinfile:
+        dest: /etc/sudoers.d/homebridge-shutdown
+        line: "{{ ansible_ssh_user }} ALL=(ALL) NOPASSWD: /sbin/shutdown, /bin/systemctl poweroff, /bin/systemctl reboot"
+        create: true
+        validate: 'visudo -cf %s'
+      become: true
+
+    - name: Verify Wake-on-LAN is enabled
+      command: ethtool {{ wol_interface }}
+      register: ethtool_output
+      changed_when: false
+
+    - name: Display WoL status
+      debug:
+        msg: "Wake-on-LAN status: {{ ethtool_output.stdout | regex_search('Wake-on: [a-z]+') }}"
+
+  handlers:
+    - name: Enable WoL service
+      systemd:
+        name: wol-enable.service
+        enabled: true
+        state: started
+        daemon_reload: true
