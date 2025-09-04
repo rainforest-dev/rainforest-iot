@@ -1,0 +1,153 @@
+---
+- name: Remove Tailscale from Pi 5 and restore local DNS
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    backup_date: "{{ ansible_date_time.epoch }}"
+    
+  tasks:
+    - name: Check if Tailscale is installed
+      command: which tailscale
+      register: tailscale_check
+      failed_when: false
+      changed_when: false
+
+    - name: Stop Tailscale service
+      systemd:
+        name: tailscaled
+        state: stopped
+        enabled: false
+      when: tailscale_check.rc == 0
+      
+    - name: Backup current resolv.conf
+      copy:
+        src: /etc/resolv.conf
+        dest: "/etc/resolv.conf.tailscale.backup.{{ backup_date }}"
+        remote_src: yes
+      when: tailscale_check.rc == 0
+
+    - name: Remove Tailscale package
+      apt:
+        name: tailscale
+        state: absent
+        purge: yes
+      when: tailscale_check.rc == 0
+
+    - name: Remove Tailscale repository
+      apt_repository:
+        repo: "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+        state: absent
+      when: tailscale_check.rc == 0
+
+    - name: Remove Tailscale GPG key
+      apt_key:
+        url: https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg
+        state: absent
+      when: tailscale_check.rc == 0
+
+    - name: Check if systemd-resolved is available
+      stat:
+        path: /etc/systemd/resolved.conf
+      register: systemd_resolved_check
+
+    - name: Configure systemd-resolved for local DNS with mDNS
+      blockinfile:
+        path: /etc/systemd/resolved.conf
+        marker: "# {mark} Pi Local DNS Configuration"
+        block: |
+          DNS=1.1.1.1 1.0.0.1
+          FallbackDNS=8.8.8.8 8.8.4.4
+          Domains=~.
+          DNSSEC=false
+          DNSOverTLS=false
+          MulticastDNS=true
+          LLMNR=true
+          Cache=true
+          DNSStubListener=true
+      when: systemd_resolved_check.stat.exists
+      notify: restart systemd-resolved
+
+    - name: Ensure systemd-resolved is enabled and started
+      systemd:
+        name: systemd-resolved
+        enabled: yes
+        state: started
+      when: systemd_resolved_check.stat.exists
+
+    - name: Configure manual resolv.conf if systemd-resolved not available
+      template:
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        backup: yes
+      when: not systemd_resolved_check.stat.exists
+      vars:
+        nameservers:
+          - "1.1.1.1"
+          - "1.0.0.1"
+        search_domains:
+          - "local"
+          - "{{ ansible_domain | default('') }}"
+
+    - name: Install avahi-daemon for mDNS resolution
+      apt:
+        name: 
+          - avahi-daemon
+          - avahi-utils
+        state: present
+        update_cache: yes
+
+    - name: Configure avahi-daemon
+      template:
+        src: avahi-daemon.conf.j2
+        dest: /etc/avahi/avahi-daemon.conf
+        backup: yes
+      notify: restart avahi-daemon
+
+    - name: Ensure avahi-daemon is enabled and started
+      systemd:
+        name: avahi-daemon
+        enabled: yes
+        state: started
+
+    - name: Test local mDNS resolution
+      shell: |
+        # Wait a moment for services to start
+        sleep 5
+        # Test mDNS resolution
+        getent hosts raspberrypi-5.local || echo "Self mDNS resolution failed"
+      register: mdns_test
+      changed_when: false
+
+    - name: Display mDNS test result
+      debug:
+        var: mdns_test.stdout_lines
+
+    - name: Remove Tailscale interface if it exists
+      shell: |
+        if ip link show tailscale0 2>/dev/null; then
+          ip link delete tailscale0
+        fi
+      failed_when: false
+      changed_when: false
+
+    - name: Clean up any remaining Tailscale files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/tailscale
+        - /etc/default/tailscaled
+        - /usr/bin/tailscale
+        - /usr/sbin/tailscaled
+      when: tailscale_check.rc == 0
+
+  handlers:
+    - name: restart systemd-resolved
+      systemd:
+        name: systemd-resolved
+        state: restarted
+
+    - name: restart avahi-daemon
+      systemd:
+        name: avahi-daemon
+        state: restarted

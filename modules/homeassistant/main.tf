@@ -20,8 +20,60 @@ resource "docker_container" "homeassistant" {
   image        = docker_image.homeassistant.image_id
   name         = "homeassistant"
   restart      = "unless-stopped"
-  privileged   = true
   network_mode = "host"
+
+  # Resource limits for stability
+  memory      = var.memory_limit
+  memory_swap = var.memory_limit * 2
+
+  # Lifecycle management to prevent unnecessary recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore Docker-managed attributes that don't affect functionality
+      memory,
+      memory_swap,
+    ]
+    replace_triggered_by = [
+      docker_image.homeassistant.image_id,
+    ]
+  }
+
+  # Health check
+  healthcheck {
+    test         = ["CMD", "curl", "-f", "http://localhost:8123/"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "60s"
+  }
+
+  # Security capabilities instead of privileged mode
+  capabilities {
+    add = ["NET_ADMIN", "NET_RAW", "SYS_ADMIN"]
+  }
+
+  # Environment variables for HomeAssistant
+  env = [
+    "TZ=${var.timezone}",
+    "HACS_ENABLED=${var.enable_hacs ? "true" : "false"}"
+  ]
+
+  # USB device access for Zigbee/Z-Wave dongles
+  dynamic "devices" {
+    for_each = var.enable_usb_devices ? [1] : []
+    content {
+      host_path      = "/dev/ttyUSB0"
+      container_path = "/dev/ttyUSB0"
+    }
+  }
+
+  dynamic "devices" {
+    for_each = var.enable_usb_devices ? [1] : []
+    content {
+      host_path      = "/dev/ttyACM0"
+      container_path = "/dev/ttyACM0"
+    }
+  }
 
   volumes {
     container_path = "/config"
@@ -39,4 +91,40 @@ resource "docker_container" "homeassistant" {
     host_path      = "/run/dbus"
     read_only      = true
   }
+
+  # Logging configuration
+  log_opts = var.log_opts
+}
+
+# HACS (Home Assistant Community Store) installation
+resource "null_resource" "hacs_installation" {
+  count = var.enable_hacs ? 1 : 0
+
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    hacs_enabled = var.enable_hacs
+  }
+
+  # Wait for HomeAssistant to be ready
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  # Install HACS
+  provisioner "local-exec" {
+    command = <<-EOT
+      docker exec homeassistant bash -c '
+        if [ ! -d "/config/custom_components/hacs" ]; then
+          echo "Installing HACS..."
+          cd /config
+          wget -O - https://get.hacs.xyz | bash -
+          echo "HACS installation completed. Restart HomeAssistant to activate."
+        else
+          echo "HACS already installed"
+        fi
+      '
+    EOT
+  }
+
+  depends_on = [docker_container.homeassistant]
 }

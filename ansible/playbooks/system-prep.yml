@@ -1,0 +1,121 @@
+---
+# System Preparation Playbook
+- name: Prepare Raspberry Pi 5 System
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    required_packages:
+      - curl
+      - wget
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+      - git
+      - htop
+      - tree
+      - nano
+      - vim
+      - tmux
+      - jq
+      - unzip
+      
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+      register: upgrade_result
+      
+    - name: Install essential packages
+      apt:
+        name: "{{ required_packages }}"
+        state: present
+        
+    - name: Check if reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+      
+    - name: Reboot if kernel was updated
+      reboot:
+        reboot_timeout: 300
+        msg: "Rebooting after kernel/system updates"
+      when: reboot_required.stat.exists
+      
+    - name: Configure system timezone
+      timezone:
+        name: "{{ timezone | default('UTC') }}"
+        
+    - name: Set hostname if specified
+      hostname:
+        name: "{{ inventory_hostname }}"
+      when: inventory_hostname != ansible_hostname
+      
+    - name: Configure locale
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+        
+    - name: Create system monitoring directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /var/log/homelab
+        - /opt/homelab
+        - /etc/homelab
+        
+    - name: Install Docker if not present
+      shell: |
+        if ! command -v docker &> /dev/null; then
+          curl -fsSL https://get.docker.com | sh
+          usermod -aG docker {{ ansible_user }}
+        fi
+      args:
+        creates: /usr/bin/docker
+        
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+        
+    - name: Configure Docker daemon for optimization
+      copy:
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "50m",
+              "max-file": "3"
+            },
+            "storage-driver": "overlay2"
+          }
+        dest: /etc/docker/daemon.json
+        mode: '0644'
+      notify: restart docker
+      
+    - name: Display system information
+      debug:
+        msg:
+          - "=== System Information ==="
+          - "Hostname: {{ ansible_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ ansible_kernel }}"
+          - "Architecture: {{ ansible_architecture }}"
+          - "Memory: {{ ansible_memtotal_mb }}MB"
+          - "CPU Cores: {{ ansible_processor_vcpus }}"
+          - "Docker: {{ 'Installed' if ansible_facts.packages is defined and 'docker-ce' in ansible_facts.packages else 'Installing...' }}"
+          
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted

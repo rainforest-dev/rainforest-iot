@@ -1,0 +1,60 @@
+---
+# Main site playbook for Homelab Infrastructure
+- name: Homelab Infrastructure Setup
+  hosts: all
+  gather_facts: yes
+  vars:
+    setup_phases:
+      - system_prep
+      - security_hardening
+      - k3s_installation
+      - monitoring_prep
+      
+  pre_tasks:
+    - name: Display infrastructure setup plan
+      debug:
+        msg:
+          - "🏠 Homelab Infrastructure Setup Starting"
+          - "Target: {{ inventory_hostname }} ({{ ansible_architecture }})"
+          - "Pi Model: {{ pi_model | default('Unknown') }}"
+          - "Memory: {{ memory_gb | default('Unknown') }}GB"
+          - "Phases: {{ setup_phases | join(', ') }}"
+          - ""
+          
+  tasks:
+    - name: Verify system requirements
+      assert:
+        that:
+          - ansible_os_family == "Debian"
+          - ansible_architecture == "aarch64"
+        fail_msg: "This setup requires Debian-based ARM64 system (Raspberry Pi OS)"
+        success_msg: "✅ System requirements met"
+
+# Phase 1: System Preparation
+- import_playbook: playbooks/system-prep.yml
+
+# Phase 2: Security Hardening  
+- import_playbook: playbooks/system-hardening.yml
+
+# Phase 3: K3s Installation
+- import_playbook: playbooks/k3s-install.yml
+
+# Final status report
+- name: Homelab Setup Complete
+  hosts: all
+  tasks:
+    - name: Infrastructure setup complete
+      debug:
+        msg:
+          - "🎉 Homelab Infrastructure Setup Complete!"
+          - ""
+          - "✅ System hardened and secured"
+          - "✅ K3s cluster running on {{ inventory_hostname }}"
+          - "✅ Ready for Terraform deployment"
+          - ""
+          - "Next steps:"
+          - "1. Enable K8s in terraform.tfvars: enable_k8s_cluster = true"
+          - "2. Deploy monitoring stack: terraform apply"
+          - "3. Access services:"
+          - "   - Grafana: http://{{ inventory_hostname }}:30080"
+          - "   - Prometheus: http://{{ inventory_hostname }}:30090"

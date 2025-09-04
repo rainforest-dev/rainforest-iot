@@ -1,0 +1,59 @@
+# Raspberry Pi connection settings
+raspberry_pi_hostname = "raspberrypi-5.local"  # or use IP address like "192.168.1.100"
+raspberry_pi_user = "rainforest"
+raspberry_pi_port = 22
+# raspberry_pi_host = "ssh://rainforest@raspberrypi-5.local:22"  # Optional: override computed connection string
+
+# System configuration
+timezone = "Asia/Taipei"
+
+# HomeAssistant settings
+homeassistant_memory = 1024
+enable_usb_devices = false  # Set to true if using Zigbee/Z-Wave USB dongles
+enable_hacs = true          # Enable HACS (Home Assistant Community Store) installation
+
+# Homebridge settings
+homebridge_web_port = 8581  # External port for Homebridge web interface
+homebridge_memory = 512     # Memory limit for Homebridge container (MB)
+
+# Port mappings
+pihole_web_port = 8080
+homepage_port = 80          # Updated to match current default
+openspeedtest_ports = {
+  http  = 3000
+  https = 3001
+}
+
+# Maintenance settings
+watchtower_poll_interval = 86400  # 24 hours in seconds
+log_max_size = "50m"
+log_max_files = 3
+
+# Kubernetes cluster configuration
+enable_k8s_cluster = true
+k8s_cluster_name = "rpi5-homelab"
+k8s_config_path = "~/.kube/config-raspberrypi-5"  # Path to kubeconfig for Pi cluster
+k8s_insecure_skip_tls_verify = false
+k8s_api_hostname = "raspberrypi-5"
+
+# Observability stack configuration
+enable_prometheus = true
+enable_loki = true
+grafana_admin_password = "admin123"  # Change this in production
+
+# Monitoring service ports (NodePort)
+prometheus_port = 30090
+grafana_port = 30080
+alertmanager_port = 30093
+loki_port = 30100
+
+# Homepage dashboard configuration
+homepage_title = "Rainforest IoT & Homelab Dashboard"
+homepage_show_docker_stats = true
+homepage_enable_kubernetes_widgets = true
+mac_mini_hostname = "rainforest-mini.local"
+
+# External monitoring targets
+mac_mini_ip = "100.86.67.66"
+mac_mini_docker_endpoint = "dockerproxy.orb.local:2375"
+# pihole_api_token = ""  # Optional: Pi-hole API token for metrics

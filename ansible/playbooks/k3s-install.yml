@@ -1,0 +1,248 @@
+---
+# K3s Installation Playbook for Raspberry Pi 5
+- name: Install and Configure K3s on Raspberry Pi 5
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    k3s_version: "v1.33.3+k3s1"
+    k3s_node_name: "{{ inventory_hostname }}"
+    k3s_tls_sans:
+      - "{{ inventory_hostname }}.local"
+      - "{{ inventory_hostname }}"
+      - "localhost"
+    
+  tasks:
+    - name: Check if running on Raspberry Pi
+      assert:
+        that:
+          - ansible_architecture == "aarch64"
+          - pi_model == "5"
+        fail_msg: "This playbook is designed for Raspberry Pi 5 (ARM64)"
+        
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+        
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - software-properties-common
+        state: present
+        
+    - name: Detect boot cmdline file location
+      stat:
+        path: "{{ item }}"
+      loop:
+        - "/boot/firmware/cmdline.txt"
+        - "/boot/cmdline.txt"
+      register: cmdline_files
+      
+    - name: Set cmdline file path
+      set_fact:
+        cmdline_path: "{{ item.item }}"
+      when: item.stat.exists
+      loop: "{{ cmdline_files.results }}"
+      
+    - name: Fail if no cmdline file found
+      fail:
+        msg: "Could not find boot cmdline file in expected locations"
+      when: cmdline_path is not defined
+      
+    - name: Read current cmdline content
+      slurp:
+        src: "{{ cmdline_path }}"
+      register: cmdline_content
+      
+    - name: Check if cgroup settings already present
+      set_fact:
+        cgroup_present: "{{ 'cgroup_memory=1' in (cmdline_content.content | b64decode) }}"
+        
+    - name: Backup original cmdline file
+      copy:
+        src: "{{ cmdline_path }}"
+        dest: "{{ cmdline_path }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      when: not cgroup_present
+      
+    - name: Add cgroup memory settings to cmdline
+      replace:
+        path: "{{ cmdline_path }}"
+        regexp: '(.*)'
+        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
+      when: not cgroup_present
+      register: cmdline_updated
+      
+    - name: Reboot if cgroup settings changed
+      reboot:
+        reboot_timeout: 300
+      when: cmdline_updated is defined and cmdline_updated.changed
+      
+    - name: Download K3s installation script
+      get_url:
+        url: https://get.k3s.io
+        dest: /tmp/k3s-install.sh
+        mode: '0755'
+        
+    - name: Check if K3s is already installed
+      stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+      
+    - name: Install K3s with proper configuration
+      shell: |
+        INSTALL_K3S_VERSION={{ k3s_version }} \
+        K3S_NODE_NAME={{ k3s_node_name }} \
+        K3S_KUBECONFIG_MODE="644" \
+        /tmp/k3s-install.sh --write-kubeconfig-mode=644
+      when: not k3s_binary.stat.exists
+      register: k3s_install_result
+      
+    - name: Start and enable K3s service
+      systemd:
+        name: k3s
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Ensure in-Pi kubeconfig uses localhost (undo any previous .local)
+      replace:
+        path: "/etc/rancher/k3s/k3s.yaml"
+        regexp: 'server: https://[^:]+:6443'
+        replace: 'server: https://127.0.0.1:6443'
+
+    - name: Ensure K3s config with SANs
+      template:
+        src: "../templates/k3s-config.yaml.j2"
+        dest: "/etc/rancher/k3s/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - rotate k3s certs
+        - restart k3s
+
+    - name: Apply any pending handlers before readiness checks
+      meta: flush_handlers
+        
+    - name: Wait for K3s API server to be ready
+      wait_for:
+        port: 6443
+        host: localhost
+        timeout: 300
+        delay: 10
+
+    - name: Wait for K3s cluster to be fully ready
+      shell: k3s kubectl get nodes --no-headers | grep -c Ready
+      register: ready_nodes
+      until: ready_nodes.stdout|int > 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Check current API cert SANs for .local entry
+      shell: |
+        set -o pipefail
+        openssl x509 -in /var/lib/rancher/k3s/server/tls/serving-kube-apiserver.crt -noout -text | grep -Eo 'DNS:[^,]+'
+      register: current_sans
+      changed_when: false
+      failed_when: false
+
+    - name: Rotate certs if .local SAN missing
+      when: current_sans.stdout is defined and ('DNS:' ~ inventory_hostname ~ '.local') not in current_sans.stdout
+      block:
+        - name: Rotate K3s API server certificate (missing .local SAN)
+          command: k3s certificate rotate -s api-server
+        - name: Restart K3s after forced rotation
+          systemd:
+            name: k3s
+            state: restarted
+            enabled: yes
+        - name: Wait for API after forced rotation
+          wait_for:
+            port: 6443
+            host: localhost
+            timeout: 300
+            delay: 10
+
+    # Keep in-Pi kubeconfig using localhost for reliability; external clients use .local
+      
+    - name: Get K3s cluster status
+      command: k3s kubectl get nodes -o wide
+      register: k3s_nodes
+      changed_when: false
+      
+    - name: Get K3s system pods status
+      command: k3s kubectl get pods -n kube-system
+      register: k3s_system_pods
+      changed_when: false
+      
+    - name: Display cluster status
+      debug:
+        msg: 
+          - "=== K3s Cluster Status ==="
+          - "{{ k3s_nodes.stdout_lines }}"
+          - ""
+          - "=== System Pods ==="
+          - "{{ k3s_system_pods.stdout_lines }}"
+        
+    - name: Create kubeconfig directory for user
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+        
+    - name: Copy kubeconfig for user access
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+        remote_src: yes
+        
+    - name: Update kubeconfig server address
+      replace:
+        path: "/home/{{ ansible_user }}/.kube/config"
+        regexp: 'server: https://[^:]+:6443'
+        replace: "server: https://{{ inventory_hostname }}.local:6443"
+        
+    - name: Ensure local .kube directory exists
+      file:
+        path: "~/.kube"
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: no
+      
+    - name: Backup existing local kubeconfig if it exists
+      copy:
+        src: "~/.kube/config"
+        dest: "~/.kube/config.backup-{{ ansible_date_time.epoch }}"
+        mode: '0600'
+      delegate_to: localhost
+      become: no
+      ignore_errors: yes  # In case ~/.kube/config doesn't exist
+      
+    - name: Fetch kubeconfig to local machine for Terraform
+      fetch:
+        src: "/home/{{ ansible_user }}/.kube/config"
+        dest: "~/.kube/config-{{ inventory_hostname }}"
+        flat: yes
+
+      
+  handlers:
+    - name: rotate k3s certs
+      become: yes
+      command: k3s certificate rotate -s api-server
+    - name: restart k3s
+      systemd:
+        name: k3s
+        state: restarted
+        enabled: yes
