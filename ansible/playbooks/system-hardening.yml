@@ -70,6 +70,8 @@
         - '80'      # Homepage
         - '8080'    # Pi-hole
         - '8123'    # HomeAssistant
+        - '8581'    # Homebridge
+        - '21064'   # HomeKit Bridge (Home Assistant)
         - '3000'    # OpenSpeedTest
         - '3001'    # OpenSpeedTest HTTPS
         - '6443'    # K3s API

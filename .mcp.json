@@ -1,18 +1,5 @@
 {
   "mcpServers": {
-    "terraform": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-v",
-        "${PWD}:/workspace",
-        "-w",
-        "/workspace",
-        "hashicorp/terraform-mcp-server"
-      ]
-    },
     "cloudflare-docs": {
       "type": "sse",
       "url": "https://docs.mcp.cloudflare.com/sse"

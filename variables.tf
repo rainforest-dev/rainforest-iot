@@ -82,11 +82,6 @@ variable "homebridge_memory" {
   default     = 512
 }
 
-variable "watchtower_poll_interval" {
-  description = "Watchtower polling interval in seconds"
-  type        = number
-  default     = 86400 # 24 hours
-}
 
 variable "log_max_size" {
   description = "Maximum log file size"
@@ -220,13 +215,13 @@ variable "k8s_api_hostname" {
 variable "prometheus_chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "55.5.0"
+  default     = "77.10.0"
 }
 
 variable "loki_chart_version" {
   description = "Version of loki-stack Helm chart"
   type        = string
-  default     = "2.9.11"
+  default     = "6.40.0"
 }
 
 # Monitoring Service Ports (NodePort)

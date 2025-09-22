@@ -96,17 +96,6 @@ module "homepage" {
   raspberry_pi_kubeconfig_path = var.k8s_config_path
 }
 
-module "watchtower" {
-  source = "./modules/watchtower"
-
-  providers = {
-    docker = docker.raspberry-pi
-  }
-
-  poll_interval = var.watchtower_poll_interval
-  timezone      = var.timezone
-  log_opts      = local.common_log_opts
-}
 
 module "openspeedtest" {
   source = "./modules/openspeedtest"

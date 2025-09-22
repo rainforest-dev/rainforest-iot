@@ -9,7 +9,7 @@ This is a production-grade IoT platform for Raspberry Pi 5 using a 3-layer archi
 - **Layer 2 (Terraform)**: Workloads - Docker services + Kubernetes monitoring with automatic dependency management
 - **Layer 3 (Future)**: Application management and custom integrations
 
-The platform deploys IoT services (HomeAssistant, Pi-hole, Homepage, Watchtower, OpenSpeedTest) plus production monitoring (Prometheus, Grafana, Loki, AlertManager) with proper CRD dependency handling.
+The platform deploys IoT services (HomeAssistant, Pi-hole, Homepage, OpenSpeedTest) plus production monitoring (Prometheus, Grafana, Loki, AlertManager) with proper CRD dependency handling.
 
 ## Essential Commands
 
@@ -55,7 +55,6 @@ terraform destroy && terraform apply
 # Docker services (Layer 2)
 docker logs homeassistant
 docker logs pihole
-docker logs watchtower
 docker ps -a
 
 # Kubernetes monitoring (Layer 2)

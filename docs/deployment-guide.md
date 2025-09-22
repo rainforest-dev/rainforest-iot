@@ -40,7 +40,11 @@ Notes:
 
 ### Deploy Infrastructure
 ```bash
-# Deploy infrastructure layer
+# Complete infrastructure deployment (recommended)
+ansible-playbook -i ansible/inventory.yml ansible/site.yml
+
+# OR individual playbooks (manual sequence)
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/system-hardening.yml
 ansible-playbook -i ansible/inventory.yml ansible/playbooks/k3s-install.yml
 
 # Validate infrastructure
@@ -64,7 +68,6 @@ kubectl get pods -A --kubeconfig ~/.kube/config-raspberrypi-5
 - **Homebridge**: HomeKit bridge for non-HomeKit devices with automated firewall management
 - **Pi-hole**: Network-wide DNS ad blocking with Tailscale support
 - **Homepage**: Service dashboard with integrated monitoring
-- **Watchtower**: Container auto-updates
 - **OpenSpeedTest**: Network speed testing
 
 **Kubernetes Monitoring Stack:**

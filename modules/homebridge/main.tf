@@ -13,7 +13,7 @@ resource "docker_volume" "homebridge_data" {
 }
 
 resource "docker_image" "homebridge" {
-  name = "homebridge/homebridge:beta-2025-08-30"
+  name = "homebridge/homebridge:beta-2025-09-21"
 }
 
 resource "docker_container" "homebridge" {

@@ -24,8 +24,7 @@ openspeedtest_ports = {
   https = 3001
 }
 
-# Maintenance settings
-watchtower_poll_interval = 86400  # 24 hours in seconds
+# Log settings
 log_max_size = "50m"
 log_max_files = 3
 
