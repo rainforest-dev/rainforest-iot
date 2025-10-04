@@ -16,6 +16,12 @@ variable "raspberry_pi_port" {
   default     = 22
 }
 
+variable "raspberry_pi_ip" {
+  description = "IP address of the Raspberry Pi (used for container-to-host communication)"
+  type        = string
+  default     = "192.168.0.134"
+}
+
 variable "raspberry_pi_host" {
   description = "Complete SSH connection string for Raspberry Pi"
   type        = string

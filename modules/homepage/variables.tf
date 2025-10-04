@@ -10,6 +10,12 @@ variable "raspberry_pi_hostname" {
   default     = "raspberrypi-5"
 }
 
+variable "raspberry_pi_ip" {
+  description = "Raspberry Pi IP address for widget URLs (avoids mDNS issues in containers)"
+  type        = string
+  default     = "192.168.0.134"
+}
+
 variable "raspberry_pi_user" {
   description = "Raspberry Pi SSH user for kubeconfig path"
   type        = string

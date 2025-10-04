@@ -77,6 +77,7 @@ module "homepage" {
 
   hostname              = var.raspberry_pi_hostname
   raspberry_pi_hostname = var.raspberry_pi_hostname
+  raspberry_pi_ip       = var.raspberry_pi_ip
   raspberry_pi_user     = var.raspberry_pi_user
   external_port         = var.homepage_port
   timezone              = var.timezone

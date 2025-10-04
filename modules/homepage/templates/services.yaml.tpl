@@ -102,7 +102,7 @@
         cluster: raspberrypi-5
         widget:
           type: grafana
-          url: http://${raspberry_pi_hostname}:${grafana_port}
+          url: http://${raspberry_pi_ip}:${grafana_port}
           username: admin
           password: admin123
     - Prometheus:
@@ -114,7 +114,7 @@
         cluster: raspberrypi-5
         widget:
           type: prometheus
-          url: http://${raspberry_pi_hostname}:${prometheus_port}
+          url: http://${raspberry_pi_ip}:${prometheus_port}
     - AlertManager:
         href: http://${raspberry_pi_hostname}:${alertmanager_port}
         description: "Alert Management & Routing"

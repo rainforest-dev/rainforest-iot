@@ -26,11 +26,11 @@
 
 # Monitoring Widgets
 - prometheus:
-    url: http://${raspberry_pi_hostname}:${prometheus_port}
+    url: http://${raspberry_pi_ip}:${prometheus_port}
     label: "Prometheus Metrics"
 
 - grafana:
-    url: http://${raspberry_pi_hostname}:${grafana_port}
+    url: http://${raspberry_pi_ip}:${grafana_port}
     username: admin
     password: admin123
     label: "Grafana Dashboards"
