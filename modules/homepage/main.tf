@@ -14,6 +14,7 @@ locals {
     mac_mini_hostname     = var.mac_mini_hostname
     mac_mini_ip          = var.mac_mini_ip
     raspberry_pi_hostname = var.raspberry_pi_hostname
+    raspberry_pi_ip      = var.raspberry_pi_ip
     homepage_title        = var.homepage_title
     grafana_port         = var.grafana_port
     prometheus_port      = var.prometheus_port
@@ -206,7 +207,9 @@ resource "docker_container" "homepage" {
     "HOMEPAGE_VAR_HEADER_STYLE=clean",
     "HOMEPAGE_VAR_DISABLE_GUEST=false",
     # Allow both short hostname and .local FQDN to avoid 404 from allowed hosts check
-    "HOMEPAGE_ALLOWED_HOSTS=${local.allowed_hosts}"
+    "HOMEPAGE_ALLOWED_HOSTS=${local.allowed_hosts}",
+    # Point to Pi 5 kubeconfig for Kubernetes widgets
+    "KUBECONFIG=/tmp/kube/kubeconfig-pi5.yaml"
   ]
 
   # Health check
