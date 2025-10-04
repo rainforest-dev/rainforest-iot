@@ -76,7 +76,7 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
         metrics_path = "/metrics"
         scrape_interval = "30s"
       },
-      # Mac Mini node monitoring
+      # Mac Mini node monitoring (if node_exporter available)
       {
         job_name = "mac-mini-node"
         static_configs = [
@@ -85,6 +85,40 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
           }
         ]
         scrape_interval = "30s"
+      },
+      # Mac Mini homelab services monitoring
+      {
+        job_name = "mac-mini-calibre-web"
+        static_configs = [
+          {
+            targets = ["${var.mac_mini_ip}:8083"]
+          }
+        ]
+        metrics_path = "/metrics"
+        scrape_interval = "60s"
+        scheme = "http"
+      },
+      {
+        job_name = "mac-mini-whisper"
+        static_configs = [
+          {
+            targets = ["${var.mac_mini_ip}:9000"]
+          }
+        ]
+        metrics_path = "/health"
+        scrape_interval = "30s"
+        scheme = "http"
+      },
+      {
+        job_name = "mac-mini-docker-mcp"
+        static_configs = [
+          {
+            targets = ["${var.mac_mini_ip}:3100"]
+          }
+        ]
+        metrics_path = "/health"
+        scrape_interval = "30s"
+        scheme = "http"
       },
       # Pi-hole monitoring
       {
@@ -171,6 +205,42 @@ resource "kubernetes_config_map" "homelab_alerting_rules" {
               for = "5m"
               labels = {
                 severity = "critical"
+              }
+            },
+            {
+              alert = "HomelabServiceDown"
+              annotations = {
+                description = "Homelab service {{ $labels.job }} is not responding"
+                summary = "Homelab service is down"
+              }
+              expr = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
+              for = "2m"
+              labels = {
+                severity = "warning"
+              }
+            },
+            {
+              alert = "KubernetesNodeNotReady"
+              annotations = {
+                description = "Kubernetes node {{ $labels.node }} is not ready"
+                summary = "Kubernetes node not ready"
+              }
+              expr = "kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 0"
+              for = "5m"
+              labels = {
+                severity = "critical"
+              }
+            },
+            {
+              alert = "KubernetesPodCrashLooping"
+              annotations = {
+                description = "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+                summary = "Pod is crash looping"
+              }
+              expr = "rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 0"
+              for = "5m"
+              labels = {
+                severity = "warning"
               }
             }
           ]

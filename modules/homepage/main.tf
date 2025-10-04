@@ -18,6 +18,7 @@ locals {
     grafana_port         = var.grafana_port
     prometheus_port      = var.prometheus_port
     alertmanager_port    = var.alertmanager_port
+    loki_port            = var.loki_port
     homepage_enable_kubernetes_widgets = var.homepage_enable_kubernetes_widgets
   }
   

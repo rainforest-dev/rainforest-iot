@@ -79,6 +79,12 @@ variable "alertmanager_port" {
   default     = 30093
 }
 
+variable "loki_port" {
+  description = "Loki service port"
+  type        = number
+  default     = 30100
+}
+
 variable "memory_limit" {
   description = "Memory limit for Homepage container (MB)"
   type        = number
