@@ -22,3 +22,17 @@
     - targets: ['${external_hostname}:8123']
   metrics_path: /api/prometheus
   scrape_interval: 30s
+
+# Mac Mini Kubernetes services
+- job_name: 'mac-mini-postgres'
+  static_configs:
+    - targets: ['${mac_mini_ip}:30432']
+  metrics_path: /metrics
+  scrape_interval: 30s
+
+- job_name: 'mac-mini-minio'
+  static_configs:
+    - targets: ['${mac_mini_ip}:30900']
+  metrics_path: /minio/v2/metrics/cluster
+  scrape_interval: 30s
+  scheme: http
