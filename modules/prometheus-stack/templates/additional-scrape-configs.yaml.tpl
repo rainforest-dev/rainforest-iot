@@ -36,3 +36,26 @@
   metrics_path: /minio/v2/metrics/cluster
   scrape_interval: 30s
   scheme: http
+
+# Blackbox Exporter - HTTP health checks for all homelab services
+- job_name: 'blackbox-homelab-services'
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+  static_configs:
+    - targets:
+        - https://open-webui.rainforest.tools
+        - https://flowise.rainforest.tools
+        - https://n8n.rainforest.tools
+        - https://calibre-web.rainforest.tools
+        - https://whisper.rainforest.tools
+        - https://minio.rainforest.tools
+        - https://pgadmin.rainforest.tools
+        - https://s3.rainforest.tools
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: prometheus-prometheus-blackbox-exporter:9115

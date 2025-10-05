@@ -308,7 +308,7 @@ resource "helm_release" "prometheus_stack" {
       # Kube State Metrics configuration
       kubeStateMetrics = {
         enabled = var.kube_state_metrics_enabled
-        
+
         resources = {
           requests = {
             cpu    = "50m"
@@ -320,7 +320,38 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
+      # Blackbox Exporter for HTTP health checks
+      prometheus-blackbox-exporter = {
+        enabled = true
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "32Mi"
+          }
+          limits = {
+            cpu    = "100m"
+            memory = "64Mi"
+          }
+        }
+
+        config = {
+          modules = {
+            http_2xx = {
+              prober = "http"
+              timeout = "5s"
+              http = {
+                valid_status_codes = []
+                valid_http_versions = ["HTTP/1.1", "HTTP/2.0"]
+                follow_redirects = true
+                preferred_ip_protocol = "ip4"
+              }
+            }
+          }
+        }
+      }
+
       # Admission webhook configuration with resource limits
       prometheusOperator = {
         admissionWebhooks = {
