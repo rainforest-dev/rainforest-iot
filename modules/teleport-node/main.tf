@@ -67,20 +67,18 @@ resource "null_resource" "teleport_config" {
     node_name    = var.node_name
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mkdir -p /etc/teleport",
-      "sudo tee /etc/teleport/teleport.yaml > /dev/null <<'TELEPORT_EOF'\n${local.teleport_config_yaml}\nTELEPORT_EOF",
-      "sudo chmod 600 /etc/teleport/teleport.yaml",
-    ]
-
-    connection {
-      type        = "ssh"
-      host        = var.hostname
-      user        = var.ssh_user
-      port        = var.ssh_port
-      private_key = var.ssh_private_key != "" ? file(var.ssh_private_key) : null
-    }
+  # Use local-exec + native ssh so ~/.ssh/config (IdentityFile, IdentitiesOnly)
+  # is respected — Terraform's built-in SSH client ignores ssh_config and
+  # exhausts MaxAuthTries when multiple keys are in the agent.
+  # Base64-encode the YAML to avoid shell quoting issues with multi-line heredocs.
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} 'sudo mkdir -p /etc/teleport'
+      echo '${base64encode(local.teleport_config_yaml)}' | \
+        ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        'base64 -d | sudo tee /etc/teleport/teleport.yaml > /dev/null && sudo chmod 600 /etc/teleport/teleport.yaml'
+    BASH
   }
 }
 

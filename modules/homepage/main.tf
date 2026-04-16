@@ -17,6 +17,8 @@ locals {
     raspberry_pi_ip      = var.raspberry_pi_ip
     homepage_title        = var.homepage_title
     grafana_port         = var.grafana_port
+    grafana_username     = var.grafana_username
+    grafana_password     = var.grafana_password
     prometheus_port      = var.prometheus_port
     alertmanager_port    = var.alertmanager_port
     loki_port            = var.loki_port

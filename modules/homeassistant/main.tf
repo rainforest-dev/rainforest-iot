@@ -97,7 +97,9 @@ resource "docker_container" "homeassistant" {
 }
 
 # Inject HTTP proxy config so HA accepts requests forwarded by Cloudflare Tunnel.
-# Uses Python to safely patch only the `http:` key — leaves all other config intact.
+# Uses grep/printf to append an `http:` block only when a top-level `http:` key
+# is not already present; this does not perform YAML-aware merging.
+# HA is restarted only when the config was actually written.
 resource "null_resource" "ha_proxy_config" {
   count = length(var.trusted_proxies) > 0 ? 1 : 0
 
@@ -110,12 +112,20 @@ resource "null_resource" "ha_proxy_config" {
   # exhausts MaxAuthTries when multiple keys are in the agent.
   provisioner "local-exec" {
     # Runs inside the HA container (has write access to /config) via docker exec.
-    # Idempotent: appends the http block only when not already present.
+    # Fails fast on any SSH or docker error; restarts HA only when config changed.
     command = <<-BASH
-      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+      set -e
+      result=$(ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
         docker exec homeassistant bash -c \
-        'grep -q "^http:" /config/configuration.yaml || printf "\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n${join("", formatlist("    - %s\n", var.trusted_proxies))}" >> /config/configuration.yaml && echo done'
-      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+        'if grep -q "^http:" /config/configuration.yaml; then
+           echo "present"
+         else
+           printf "\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n${join("", formatlist("    - %s\n", var.trusted_proxies))}" >> /config/configuration.yaml
+           echo "written"
+         fi')
+      if [ "$result" = "written" ]; then
+        ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+      fi
     BASH
   }
 

@@ -4,10 +4,9 @@
 
 ### Added
 
-- **Homebridge v2.0 Beta Support**
-  - Updated Docker image to `homebridge/homebridge:beta-2025-08-30`
-  - Enhanced compatibility with HomeKit v2 protocol
-  - Improved web UI with v2 features
+- **Homebridge Image Tracking**
+  - Switched to `homebridge/homebridge:latest` with explicit `docker_image` resource
+  - Container now recreates cleanly on image updates via `replace_triggered_by`
 
 - **Automated Wake-on-LAN Setup with Ansible**
   - New playbooks for SSH key management: `ansible/playbooks/setup-homebridge-wol.yml`

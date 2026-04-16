@@ -73,6 +73,19 @@ variable "grafana_port" {
   default     = 30080
 }
 
+variable "grafana_username" {
+  description = "Grafana admin username for the homepage widget"
+  type        = string
+  default     = "admin"
+}
+
+variable "grafana_password" {
+  description = "Grafana admin password for the homepage widget"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "prometheus_port" {
   description = "Prometheus service port"
   type        = number

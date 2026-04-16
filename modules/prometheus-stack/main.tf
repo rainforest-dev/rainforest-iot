@@ -322,7 +322,7 @@ resource "helm_release" "prometheus_stack" {
       }
 
       # Blackbox Exporter for HTTP health checks
-      prometheus-blackbox-exporter = {
+      "prometheus-blackbox-exporter" = {
         enabled = true
 
         resources = {

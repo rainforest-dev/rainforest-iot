@@ -96,8 +96,8 @@
         widget:
           type: grafana
           url: http://${raspberry_pi_ip}:${grafana_port}
-          username: admin
-          password: admin123
+          username: ${grafana_username}
+          password: ${grafana_password}
     - Prometheus:
         href: http://${raspberry_pi_hostname}:${prometheus_port}
         description: "Metrics Collection & Storage"

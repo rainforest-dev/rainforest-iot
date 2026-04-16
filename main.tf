@@ -107,6 +107,8 @@ module "homepage" {
   homepage_title                     = var.homepage_title
   homepage_enable_kubernetes_widgets = var.homepage_enable_kubernetes_widgets
   grafana_port                       = var.grafana_port
+  grafana_username                   = "admin"
+  grafana_password                   = var.grafana_admin_password
   prometheus_port                    = var.prometheus_port
   alertmanager_port                  = var.alertmanager_port
   loki_port                          = var.loki_port
