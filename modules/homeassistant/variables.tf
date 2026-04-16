@@ -28,6 +28,30 @@ variable "timezone" {
   default     = "Asia/Taipei"
 }
 
+variable "trusted_proxies" {
+  description = "CIDR ranges trusted as reverse proxies (needed when HA is behind Cloudflare Tunnel)"
+  type        = list(string)
+  default     = []
+}
+
+variable "ssh_user" {
+  description = "SSH user for provisioning HA config on the Pi"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "ssh_port" {
+  description = "SSH port on the Pi"
+  type        = number
+  default     = 22
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key for the Pi (must match authorized_keys on the Pi)"
+  type        = string
+  default     = "~/.ssh/id_ed25519.rpi5"
+}
+
 variable "log_opts" {
   description = "Logging options for the container"
   type        = map(string)

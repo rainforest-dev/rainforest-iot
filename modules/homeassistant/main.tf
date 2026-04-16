@@ -96,6 +96,32 @@ resource "docker_container" "homeassistant" {
   log_opts = var.log_opts
 }
 
+# Inject HTTP proxy config so HA accepts requests forwarded by Cloudflare Tunnel.
+# Uses Python to safely patch only the `http:` key — leaves all other config intact.
+resource "null_resource" "ha_proxy_config" {
+  count = length(var.trusted_proxies) > 0 ? 1 : 0
+
+  triggers = {
+    trusted_proxies = join(",", var.trusted_proxies)
+  }
+
+  # Use local-exec + native ssh so ~/.ssh/config (IdentityFile, IdentitiesOnly)
+  # is respected — Terraform's built-in SSH client ignores ssh_config and
+  # exhausts MaxAuthTries when multiple keys are in the agent.
+  provisioner "local-exec" {
+    # Runs inside the HA container (has write access to /config) via docker exec.
+    # Idempotent: appends the http block only when not already present.
+    command = <<-BASH
+      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        docker exec homeassistant bash -c \
+        'grep -q "^http:" /config/configuration.yaml || printf "\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n${join("", formatlist("    - %s\n", var.trusted_proxies))}" >> /config/configuration.yaml && echo done'
+      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+    BASH
+  }
+
+  depends_on = [docker_container.homeassistant]
+}
+
 # HACS (Home Assistant Community Store) installation
 resource "null_resource" "hacs_installation" {
   count = var.enable_hacs ? 1 : 0
