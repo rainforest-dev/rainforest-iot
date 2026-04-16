@@ -38,6 +38,24 @@ module "homeassistant" {
   enable_hacs        = var.enable_hacs
   timezone           = var.timezone
   log_opts           = local.common_log_opts
+
+  # Trust the Mac Mini as a reverse proxy (Cloudflare Tunnel routes through it)
+  trusted_proxies = ["192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
+  ssh_user        = var.raspberry_pi_user
+  ssh_port        = var.raspberry_pi_port
+}
+
+module "music_assistant" {
+  source = "./modules/music-assistant"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  hostname     = var.raspberry_pi_hostname
+  memory_limit = var.music_assistant_memory
+  timezone     = var.timezone
+  log_opts     = local.common_log_opts
 }
 
 module "homebridge" {
@@ -260,6 +278,47 @@ module "loki_stack" {
   # Integration with Prometheus (disabled to avoid CRD issues)
   enable_prometheus_monitoring = false
   alertmanager_url             = ""
+}
+
+# Teleport node agent — joins the Mac Mini Teleport cluster.
+#
+# Access strategy per service:
+#   Home Assistant  → Cloudflare Zero Trust (genuine remote use, two auth layers)
+#   Pi-hole         → Teleport app access (admin-only, no permanent public URL)
+#   Homebridge      → Teleport app access (admin-only, no permanent public URL)
+#   Music Assistant → LAN only (speakers are local; no remote use case)
+#   SSH to Pi       → Teleport SSH (replaces direct SSH exposure)
+module "teleport_node" {
+  count  = var.enable_teleport_node ? 1 : 0
+  source = "./modules/teleport-node"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  project_name           = "homelab"
+  teleport_proxy_address = var.teleport_proxy_address
+  auth_token             = var.teleport_auth_token
+  node_name              = "raspberry-pi-5"
+  enable_ssh             = true # Pi SSH tunnelled through Teleport — no direct port exposure
+
+  # Only register admin UIs that have no business being on a public URL
+  apps = {
+    "pihole" = {
+      uri         = "http://localhost:${var.pihole_web_port}"
+      description = "Pi-hole DNS ad blocker (admin)"
+    }
+    "homebridge" = {
+      uri         = "http://localhost:${var.homebridge_web_port}"
+      description = "Homebridge HomeKit bridge (admin)"
+    }
+  }
+
+  hostname = var.raspberry_pi_hostname
+  ssh_user = var.raspberry_pi_user
+  ssh_port = var.raspberry_pi_port
+  timezone = var.timezone
+  log_opts = local.common_log_opts
 }
 
 # Homepage ingress (when K8s is enabled) - points to existing Docker container

@@ -76,6 +76,12 @@ variable "openspeedtest_ports" {
   }
 }
 
+variable "music_assistant_memory" {
+  description = "Memory limit for Music Assistant container (MB)"
+  type        = number
+  default     = 512
+}
+
 variable "homebridge_web_port" {
   description = "External port for Homebridge web interface"
   type        = number
@@ -320,6 +326,26 @@ variable "mac_mini_docker_endpoint" {
 
 variable "pihole_api_token" {
   description = "Pi-hole API token for metrics"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+# Teleport Node Agent Configuration
+variable "enable_teleport_node" {
+  description = "Deploy a Teleport node agent on the Pi to join the Mac Mini Teleport cluster"
+  type        = bool
+  default     = false
+}
+
+variable "teleport_proxy_address" {
+  description = "Public address of the Teleport proxy hosted on Mac Mini (e.g. tp.rainforest.tools:443)"
+  type        = string
+  default     = ""
+}
+
+variable "teleport_auth_token" {
+  description = "Join token from the Teleport auth server (generate with: tctl tokens add --type=node,app)"
   type        = string
   default     = ""
   sensitive   = true
