@@ -16,8 +16,12 @@ resource "docker_volume" "dnsmasq" {
   name = "pihole_dnsmasq"
 }
 
+resource "docker_image" "pihole" {
+  name = "pihole/pihole:latest"
+}
+
 resource "docker_container" "pihole" {
-  image   = "pihole/pihole:latest"
+  image   = docker_image.pihole.image_id
   name    = "pihole"
   restart = "unless-stopped"
 
@@ -29,12 +33,13 @@ resource "docker_container" "pihole" {
   lifecycle {
     ignore_changes = [
       # Ignore Docker-managed attributes that don't affect functionality
-      image,
       memory,
       memory_swap,
       network_mode,
     ]
-    create_before_destroy = true
+    replace_triggered_by = [
+      docker_image.pihole.image_id,
+    ]
   }
 
   # Environment variables
