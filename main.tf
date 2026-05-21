@@ -334,6 +334,21 @@ module "teleport_node" {
   log_opts = local.common_log_opts
 }
 
+module "crowdsec" {
+  source = "./modules/crowdsec"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  project_name     = "homelab"
+  crowdsec_version = var.crowdsec_version
+  bouncer_version  = var.crowdsec_bouncer_version
+  bouncer_api_key  = var.crowdsec_bouncer_api_key
+  timezone         = var.timezone
+  log_opts         = local.common_log_opts
+}
+
 # Homepage ingress (when K8s is enabled) - points to existing Docker container
 module "homepage_ingress" {
   count      = var.enable_k8s_cluster ? 1 : 0

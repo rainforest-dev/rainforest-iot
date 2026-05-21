@@ -466,3 +466,22 @@ variable "pi_ssh_private_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "crowdsec_version" {
+  description = "CrowdSec Agent Docker image version"
+  type        = string
+  default     = "v1.6.3"
+}
+
+variable "crowdsec_bouncer_version" {
+  description = "CrowdSec Firewall Bouncer image version"
+  type        = string
+  default     = "v0.0.29"
+}
+
+variable "crowdsec_bouncer_api_key" {
+  description = "CrowdSec LAPI key for firewall bouncer (set in terraform.tfvars after first run)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
