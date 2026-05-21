@@ -453,3 +453,9 @@ variable "monitoring_resource_limits" {
     promtail_memory_limit   = "128Mi"
   }
 }
+
+variable "pihole_exporter_version" {
+  description = "pihole-exporter Docker image version"
+  type        = string
+  default     = "v0.4.0"
+}

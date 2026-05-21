@@ -133,6 +133,18 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
           auth = [var.pihole_api_token]
         }
         scrape_interval = "60s"
+      },
+      # Pi-hole Prometheus exporter (port 9617)
+      {
+        job_name = "pihole-exporter"
+        static_configs = [
+          {
+            targets = ["${var.raspberry_pi_hostname}:9617"]
+            labels  = { instance = "raspberry-pi-5", service = "pihole" }
+          }
+        ]
+        metrics_path    = "/metrics"
+        scrape_interval = "30s"
       }
     ])
   }

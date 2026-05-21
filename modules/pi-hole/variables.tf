@@ -52,3 +52,16 @@ variable "blocklists" {
     "https://openphish.com/feed.txt",
   ]
 }
+
+variable "exporter_version" {
+  description = "pihole-exporter Docker image version"
+  type        = string
+  default     = "v0.4.0"
+}
+
+variable "pihole_api_token" {
+  description = "Pi-hole API token for the exporter to authenticate"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

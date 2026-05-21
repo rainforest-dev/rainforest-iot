@@ -125,3 +125,39 @@ resource "null_resource" "pihole_blocklists" {
 
   depends_on = [docker_container.pihole]
 }
+
+resource "docker_image" "pihole_exporter" {
+  name         = "ekofr/pihole-exporter:${var.exporter_version}"
+  keep_locally = true
+}
+
+resource "docker_container" "pihole_exporter" {
+  name  = "pihole-exporter"
+  image = docker_image.pihole_exporter.image_id
+
+  restart = "unless-stopped"
+
+  env = [
+    "PIHOLE_HOSTNAME=localhost",
+    "PIHOLE_PORT=${var.web_port}",
+    "PIHOLE_API_TOKEN=${var.pihole_api_token}",
+    "INTERVAL=30s",
+    "PORT=9617",
+  ]
+
+  network_mode = "host"
+
+  memory = 32
+
+  log_opts = var.log_opts
+
+  healthcheck {
+    test         = ["CMD", "wget", "-qO-", "http://localhost:9617/metrics"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "10s"
+  }
+
+  depends_on = [docker_container.pihole]
+}

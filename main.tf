@@ -142,13 +142,15 @@ module "pi-hole" {
     docker = docker.raspberry-pi
   }
 
-  hostname      = var.raspberry_pi_hostname
-  web_port      = var.pihole_web_port
-  timezone      = var.timezone
-  log_opts      = local.common_log_opts
-  image_version = var.pihole_image_version
-  ssh_user      = var.raspberry_pi_user
-  ssh_port      = var.raspberry_pi_port
+  hostname         = var.raspberry_pi_hostname
+  web_port         = var.pihole_web_port
+  timezone         = var.timezone
+  log_opts         = local.common_log_opts
+  image_version    = var.pihole_image_version
+  ssh_user         = var.raspberry_pi_user
+  ssh_port         = var.raspberry_pi_port
+  exporter_version = var.pihole_exporter_version
+  pihole_api_token = var.pihole_api_token
 }
 
 # K3s Cluster configuration (when enabled)
