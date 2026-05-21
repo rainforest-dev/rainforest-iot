@@ -31,6 +31,10 @@ resource "helm_release" "velero" {
 
   values = [
     yamlencode({
+      credentials = {
+        useSecret = false
+      }
+
       initContainers = [
         {
           name  = "velero-plugin-for-aws"
@@ -84,32 +88,22 @@ resource "helm_release" "velero" {
           limits   = { cpu = "250m", memory = "128Mi" }
         }
       }
+
+      schedules = {
+        daily-full-backup = {
+          disabled                   = false
+          schedule                   = var.backup_schedule
+          useOwnerReferencesInBackup = false
+          template = {
+            ttl                     = var.backup_ttl
+            includedNamespaces      = ["*"]
+            storageLocation         = "default"
+            volumeSnapshotLocations = ["default"]
+          }
+        }
+      }
     })
   ]
 
   depends_on = [kubernetes_secret.velero_credentials]
-}
-
-# Daily backup schedule — all namespaces, 7-day retention
-resource "kubernetes_manifest" "velero_schedule" {
-  depends_on = [helm_release.velero]
-
-  manifest = {
-    apiVersion = "velero.io/v1"
-    kind       = "Schedule"
-    metadata = {
-      name      = "daily-full-backup"
-      namespace = kubernetes_namespace.velero.metadata[0].name
-    }
-    spec = {
-      schedule                   = var.backup_schedule
-      useOwnerReferencesInBackup = false
-      template = {
-        ttl                     = var.backup_ttl
-        includedNamespaces      = ["*"]
-        storageLocation         = "default"
-        volumeSnapshotLocations = ["default"]
-      }
-    }
-  }
 }
