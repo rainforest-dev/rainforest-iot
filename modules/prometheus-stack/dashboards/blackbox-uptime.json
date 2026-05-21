@@ -1,5 +1,6 @@
 {
   "id": null,
+  "uid": "blackbox-uptime",
   "title": "Service Uptime (Blackbox Exporter)",
   "tags": ["homelab", "uptime", "monitoring"],
   "timezone": "browser",

@@ -1,5 +1,6 @@
 {
   "id": null,
+  "uid": "crowdsec-events",
   "title": "CrowdSec Security Events",
   "tags": ["homelab", "security", "crowdsec"],
   "timezone": "browser",

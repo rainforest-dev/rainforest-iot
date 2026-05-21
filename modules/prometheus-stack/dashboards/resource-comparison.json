@@ -1,5 +1,6 @@
 {
   "id": null,
+  "uid": "resource-comparison",
   "title": "Mac Mini vs RPi Resource Comparison",
   "tags": ["homelab", "resources"],
   "timezone": "browser",
@@ -16,7 +17,7 @@
           "legendFormat": "Mac Mini"
         },
         {
-          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode='idle',job='rpi-node'}[5m])) * 100)",
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\"}[5m])) * 100)",
           "legendFormat": "RPi 5"
         }
       ],
@@ -34,7 +35,7 @@
           "legendFormat": "Mac Mini"
         },
         {
-          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job='rpi-node'} / node_memory_MemTotal_bytes{job='rpi-node'}))",
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}))",
           "legendFormat": "RPi 5"
         }
       ],

@@ -1,5 +1,6 @@
 {
   "id": null,
+  "uid": "pihole-stats",
   "title": "Pi-hole Statistics",
   "tags": ["homelab", "dns", "security"],
   "timezone": "browser",
