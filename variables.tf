@@ -485,3 +485,15 @@ variable "crowdsec_bouncer_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "ntopng_image_version" {
+  description = "Ntopng Docker image version (ntop uses :stable as their versioned release)"
+  type        = string
+  default     = "stable"
+}
+
+variable "ntopng_web_port" {
+  description = "Ntopng web UI port"
+  type        = number
+  default     = 3001
+}

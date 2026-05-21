@@ -325,6 +325,10 @@ module "teleport_node" {
       uri         = "http://localhost:${var.homebridge_web_port}"
       description = "Homebridge HomeKit bridge (admin)"
     }
+    "ntopng" = {
+      uri         = "http://localhost:${var.ntopng_web_port}"
+      description = "Ntopng LAN traffic analysis (admin)"
+    }
   }
 
   hostname = var.raspberry_pi_hostname
@@ -347,6 +351,20 @@ module "crowdsec" {
   bouncer_api_key  = var.crowdsec_bouncer_api_key
   timezone         = var.timezone
   log_opts         = local.common_log_opts
+}
+
+module "ntopng" {
+  source = "./modules/ntopng"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  project_name  = "homelab"
+  image_version = var.ntopng_image_version
+  web_port      = var.ntopng_web_port
+  timezone      = var.timezone
+  log_opts      = local.common_log_opts
 }
 
 # Homepage ingress (when K8s is enabled) - points to existing Docker container
