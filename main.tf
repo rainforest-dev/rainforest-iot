@@ -383,3 +383,19 @@ module "homepage_ingress" {
   raspberry_pi_hostname = var.raspberry_pi_hostname
   raspberry_pi_ip       = "192.168.0.134" # Pi's actual IP address
 }
+
+module "velero" {
+  count      = var.enable_k8s_cluster ? 1 : 0
+  source     = "./modules/velero"
+  depends_on = [module.k3s_cluster]
+
+  providers = {
+    kubernetes = kubernetes.k3s
+    helm       = helm.k3s
+  }
+
+  chart_version    = var.velero_chart_version
+  minio_endpoint   = "http://${var.mac_mini_ip}:9000"
+  minio_access_key = var.minio_access_key
+  minio_secret_key = var.minio_secret_key
+}

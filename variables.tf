@@ -514,3 +514,23 @@ variable "blackbox_icmp_targets" {
   type        = list(string)
   default     = ["192.168.0.1", "1.1.1.1"]
 }
+
+# Velero Backup Configuration
+variable "velero_chart_version" {
+  description = "Velero Helm chart version"
+  type        = string
+  default     = "12.0.1"
+}
+
+variable "minio_access_key" {
+  description = "MinIO root user for Velero S3 access"
+  type        = string
+  sensitive   = true
+  default     = "minioadmin"
+}
+
+variable "minio_secret_key" {
+  description = "MinIO root password for Velero S3 access"
+  type        = string
+  sensitive   = true
+}
