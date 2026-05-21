@@ -17,7 +17,7 @@ resource "docker_volume" "dnsmasq" {
 }
 
 resource "docker_image" "pihole" {
-  name = "pihole/pihole:latest"
+  name = "pihole/pihole:${var.image_version}"
 }
 
 resource "docker_container" "pihole" {

@@ -121,3 +121,9 @@ variable "raspberry_pi_kubeconfig_path" {
   type        = string
   default     = "~/.kube/config-raspberrypi-5"
 }
+
+variable "image_version" {
+  description = "Homepage Docker image version"
+  type        = string
+  default     = "v1.13.1"
+}

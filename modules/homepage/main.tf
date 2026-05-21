@@ -91,7 +91,7 @@ resource "docker_volume" "kubeconfig" {
 
 # Homepage Docker image
 resource "docker_image" "homepage" {
-  name = "ghcr.io/gethomepage/homepage:latest"
+  name = "ghcr.io/gethomepage/homepage:${var.image_version}"
 }
 
 # Copy Raspberry Pi kubeconfig content and rewrite with IP

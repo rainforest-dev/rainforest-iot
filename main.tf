@@ -65,14 +65,15 @@ module "homebridge" {
     docker = docker.raspberry-pi
   }
 
-  hostname     = var.raspberry_pi_hostname
-  pi_hostname  = var.raspberry_pi_hostname
-  pi_user      = var.raspberry_pi_user
-  pi_port      = var.raspberry_pi_port
-  memory_limit = var.homebridge_memory
-  web_port     = var.homebridge_web_port
-  timezone     = var.timezone
-  log_opts     = local.common_log_opts
+  hostname      = var.raspberry_pi_hostname
+  pi_hostname   = var.raspberry_pi_hostname
+  pi_user       = var.raspberry_pi_user
+  pi_port       = var.raspberry_pi_port
+  memory_limit  = var.homebridge_memory
+  web_port      = var.homebridge_web_port
+  timezone      = var.timezone
+  log_opts      = local.common_log_opts
+  image_version = var.homebridge_image_version
 }
 
 # module "acton-3" {
@@ -100,6 +101,7 @@ module "homepage" {
   external_port         = var.homepage_port
   timezone              = var.timezone
   log_opts              = local.common_log_opts
+  image_version         = var.homepage_image_version
 
   # New template variables
   mac_mini_hostname                  = var.mac_mini_hostname
@@ -126,10 +128,11 @@ module "openspeedtest" {
     docker = docker.raspberry-pi
   }
 
-  hostname = var.raspberry_pi_hostname
-  ports    = var.openspeedtest_ports
-  timezone = var.timezone
-  log_opts = local.common_log_opts
+  hostname      = var.raspberry_pi_hostname
+  ports         = var.openspeedtest_ports
+  timezone      = var.timezone
+  log_opts      = local.common_log_opts
+  image_version = var.openspeedtest_image_version
 }
 
 module "pi-hole" {
@@ -139,10 +142,11 @@ module "pi-hole" {
     docker = docker.raspberry-pi
   }
 
-  hostname = var.raspberry_pi_hostname
-  web_port = var.pihole_web_port
-  timezone = var.timezone
-  log_opts = local.common_log_opts
+  hostname      = var.raspberry_pi_hostname
+  web_port      = var.pihole_web_port
+  timezone      = var.timezone
+  log_opts      = local.common_log_opts
+  image_version = var.pihole_image_version
 }
 
 # K3s Cluster configuration (when enabled)

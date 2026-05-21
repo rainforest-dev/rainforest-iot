@@ -9,7 +9,7 @@ terraform {
 }
 
 resource "docker_image" "openspeedtest" {
-  name = "openspeedtest/latest"
+  name = "openspeedtest/latest:${var.image_version}"
 }
 
 resource "docker_container" "openspeedtest" {

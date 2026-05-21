@@ -148,9 +148,8 @@ variable "enable_mimir" {
 # This variable is redefined below with detailed component settings
 
 variable "grafana_admin_password" {
-  description = "Admin password for Grafana"
+  description = "Admin password for Grafana (set in terraform.tfvars — no default to prevent accidental use of a weak password)"
   type        = string
-  default     = "admin123"
   sensitive   = true
 }
 
@@ -349,6 +348,31 @@ variable "teleport_auth_token" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+# Docker Image Versions
+variable "pihole_image_version" {
+  description = "Pi-hole Docker image version"
+  type        = string
+  default     = "2026.05.0"
+}
+
+variable "homebridge_image_version" {
+  description = "Homebridge Docker image version"
+  type        = string
+  default     = "2026-05-13"
+}
+
+variable "homepage_image_version" {
+  description = "Homepage Docker image version"
+  type        = string
+  default     = "v1.13.1"
+}
+
+variable "openspeedtest_image_version" {
+  description = "OpenSpeedtest Docker image version"
+  type        = string
+  default     = "v2.0.6"
 }
 
 # Detailed Resource Limits for All Components

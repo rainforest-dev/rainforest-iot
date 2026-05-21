@@ -30,3 +30,9 @@ variable "log_opts" {
     "max-file" = "3"
   }
 }
+
+variable "image_version" {
+  description = "OpenSpeedtest Docker image version"
+  type        = string
+  default     = "v2.0.6"
+}

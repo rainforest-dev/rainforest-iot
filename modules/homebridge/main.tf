@@ -13,7 +13,7 @@ resource "docker_volume" "homebridge_data" {
 }
 
 resource "docker_image" "homebridge" {
-  name = "homebridge/homebridge:latest"
+  name = "homebridge/homebridge:${var.image_version}"
 }
 
 resource "docker_container" "homebridge" {
