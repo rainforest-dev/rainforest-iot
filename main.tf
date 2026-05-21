@@ -167,6 +167,9 @@ module "k3s_cluster" {
   enable_ingress          = var.k8s_enable_ingress
   enable_resource_quotas  = var.k8s_enable_resource_quotas
   enable_network_policies = var.k8s_enable_network_policies
+  pi_hostname             = var.raspberry_pi_hostname
+  pi_user                 = var.raspberry_pi_user
+  pi_ssh_private_key      = var.pi_ssh_private_key
 }
 
 # Prometheus monitoring stack (when K8s is enabled)

@@ -459,3 +459,10 @@ variable "pihole_exporter_version" {
   type        = string
   default     = "v0.4.0"
 }
+
+variable "pi_ssh_private_key" {
+  description = "SSH private key content for Pi-hole gravity CronJob (store in terraform.tfvars only)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

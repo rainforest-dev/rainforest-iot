@@ -46,3 +46,22 @@ variable "monitoring_storage_limit" {
   type        = string
   default     = "50Gi"   # 50GB storage
 }
+
+variable "pi_hostname" {
+  description = "Raspberry Pi hostname for CronJob SSH"
+  type        = string
+  default     = "raspberrypi-5.local"
+}
+
+variable "pi_user" {
+  description = "Raspberry Pi SSH user"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "pi_ssh_private_key" {
+  description = "SSH private key content for Pi-hole gravity CronJob (set in terraform.tfvars)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
