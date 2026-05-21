@@ -38,7 +38,7 @@ resource "helm_release" "velero" {
       initContainers = [
         {
           name  = "velero-plugin-for-aws"
-          image = "velero/velero-plugin-for-aws:v1.13.1"
+          image = "velero/velero-plugin-for-aws:v1.14.1"
           volumeMounts = [
             { mountPath = "/target", name = "plugins" }
           ]
