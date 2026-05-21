@@ -21,6 +21,6 @@ output "container_status" {
   value = {
     restart_policy = docker_container.openspeedtest.restart
     memory_limit   = docker_container.openspeedtest.memory
-    ports         = var.ports
+    ports          = var.ports
   }
 }

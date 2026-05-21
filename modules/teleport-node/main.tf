@@ -61,10 +61,10 @@ resource "docker_volume" "teleport_data" {
 resource "null_resource" "teleport_config" {
   triggers = {
     # Re-run if any config values change
-    auth_token   = sha256(var.auth_token)
-    proxy_addr   = var.teleport_proxy_address
-    apps         = jsonencode(var.apps)
-    node_name    = var.node_name
+    auth_token = sha256(var.auth_token)
+    proxy_addr = var.teleport_proxy_address
+    apps       = jsonencode(var.apps)
+    node_name  = var.node_name
   }
 
   # Use local-exec + native ssh so ~/.ssh/config (IdentityFile, IdentitiesOnly)
@@ -87,9 +87,9 @@ locals {
     version = "v3"
 
     teleport = {
-      nodename    = var.node_name
-      data_dir    = "/var/lib/teleport"
-      auth_token  = var.auth_token
+      nodename     = var.node_name
+      data_dir     = "/var/lib/teleport"
+      auth_token   = var.auth_token
       proxy_server = var.teleport_proxy_address
       log = {
         output   = "stderr"

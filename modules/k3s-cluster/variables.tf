@@ -25,26 +25,26 @@ variable "enable_resource_quotas" {
 variable "enable_network_policies" {
   description = "Enable network policies for enhanced security"
   type        = bool
-  default     = false  # Start with false, enable when comfortable
+  default     = false # Start with false, enable when comfortable
 }
 
 # Resource limits for monitoring namespace
 variable "monitoring_cpu_limit" {
   description = "CPU limit for monitoring namespace"
   type        = string
-  default     = "2000m"  # 2 CPU cores
+  default     = "2000m" # 2 CPU cores
 }
 
 variable "monitoring_memory_limit" {
   description = "Memory limit for monitoring namespace"
   type        = string
-  default     = "4Gi"    # 4GB RAM
+  default     = "4Gi" # 4GB RAM
 }
 
 variable "monitoring_storage_limit" {
   description = "Storage limit for monitoring namespace"
   type        = string
-  default     = "50Gi"   # 50GB storage
+  default     = "50Gi" # 50GB storage
 }
 
 variable "pi_hostname" {

@@ -7,7 +7,7 @@ variable "namespace" {
 variable "chart_version" {
   description = "Version of loki-stack Helm chart"
   type        = string
-  default     = "2.9.11"  # Stable version
+  default     = "2.9.11" # Stable version
 }
 
 variable "storage_class" {
@@ -56,7 +56,7 @@ variable "loki_storage_size" {
 variable "loki_retention" {
   description = "Loki log retention period"
   type        = string
-  default     = "168h"  # 7 days
+  default     = "168h" # 7 days
 }
 
 variable "loki_port" {

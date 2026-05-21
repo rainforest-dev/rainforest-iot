@@ -40,7 +40,7 @@ resource "docker_container" "acton-3" {
   command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "Headphone"]
 
   # Resource limits
-  memory = 128
+  memory      = 128
   memory_swap = 256
 
   # Health check for audio service

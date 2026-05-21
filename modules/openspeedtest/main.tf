@@ -18,7 +18,7 @@ resource "docker_container" "openspeedtest" {
   restart = "unless-stopped"
 
   # Resource limits
-  memory = 256
+  memory      = 256
   memory_swap = 512
 
   # Lifecycle management to prevent unnecessary recreation

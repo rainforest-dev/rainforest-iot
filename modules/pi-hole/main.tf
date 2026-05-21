@@ -30,7 +30,7 @@ resource "docker_container" "pihole" {
   restart = "unless-stopped"
 
   # Resource limits
-  memory = 512
+  memory      = 512
   memory_swap = 1024
 
   # Lifecycle management to prevent unnecessary recreation

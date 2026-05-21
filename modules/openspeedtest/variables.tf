@@ -6,7 +6,7 @@ variable "hostname" {
 
 variable "ports" {
   description = "External ports for OpenSpeedTest"
-  type        = object({
+  type = object({
     http  = number
     https = number
   })
