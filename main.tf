@@ -147,6 +147,8 @@ module "pi-hole" {
   timezone      = var.timezone
   log_opts      = local.common_log_opts
   image_version = var.pihole_image_version
+  ssh_user      = var.raspberry_pi_user
+  ssh_port      = var.raspberry_pi_port
 }
 
 # K3s Cluster configuration (when enabled)

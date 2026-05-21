@@ -30,3 +30,25 @@ variable "image_version" {
   type        = string
   default     = "2026.05.0"
 }
+
+variable "ssh_user" {
+  description = "SSH user for Raspberry Pi"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "ssh_port" {
+  description = "SSH port for Raspberry Pi"
+  type        = number
+  default     = 22
+}
+
+variable "blocklists" {
+  description = "Additional threat blocklist URLs to add to Pi-hole gravity database"
+  type        = list(string)
+  default = [
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.txt",
+    "https://big.oisd.nl/",
+    "https://openphish.com/feed.txt",
+  ]
+}

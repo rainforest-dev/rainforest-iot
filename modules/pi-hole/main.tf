@@ -5,6 +5,10 @@ terraform {
       version               = "~> 3.0"
       configuration_aliases = [docker]
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -93,4 +97,31 @@ resource "docker_container" "pihole" {
 
   # Logging configuration
   log_opts = var.log_opts
+}
+
+# Add threat blocklists to Pi-hole gravity database via SSH.
+# Fires whenever the blocklist URLs change (triggers key).
+# Uses INSERT OR IGNORE so re-runs are safe (no duplicates).
+resource "null_resource" "pihole_blocklists" {
+  triggers = {
+    blocklists_hash = sha256(join(",", sort(var.blocklists)))
+    container_id    = docker_container.pihole.id
+  }
+
+  connection {
+    type  = "ssh"
+    host  = var.hostname
+    user  = var.ssh_user
+    port  = var.ssh_port
+    agent = true
+  }
+
+  provisioner "remote-exec" {
+    inline = concat(
+      [for url in var.blocklists : "docker exec pihole sqlite3 /etc/pihole/gravity.db \"INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('${url}', 1, 'Terraform managed');\""],
+      ["docker exec pihole pihole updateGravity || docker exec pihole pihole -g || true"]
+    )
+  }
+
+  depends_on = [docker_container.pihole]
 }
