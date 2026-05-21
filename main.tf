@@ -256,6 +256,7 @@ module "monitoring_integrations" {
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_port              = var.pihole_web_port
   pihole_api_token         = var.pihole_api_token
+  ntopng_port              = var.ntopng_web_port
 }
 
 # Loki logging stack (after Prometheus CRDs exist)

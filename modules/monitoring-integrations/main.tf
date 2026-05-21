@@ -145,6 +145,30 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
         ]
         metrics_path    = "/metrics"
         scrape_interval = "30s"
+      },
+      # CrowdSec metrics
+      {
+        job_name = "crowdsec"
+        static_configs = [
+          {
+            targets = ["${var.raspberry_pi_hostname}:6060"]
+            labels  = { instance = "raspberry-pi-5", service = "crowdsec" }
+          }
+        ]
+        metrics_path    = "/metrics"
+        scrape_interval = "30s"
+      },
+      # Ntopng uptime check (community edition has no native Prometheus export)
+      {
+        job_name = "ntopng-health"
+        static_configs = [
+          {
+            targets = ["${var.raspberry_pi_hostname}:${var.ntopng_port}"]
+            labels  = { instance = "raspberry-pi-5", service = "ntopng" }
+          }
+        ]
+        metrics_path    = "/"
+        scrape_interval = "60s"
       }
     ])
   }
