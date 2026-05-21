@@ -42,6 +42,50 @@ resource "kubernetes_config_map" "grafana_dashboard_kubernetes_cluster" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_pihole" {
+  metadata {
+    name      = "grafana-pihole-stats"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "pihole-stats.json" = file("${path.module}/dashboards/pihole-stats.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_crowdsec" {
+  metadata {
+    name      = "grafana-crowdsec-events"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "crowdsec-events.json" = file("${path.module}/dashboards/crowdsec-events.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_blackbox" {
+  metadata {
+    name      = "grafana-blackbox-uptime"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "blackbox-uptime.json" = file("${path.module}/dashboards/blackbox-uptime.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
+  metadata {
+    name      = "grafana-resource-comparison"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "resource-comparison.json" = file("${path.module}/dashboards/resource-comparison.json")
+  }
+}
+
 # Create Secret for additional scrape configs (Prometheus operator expects Secret, not ConfigMap)
 resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   metadata {
@@ -84,7 +128,7 @@ resource "helm_release" "prometheus_stack" {
               app = "prometheus"
             }
           }
-          
+
           # Resource limits for Pi 5
           resources = {
             requests = {
@@ -96,7 +140,7 @@ resource "helm_release" "prometheus_stack" {
               memory = var.prometheus_memory_limit
             }
           }
-          
+
           # Storage configuration
           retention = var.prometheus_retention
           storageSpec = {
@@ -112,38 +156,38 @@ resource "helm_release" "prometheus_stack" {
               }
             }
           }
-          
+
           # Additional scrape configs for comprehensive monitoring
           additionalScrapeConfigsSecret = {
             enabled = true
-            name = kubernetes_secret.prometheus_additional_scrape_configs.metadata[0].name
-            key  = "prometheus-additional.yaml"
+            name    = kubernetes_secret.prometheus_additional_scrape_configs.metadata[0].name
+            key     = "prometheus-additional.yaml"
           }
-          
+
           # External access
           serviceMonitorSelectorNilUsesHelmValues = false
           podMonitorSelectorNilUsesHelmValues     = false
           ruleSelectorNilUsesHelmValues           = false
-          
+
           # Enable external URL access
           externalUrl = "http://${var.external_hostname}:${var.prometheus_port}"
         }
-        
+
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.prometheus_port
         }
       }
-      
+
       # Grafana configuration
       grafana = {
         enabled = var.grafana_enabled
-        
+
         # Add pod labels for Homepage integration
         podLabels = {
           app = "grafana"
         }
-        
+
         # Resource limits
         resources = {
           requests = {
@@ -155,26 +199,26 @@ resource "helm_release" "prometheus_stack" {
             memory = var.grafana_memory_limit
           }
         }
-        
+
         # Admin credentials
         adminPassword = var.grafana_admin_password
-        
+
         # Persistence
         persistence = {
-          enabled = true
+          enabled          = true
           storageClassName = var.storage_class
-          size = var.grafana_storage_size
+          size             = var.grafana_storage_size
         }
-        
+
         # Service configuration
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.grafana_port
         }
-        
+
         # Default dashboards
         defaultDashboardsEnabled = true
-        
+
         # Additional data sources
         additionalDataSources = concat(var.grafana_additional_datasources, [
           {
@@ -185,7 +229,7 @@ resource "helm_release" "prometheus_stack" {
             isDefault = false
           }
         ])
-        
+
         # Grafana configuration
         "grafana.ini" = {
           server = {
@@ -199,7 +243,7 @@ resource "helm_release" "prometheus_stack" {
             admin_password = var.grafana_admin_password
           }
         }
-        
+
         # Sidecar resource limits
         sidecar = {
           dashboards = {
@@ -229,7 +273,7 @@ resource "helm_release" "prometheus_stack" {
             }
           }
         }
-        
+
         # Init container resource limits
         initChownData = {
           resources = {
@@ -244,11 +288,11 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
       # AlertManager configuration
       alertmanager = {
         enabled = var.alertmanager_enabled
-        
+
         alertmanagerSpec = {
           # Add pod labels for Homepage integration
           podMetadata = {
@@ -256,7 +300,7 @@ resource "helm_release" "prometheus_stack" {
               app = "alertmanager"
             }
           }
-          
+
           resources = {
             requests = {
               cpu    = var.alertmanager_cpu_request
@@ -267,7 +311,7 @@ resource "helm_release" "prometheus_stack" {
               memory = var.alertmanager_memory_limit
             }
           }
-          
+
           storage = {
             volumeClaimTemplate = {
               spec = {
@@ -281,20 +325,20 @@ resource "helm_release" "prometheus_stack" {
               }
             }
           }
-          
+
           externalUrl = "http://${var.external_hostname}:${var.alertmanager_port}"
         }
-        
+
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.alertmanager_port
         }
       }
-      
+
       # Node Exporter configuration
       nodeExporter = {
         enabled = var.node_exporter_enabled
-        
+
         resources = {
           requests = {
             cpu    = "50m"
@@ -306,7 +350,7 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
       # Kube State Metrics configuration
       kubeStateMetrics = {
         enabled = var.kube_state_metrics_enabled
@@ -341,12 +385,12 @@ resource "helm_release" "prometheus_stack" {
         config = {
           modules = {
             http_2xx = {
-              prober = "http"
+              prober  = "http"
               timeout = "5s"
               http = {
-                valid_status_codes = []
-                valid_http_versions = ["HTTP/1.1", "HTTP/2.0"]
-                follow_redirects = true
+                valid_status_codes    = []
+                valid_http_versions   = ["HTTP/1.1", "HTTP/2.0"]
+                follow_redirects      = true
                 preferred_ip_protocol = "ip4"
               }
             }
@@ -381,7 +425,7 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
       # Disable components that are too heavy for Pi
       kubeEtcd = {
         enabled = false
@@ -404,14 +448,14 @@ resource "helm_release" "prometheus_stack" {
 # Create custom alerting rules for homelab
 resource "kubernetes_config_map" "alerting_rules" {
   count = var.enable_custom_alerts ? 1 : 0
-  
+
   metadata {
     name      = "homelab-alerting-rules"
     namespace = var.namespace
     labels = {
       "app.kubernetes.io/name" = "prometheus"
-      "prometheus" = "kube-prometheus-prometheus"
-      "role" = "alert-rules"
+      "prometheus"             = "kube-prometheus-prometheus"
+      "role"                   = "alert-rules"
     }
   }
 

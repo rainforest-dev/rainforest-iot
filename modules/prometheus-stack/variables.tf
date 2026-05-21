@@ -7,7 +7,7 @@ variable "namespace" {
 variable "chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "55.5.0"  # Stable version
+  default     = "55.5.0" # Stable version
 }
 
 variable "storage_class" {
@@ -117,7 +117,7 @@ variable "grafana_port" {
 
 variable "grafana_additional_datasources" {
   description = "Additional data sources for Grafana"
-  type        = list(object({
+  type = list(object({
     name      = string
     type      = string
     url       = string

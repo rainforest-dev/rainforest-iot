@@ -1,0 +1,57 @@
+{
+  "id": null,
+  "title": "Pi-hole Statistics",
+  "tags": ["homelab", "dns", "security"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Domains Blocked",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "pihole_domains_being_blocked", "legendFormat": "Blocked domains" }],
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 2,
+      "title": "Queries Today",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "pihole_dns_queries_today", "legendFormat": "DNS queries" }],
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 3,
+      "title": "Ads Blocked Today",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "pihole_ads_blocked_today", "legendFormat": "Blocked today" }],
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 4,
+      "title": "Block Rate %",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "pihole_ads_percentage_today", "legendFormat": "Block %" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 20 }, { "color": "red", "value": 50 }] }
+        }
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 5,
+      "title": "DNS Query Rate (per minute)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rate(pihole_dns_queries_today[5m]) * 60", "legendFormat": "Queries/min" }],
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }
+    }
+  ],
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m"
+}
