@@ -37,21 +37,34 @@
   scrape_interval: 30s
   scheme: http
 
-# Blackbox Exporter - HTTP health checks for all homelab services
-- job_name: 'blackbox-homelab-services'
+# Blackbox Exporter - HTTP synthetic monitoring
+- job_name: 'blackbox-http'
   metrics_path: /probe
   params:
     module: [http_2xx]
   static_configs:
     - targets:
-        - https://open-webui.rainforest.tools
-        - https://flowise.rainforest.tools
-        - https://n8n.rainforest.tools
-        - https://calibre-web.rainforest.tools
-        - https://whisper.rainforest.tools
-        - https://minio.rainforest.tools
-        - https://pgadmin.rainforest.tools
-        - https://s3.rainforest.tools
+%{~ for t in blackbox_http_targets ~}
+        - ${t}
+%{~ endfor ~}
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: prometheus-prometheus-blackbox-exporter:9115
+
+# Blackbox Exporter - ICMP ping probes
+- job_name: 'blackbox-icmp'
+  metrics_path: /probe
+  params:
+    module: [icmp]
+  static_configs:
+    - targets:
+%{~ for t in blackbox_icmp_targets ~}
+        - ${t}
+%{~ endfor ~}
   relabel_configs:
     - source_labels: [__address__]
       target_label: __param_target

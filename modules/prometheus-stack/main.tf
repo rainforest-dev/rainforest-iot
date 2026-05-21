@@ -56,6 +56,8 @@ resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
       pihole_endpoint          = var.pihole_endpoint
       pihole_api_token         = var.pihole_api_token
       external_hostname        = var.external_hostname
+      blackbox_http_targets    = var.blackbox_http_targets
+      blackbox_icmp_targets    = var.blackbox_icmp_targets
     })
   }
 

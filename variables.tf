@@ -497,3 +497,20 @@ variable "ntopng_web_port" {
   type        = number
   default     = 3001
 }
+
+variable "blackbox_http_targets" {
+  description = "HTTP/HTTPS endpoints for Blackbox Exporter synthetic monitoring"
+  type        = list(string)
+  default = [
+    "https://open-webui.rainforest.tools",
+    "https://n8n.rainforest.tools",
+    "https://calibre-web.rainforest.tools",
+    "https://whisper.rainforest.tools",
+  ]
+}
+
+variable "blackbox_icmp_targets" {
+  description = "IP addresses for ICMP ping probes"
+  type        = list(string)
+  default     = ["192.168.0.1", "1.1.1.1"]
+}

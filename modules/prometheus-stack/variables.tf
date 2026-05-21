@@ -220,3 +220,20 @@ variable "pihole_api_token" {
   default     = ""
   sensitive   = true
 }
+
+variable "blackbox_http_targets" {
+  description = "HTTP/HTTPS endpoints for Blackbox Exporter to probe"
+  type        = list(string)
+  default = [
+    "https://open-webui.rainforest.tools",
+    "https://n8n.rainforest.tools",
+    "https://calibre-web.rainforest.tools",
+    "https://whisper.rainforest.tools",
+  ]
+}
+
+variable "blackbox_icmp_targets" {
+  description = "IP addresses for ICMP ping probes"
+  type        = list(string)
+  default     = ["192.168.0.1", "1.1.1.1"]
+}

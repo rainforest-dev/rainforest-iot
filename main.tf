@@ -222,6 +222,8 @@ module "prometheus_stack" {
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_endpoint          = "${var.raspberry_pi_hostname}:${var.pihole_web_port}"
   pihole_api_token         = var.pihole_api_token
+  blackbox_http_targets    = var.blackbox_http_targets
+  blackbox_icmp_targets    = var.blackbox_icmp_targets
 }
 
 # Wait for Prometheus CRDs to be available
