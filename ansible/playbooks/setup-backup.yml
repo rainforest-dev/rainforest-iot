@@ -15,16 +15,17 @@
     - name: Create backup destination directory on Mac Mini
       become: no
       shell: |
-        ssh -o StrictHostKeyChecking=no \
+        ssh -o StrictHostKeyChecking=accept-new \
           {{ mac_mini_user }}@{{ mac_mini_ip }} \
           "mkdir -p {{ backup_dest }}"
+      changed_when: false
 
     - name: Write rsync backup script
       copy:
         dest: /usr/local/bin/rpi-backup-rsync.sh
         mode: "0755"
         content: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -euo pipefail
           rsync -az --delete \
             {{ rsync_source }} \
@@ -47,13 +48,16 @@
           StandardOutput=journal
           StandardError=journal
 
+          [Install]
+          WantedBy=multi-user.target
+
     - name: Create rsync systemd timer unit
       copy:
         dest: /etc/systemd/system/homelab-rsync-backup.timer
         content: |
           [Unit]
           Description=RPi K3s rsync backup — every 6 hours
-          Requires=homelab-rsync-backup.service
+          Wants=homelab-rsync-backup.service
 
           [Timer]
           OnBootSec=10min
@@ -77,11 +81,11 @@
         dest: /usr/local/bin/crowdsec-hub-update.sh
         mode: "0755"
         content: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -euo pipefail
           docker exec homelab-crowdsec cscli hub update
           docker exec homelab-crowdsec cscli hub upgrade
-          echo "$(date): CrowdSec hub updated" >> /var/log/homelab-backup.log
+          echo "$(date): CrowdSec hub updated" >> /var/log/crowdsec-hub-update.log
 
     - name: Create CrowdSec update systemd service unit
       copy:
@@ -105,7 +109,7 @@
         content: |
           [Unit]
           Description=Daily CrowdSec hub update at 04:00
-          Requires=crowdsec-hub-update.service
+          Wants=crowdsec-hub-update.service
 
           [Timer]
           OnCalendar=*-*-* 04:00:00
