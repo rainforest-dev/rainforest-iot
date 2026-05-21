@@ -394,8 +394,9 @@ module "velero" {
     helm       = helm.k3s
   }
 
-  chart_version    = var.velero_chart_version
-  minio_endpoint   = "http://${var.mac_mini_ip}:9000"
+  chart_version = var.velero_chart_version
+  # Use LAN IP directly — Tailscale may not be available during disaster recovery
+  # Module default (http://192.168.0.126:9000) is correct; mac_mini_ip is Tailscale
   minio_access_key = var.minio_access_key
   minio_secret_key = var.minio_secret_key
 }
