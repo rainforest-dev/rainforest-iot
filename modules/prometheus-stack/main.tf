@@ -582,6 +582,43 @@ resource "kubernetes_config_map" "alerting_rules" {
                 summary     = "High disk usage detected"
                 description = "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}"
               }
+            },
+            # Homelab-specific alerts (consolidated from monitoring-integrations module)
+            {
+              alert = "HomelabServiceDown"
+              expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
+              for   = "2m"
+              labels = {
+                severity = "warning"
+              }
+              annotations = {
+                summary     = "Homelab service is down"
+                description = "Homelab service {{ $labels.job }} is not responding"
+              }
+            },
+            {
+              alert = "KubernetesNodeNotReady"
+              expr  = "kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 0"
+              for   = "5m"
+              labels = {
+                severity = "critical"
+              }
+              annotations = {
+                summary     = "Kubernetes node not ready"
+                description = "Kubernetes node {{ $labels.node }} is not ready"
+              }
+            },
+            {
+              alert = "KubernetesPodCrashLooping"
+              expr  = "rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 0"
+              for   = "5m"
+              labels = {
+                severity = "warning"
+              }
+              annotations = {
+                summary     = "Pod is crash looping"
+                description = "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+              }
             }
           ]
         }

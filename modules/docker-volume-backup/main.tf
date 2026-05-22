@@ -35,6 +35,12 @@ resource "docker_container" "backup" {
   image   = docker_image.backup.image_id
   restart = "unless-stopped"
 
+  # Docker reads back network_mode="bridge" (its default) after creation.
+  # Ignoring it prevents forced replacement on every plan.
+  lifecycle {
+    ignore_changes = [network_mode]
+  }
+
   env = [
     # Cron schedule — default 03:00 daily, 1h after Velero's K3s backup
     "BACKUP_CRON_EXPRESSION=${var.backup_schedule}",

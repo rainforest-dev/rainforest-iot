@@ -40,6 +40,8 @@ resource "docker_container" "pihole" {
       memory,
       memory_swap,
       network_mode,
+      # Docker normalises "60s" → "1m0s"; ignore to prevent perpetual in-place diff
+      healthcheck,
     ]
     replace_triggered_by = [
       docker_image.pihole.image_id,
@@ -149,6 +151,11 @@ resource "docker_container" "pihole_exporter" {
   network_mode = "host"
 
   memory = 32
+
+  # Docker sets memory_swap to 2× memory by default; ignore to avoid perpetual diff
+  lifecycle {
+    ignore_changes = [memory_swap]
+  }
 
   log_opts = var.log_opts
 

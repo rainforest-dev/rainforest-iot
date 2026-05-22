@@ -27,6 +27,15 @@ resource "docker_container" "crowdsec" {
 
   restart = "unless-stopped"
 
+  # Docker reads back several default attributes after container creation that
+  # don't need to be managed by Terraform:
+  #   - network_mode="bridge": Docker default; container actually uses networks_advanced
+  #   - memory_swap: Docker sets to 2× memory when unspecified
+  #   - healthcheck: Docker normalises "60s" → "1m0s" causing perpetual diff
+  lifecycle {
+    ignore_changes = [network_mode, memory_swap, healthcheck]
+  }
+
   ports {
     internal = 6060
     external = 6060

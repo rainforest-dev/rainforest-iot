@@ -11,8 +11,8 @@ output "external_monitoring_enabled" {
 }
 
 output "custom_alerts_enabled" {
-  description = "Whether custom alerting rules are configured"
-  value       = var.enable_custom_alerts && length(kubernetes_config_map.homelab_alerting_rules) > 0
+  description = "Whether custom alerting rules are configured (managed by prometheus-stack module)"
+  value       = var.enable_custom_alerts
 }
 
 output "monitoring_integrations_summary" {

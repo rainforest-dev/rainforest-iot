@@ -28,6 +28,8 @@ resource "docker_container" "openspeedtest" {
       memory,
       memory_swap,
       network_mode,
+      # Docker normalises "60s" → "1m0s"; ignore to prevent perpetual in-place diff
+      healthcheck,
     ]
     replace_triggered_by = [
       docker_image.openspeedtest.image_id,

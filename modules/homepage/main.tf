@@ -126,6 +126,16 @@ resource "docker_container" "kubeconfig_updater" {
   name     = "homepage-kubeconfig-updater-${substr(md5(join("", [local_file.kubeconfig_pi5_content.content, local_file.kubeconfig_mac_content.content])), 0, 8)}"
   must_run = false
 
+  # These one-shot containers get their lifecycle managed through the content-hash in
+  # their name — when config changes, the name changes and Docker creates a new container.
+  # Ignore Docker provider readbacks that would otherwise cause spurious forced replacement:
+  #   - image: provider reads back the resolved SHA256; tag→SHA drift is harmless noise
+  #   - log_opts: provider stores the default json-file opts; config omits them on purpose
+  #   - network_mode: provider reads back "bridge" (Docker default); ForceNew attribute
+  lifecycle {
+    ignore_changes = [image, log_opts, network_mode]
+  }
+
   command = [
     "sh", "-c",
     <<-EOF
@@ -154,6 +164,12 @@ resource "docker_container" "config_updater" {
   image    = "alpine:latest"
   name     = "homepage-config-updater-${substr(md5(join("", [local_file.services_config.content, local_file.docker_config.content])), 0, 8)}"
   must_run = false
+
+  # Same lifecycle rationale as kubeconfig_updater above — content-hash name handles
+  # real recreation; these ignore_changes suppress Docker provider readback drift.
+  lifecycle {
+    ignore_changes = [image, log_opts, network_mode]
+  }
 
   command = [
     "sh", "-c",
@@ -199,6 +215,9 @@ resource "docker_container" "homepage" {
     replace_triggered_by = [
       docker_container.config_updater.id
     ]
+    # Docker reads back network_mode="bridge" (its default) after creation.
+    # Ignoring it prevents forced replacement on every plan.
+    ignore_changes = [network_mode]
   }
 
   # Environment variables for host validation

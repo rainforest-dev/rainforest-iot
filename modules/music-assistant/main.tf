@@ -31,6 +31,8 @@ resource "docker_container" "music_assistant" {
     ignore_changes = [
       memory,
       memory_swap,
+      # Docker normalises "60s" → "1m0s"; ignore to prevent perpetual in-place diff
+      healthcheck,
     ]
     replace_triggered_by = [
       docker_image.music_assistant.image_id,
