@@ -224,14 +224,12 @@ module "prometheus_stack" {
   alertmanager_storage_size   = var.monitoring_resource_limits.alertmanager_storage_size
   alertmanager_port           = var.alertmanager_port
 
-  # External monitoring targets
-  mac_mini_ip              = var.mac_mini_ip
-  mac_mini_hostname        = var.mac_mini_hostname
-  mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
-  pihole_endpoint          = "${var.raspberry_pi_hostname}:${var.pihole_web_port}"
-  pihole_api_token         = var.pihole_api_token
-  blackbox_http_targets    = var.blackbox_http_targets
-  blackbox_icmp_targets    = var.blackbox_icmp_targets
+  # External monitoring targets — use IPs, not .local hostnames (K3s CoreDNS can't resolve mDNS)
+  mac_mini_ip           = var.mac_mini_ip
+  mac_mini_hostname     = var.mac_mini_hostname
+  external_ip           = var.raspberry_pi_ip
+  blackbox_http_targets = var.blackbox_http_targets
+  blackbox_icmp_targets = var.blackbox_icmp_targets
 }
 
 # Wait for Prometheus CRDs to be available

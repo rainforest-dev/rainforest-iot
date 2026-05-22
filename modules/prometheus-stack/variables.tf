@@ -202,16 +202,17 @@ variable "mac_mini_hostname" {
   default     = "rainforest-mini.local"
 }
 
-variable "mac_mini_docker_endpoint" {
-  description = "Mac mini Docker endpoint for monitoring"
+variable "external_ip" {
+  description = "Raspberry Pi LAN IP address. Must be a raw IP (not .local hostname) so scrape targets resolve inside K3s pods via CoreDNS."
   type        = string
-  default     = "dockerproxy.orb.local:2375"
+  default     = ""
 }
 
-variable "pihole_endpoint" {
-  description = "Pi-hole endpoint for monitoring"
+variable "homeassistant_token" {
+  description = "Home Assistant long-lived access token for /api/prometheus endpoint. Leave empty to skip HA scraping."
   type        = string
-  default     = "localhost:8080"
+  default     = ""
+  sensitive   = true
 }
 
 variable "pihole_api_token" {

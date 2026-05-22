@@ -86,6 +86,76 @@ resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
   }
 }
 
+# Build the list of additional scrape job configs.
+# All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
+locals {
+  _resolved_ip = var.external_ip != "" ? var.external_ip : var.external_hostname
+
+  _relabel_blackbox = [
+    { source_labels = ["__address__"], target_label = "__param_target" },
+    { source_labels = ["__param_target"], target_label = "instance" },
+    { target_label = "__address__", replacement = "prometheus-prometheus-blackbox-exporter:9115" },
+  ]
+
+  _base_scrape_jobs = [
+    {
+      job_name        = "mac-mini-docker"
+      static_configs  = [{ targets = ["${var.mac_mini_ip}:2375"] }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30s"
+    },
+    {
+      job_name        = "mac-mini-minio"
+      static_configs  = [{ targets = ["${var.mac_mini_ip}:30900"] }]
+      metrics_path    = "/minio/v2/metrics/cluster"
+      scrape_interval = "30s"
+      scheme          = "http"
+    },
+    # Pi-hole Prometheus exporter sidecar (port 9617).
+    # Replaces the old /admin/api.php job which returned JSON, not Prometheus text-format.
+    {
+      job_name       = "pihole-exporter"
+      static_configs = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30s"
+    },
+    # CrowdSec IDS metrics (community bans + local decisions)
+    {
+      job_name       = "crowdsec"
+      static_configs = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30s"
+    },
+    # Blackbox Exporter — HTTP synthetic monitoring
+    {
+      job_name        = "blackbox-http"
+      metrics_path    = "/probe"
+      params          = { module = ["http_2xx"] }
+      static_configs  = [{ targets = var.blackbox_http_targets }]
+      relabel_configs = local._relabel_blackbox
+    },
+    # Blackbox Exporter — ICMP ping probes
+    {
+      job_name        = "blackbox-icmp"
+      metrics_path    = "/probe"
+      params          = { module = ["icmp"] }
+      static_configs  = [{ targets = var.blackbox_icmp_targets }]
+      relabel_configs = local._relabel_blackbox
+    },
+  ]
+
+  # Home Assistant job is optional — requires a long-lived token + HA Prometheus integration enabled.
+  _ha_scrape_job = var.homeassistant_token != "" ? [{
+    job_name       = "homeassistant"
+    static_configs = [{ targets = ["${local._resolved_ip}:8123"] }]
+    metrics_path    = "/api/prometheus"
+    authorization  = { credentials = var.homeassistant_token }
+    scrape_interval = "60s"
+  }] : []
+
+  _all_scrape_jobs = concat(local._base_scrape_jobs, local._ha_scrape_job)
+}
+
 # Create Secret for additional scrape configs (Prometheus operator expects Secret, not ConfigMap)
 resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   metadata {
@@ -94,15 +164,9 @@ resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   }
 
   data = {
-    "prometheus-additional.yaml" = templatefile("${path.module}/templates/additional-scrape-configs.yaml.tpl", {
-      mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
-      mac_mini_ip              = var.mac_mini_ip
-      pihole_endpoint          = var.pihole_endpoint
-      pihole_api_token         = var.pihole_api_token
-      external_hostname        = var.external_hostname
-      blackbox_http_targets    = var.blackbox_http_targets
-      blackbox_icmp_targets    = var.blackbox_icmp_targets
-    })
+    # yamlencode generates guaranteed-valid YAML, avoiding the whitespace-stripping
+    # issues that Terraform templatefile %{~ for ~} loops cause in YAML list contexts.
+    "prometheus-additional.yaml" = yamlencode(local._all_scrape_jobs)
   }
 
   type = "Opaque"
