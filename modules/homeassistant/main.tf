@@ -105,39 +105,51 @@ resource "docker_container" "homeassistant" {
 }
 
 # Inject HTTP proxy config so HA accepts requests forwarded by Cloudflare Tunnel.
-# Uses grep/printf to append an `http:` block only when a top-level `http:` key
-# is not already present; this does not perform YAML-aware merging.
+# Appends an `http:` block only when a top-level `http:` key is not already
+# present; this does not perform YAML-aware merging.
 # HA is restarted only when the config was actually written.
+#
+# Design notes:
+#  - container_id in triggers provides both correct ordering (container must
+#    exist before this runs) and intentional re-run when the container is
+#    replaced (e.g. after a label change). The provisioner is idempotent —
+#    it exits early if the http: block is already present in the config volume.
+#  - Base64 encoding avoids all SSH/shell quoting issues when transferring
+#    the YAML block through ssh → docker exec layers.
+#  - depends_on is intentionally omitted; triggers already enforce ordering.
 resource "null_resource" "ha_proxy_config" {
   count = length(var.trusted_proxies) > 0 ? 1 : 0
 
   triggers = {
     trusted_proxies = join(",", var.trusted_proxies)
+    # Re-run when the container is replaced so the new container always has
+    # the proxy config. Since the config volume persists, the grep check will
+    # find the existing block and exit early without restarting HA.
+    container_id = docker_container.homeassistant.id
   }
 
   # Use local-exec + native ssh so ~/.ssh/config (IdentityFile, IdentitiesOnly)
   # is respected — Terraform's built-in SSH client ignores ssh_config and
   # exhausts MaxAuthTries when multiple keys are in the agent.
   provisioner "local-exec" {
-    # Runs inside the HA container (has write access to /config) via docker exec.
-    # Fails fast on any SSH or docker error; restarts HA only when config changed.
     command = <<-BASH
       set -e
-      result=$(ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
-        docker exec homeassistant bash -c \
-        'if grep -q "^http:" /config/configuration.yaml; then
-           echo "present"
-         else
-           printf "\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n${join("", formatlist("    - %s\n", var.trusted_proxies))}" >> /config/configuration.yaml
-           echo "written"
-         fi')
-      if [ "$result" = "written" ]; then
-        ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+      # Exit early if the http: block is already present (config volume persists
+      # across container recreation, so this is the common path after a redeploy).
+      if ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+          docker exec homeassistant grep -q ^http: /config/configuration.yaml 2>/dev/null; then
+        echo "HA trusted proxy config already present, skipping"
+        exit 0
       fi
+      # Base64-encode the YAML block locally and decode+append inside the
+      # container — avoids all SSH/docker-exec quoting complexity.
+      BLOCK=$(printf '\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n${join("", formatlist("    - %s\\n", var.trusted_proxies))}' | base64 | tr -d '\n')
+      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        "echo '$${BLOCK}' | base64 -d | docker exec --interactive homeassistant sh -c 'cat >> /config/configuration.yaml'"
+      ssh -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+      echo "HA trusted proxy config written, HA restarted"
     BASH
   }
-
-  depends_on = [docker_container.homeassistant]
 }
 
 # HACS (Home Assistant Community Store) installation
