@@ -43,7 +43,10 @@ resource "docker_container" "backup" {
     "AWS_S3_BUCKET_NAME=${var.minio_bucket}",
     "AWS_ACCESS_KEY_ID=${var.minio_access_key}",
     "AWS_SECRET_ACCESS_KEY=${var.minio_secret_key}",
+    # offen/docker-volume-backup expects just host:port — no scheme prefix
     "AWS_ENDPOINT=${var.minio_endpoint}",
+    # Explicit protocol (default is https; MinIO is plain http on LAN)
+    "AWS_ENDPOINT_PROTO=${var.minio_endpoint_proto}",
     # Required for MinIO: use /<bucket>/<key> path format instead of virtual-hosted-style
     "AWS_S3_FORCE_PATH_STYLE=true",
     # Prefix all archives with "pi5/" so the bucket can also hold backups from

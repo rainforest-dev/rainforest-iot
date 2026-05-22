@@ -5,9 +5,15 @@ variable "image_version" {
 }
 
 variable "minio_endpoint" {
-  description = "Mac Mini MinIO S3 endpoint. Must be the LAN IP — Tailscale is not available inside the Pi5 Docker network."
+  description = "Mac Mini MinIO S3 endpoint as host:port (no scheme). Must be the LAN IP — Tailscale is not available inside the Pi5 Docker network."
   type        = string
-  default     = "http://192.168.0.126:9000"
+  default     = "192.168.0.126:9000"
+}
+
+variable "minio_endpoint_proto" {
+  description = "Protocol for MinIO endpoint: http or https."
+  type        = string
+  default     = "http"
 }
 
 variable "minio_bucket" {
