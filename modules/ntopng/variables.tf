@@ -4,9 +4,9 @@ variable "project_name" {
 }
 
 variable "image_version" {
-  description = "Ntopng Docker image version tag (ntop uses :stable as their versioned release)"
+  description = "Ntopng Docker image version tag"
   type        = string
-  default     = "stable"
+  default     = "latest"
 }
 
 variable "timezone" {

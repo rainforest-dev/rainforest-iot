@@ -141,25 +141,14 @@ resource "null_resource" "hacs_installation" {
     hacs_enabled = var.enable_hacs
   }
 
-  # Wait for HomeAssistant to be ready
+  # Install HACS via native ssh (avoids Terraform SSH client exhausting MaxAuthTries
+  # when many keys are loaded in the agent — uses IdentitiesOnly with explicit key)
   provisioner "local-exec" {
-    command = "sleep 60"
-  }
-
-  # Install HACS
-  provisioner "local-exec" {
-    command = <<-EOT
-      docker exec homeassistant bash -c '
-        if [ ! -d "/config/custom_components/hacs" ]; then
-          echo "Installing HACS..."
-          cd /config
-          wget -O - https://get.hacs.xyz | bash -
-          echo "HACS installation completed. Restart HomeAssistant to activate."
-        else
-          echo "HACS already installed"
-        fi
-      '
-    EOT
+    command = <<-BASH
+      ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        "docker exec homeassistant bash -c 'if [ ! -d /config/custom_components/hacs ]; then echo Installing HACS...; cd /config && wget -O - https://get.hacs.xyz | bash -; else echo HACS already installed; fi'"
+    BASH
   }
 
   depends_on = [docker_container.homeassistant]

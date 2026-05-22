@@ -4,6 +4,7 @@ resource "docker_image" "crowdsec" {
 }
 
 resource "docker_image" "bouncer" {
+  count        = var.enable_bouncer ? 1 : 0
   name         = "crowdsecurity/firewall-bouncer-iptables:${var.bouncer_version}"
   keep_locally = true
 }
@@ -76,8 +77,9 @@ resource "docker_container" "crowdsec" {
 }
 
 resource "docker_container" "crowdsec_bouncer" {
+  count = var.enable_bouncer ? 1 : 0
   name  = "${var.project_name}-crowdsec-bouncer"
-  image = docker_image.bouncer.image_id
+  image = docker_image.bouncer[0].image_id
 
   restart = "unless-stopped"
 

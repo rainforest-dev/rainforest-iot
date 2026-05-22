@@ -75,7 +75,10 @@ resource "kubernetes_storage_class" "monitoring_storage" {
   }
 }
 
-# Create resource quota for monitoring namespace
+# Create resource quota for monitoring namespace.
+# NOTE: Only track *requests* aggregate here — limits.cpu/limits.memory in a ResourceQuota
+# would block every pod that doesn't set explicit limits (including kube-prometheus-stack sidecars).
+# A LimitRange below provides sensible defaults for containers that omit limits.
 resource "kubernetes_resource_quota" "monitoring_quota" {
   count = var.enable_monitoring && var.enable_resource_quotas ? 1 : 0
 
@@ -89,9 +92,34 @@ resource "kubernetes_resource_quota" "monitoring_quota" {
       "requests.cpu"           = var.monitoring_cpu_limit
       "requests.memory"        = var.monitoring_memory_limit
       "requests.storage"       = var.monitoring_storage_limit
-      "limits.cpu"             = var.monitoring_cpu_limit
-      "limits.memory"          = var.monitoring_memory_limit
       "persistentvolumeclaims" = "10"
+    }
+  }
+}
+
+# Provide default resource limits for containers in the monitoring namespace.
+# kube-prometheus-stack injects sidecar containers (config-reloader, grafana-sc-dashboard,
+# kube-state-metrics, node-exporter) that don't specify limits — without defaults they would
+# be blocked by a ResourceQuota that enforces limits.
+resource "kubernetes_limit_range" "monitoring_defaults" {
+  count = var.enable_monitoring && var.enable_resource_quotas ? 1 : 0
+
+  metadata {
+    name      = "monitoring-defaults"
+    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+  }
+
+  spec {
+    limit {
+      type = "Container"
+      default = {
+        cpu    = "200m"
+        memory = "256Mi"
+      }
+      default_request = {
+        cpu    = "50m"
+        memory = "64Mi"
+      }
     }
   }
 }

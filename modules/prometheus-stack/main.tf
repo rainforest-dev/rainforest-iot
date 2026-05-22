@@ -115,6 +115,7 @@ resource "helm_release" "prometheus_stack" {
   chart      = "kube-prometheus-stack"
   version    = var.chart_version
   namespace  = var.namespace
+  timeout    = 600 # 10 min — Pi 5 needs extra time to pull/roll pods
 
   # Pi 5 optimized values
   values = [
@@ -239,8 +240,9 @@ resource "helm_release" "prometheus_stack" {
             enabled = false
           }
           security = {
-            admin_user     = "admin"
-            admin_password = var.grafana_admin_password
+            admin_user = "admin"
+            # admin_password is set via the top-level adminPassword value (K8s secret)
+            # Setting it here too triggers kube-prometheus-stack's assertNoLeakedSecrets check
           }
         }
 
@@ -422,6 +424,17 @@ resource "helm_release" "prometheus_stack" {
           limits = {
             cpu    = "100m"
             memory = "128Mi"
+          }
+        }
+        # config-reloader sidecar limits — required when ResourceQuota mandates limits on all containers
+        configReloaderResources = {
+          requests = {
+            cpu    = "10m"
+            memory = "32Mi"
+          }
+          limits = {
+            cpu    = "50m"
+            memory = "64Mi"
           }
         }
       }

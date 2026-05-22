@@ -108,19 +108,20 @@ resource "null_resource" "pihole_blocklists" {
     container_id    = docker_container.pihole.id
   }
 
-  connection {
-    type  = "ssh"
-    host  = var.hostname
-    user  = var.ssh_user
-    port  = var.ssh_port
-    agent = true
-  }
-
-  provisioner "remote-exec" {
-    inline = concat(
-      [for url in var.blocklists : "docker exec pihole sqlite3 /etc/pihole/gravity.db \"INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('${url}', 1, 'Terraform managed');\""],
-      ["docker exec pihole pihole updateGravity || docker exec pihole pihole -g || true"]
-    )
+  # Uses native ssh with IdentitiesOnly to avoid MaxAuthTries exhaustion.
+  # Writes a temp script locally and pipes it to ssh stdin in one connection.
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      TMPSCRIPT=$(mktemp /tmp/pihole-blocklist-XXXXXX.sh)
+      cat > "$TMPSCRIPT" << 'SCRIPT_EOF'
+${join("\n", [for url in var.blocklists : "docker exec pihole sqlite3 /etc/pihole/gravity.db \"INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('${url}', 1, 'Terraform managed');\""])}
+docker exec pihole pihole updateGravity || docker exec pihole pihole -g || true
+SCRIPT_EOF
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} bash < "$TMPSCRIPT"
+      rm -f "$TMPSCRIPT"
+    BASH
   }
 
   depends_on = [docker_container.pihole]
@@ -151,12 +152,11 @@ resource "docker_container" "pihole_exporter" {
 
   log_opts = var.log_opts
 
+  # pihole-exporter is a scratch-based Go binary — no shell/wget/curl available.
+  # Explicitly disable healthcheck with ["NONE"] so Docker doesn't inherit a
+  # stale wget probe. Health is verified by Prometheus scraping port 9617.
   healthcheck {
-    test         = ["CMD", "wget", "-qO-", "http://localhost:9617/metrics"]
-    interval     = "30s"
-    timeout      = "10s"
-    retries      = 3
-    start_period = "10s"
+    test = ["NONE"]
   }
 
   depends_on = [docker_container.pihole]

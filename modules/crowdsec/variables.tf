@@ -22,6 +22,12 @@ variable "bouncer_api_key" {
   default     = ""
 }
 
+variable "enable_bouncer" {
+  description = "Enable firewall bouncer container (requires Docker Hub auth for CrowdSec bouncer images)"
+  type        = bool
+  default     = false
+}
+
 variable "timezone" {
   type    = string
   default = "Asia/Taipei"

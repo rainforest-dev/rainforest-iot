@@ -37,9 +37,9 @@ resource "docker_container" "music_assistant" {
     ]
   }
 
-  # Health check
+  # Health check — image has no curl, use wget via CMD-SHELL
   healthcheck {
-    test         = ["CMD", "curl", "-f", "http://localhost:8095/"]
+    test         = ["CMD-SHELL", "wget -qO- http://localhost:8095/ > /dev/null"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3

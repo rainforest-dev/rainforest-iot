@@ -20,6 +20,7 @@ resource "helm_release" "loki_stack" {
   chart      = "loki-stack"
   version    = var.chart_version
   namespace  = var.namespace
+  timeout    = 600 # 10 min — Pi 5 needs extra time
 
   # Pi 5 optimized values
   values = [

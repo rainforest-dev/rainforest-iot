@@ -487,15 +487,21 @@ variable "crowdsec_bouncer_api_key" {
 }
 
 variable "ntopng_image_version" {
-  description = "Ntopng Docker image version (ntop uses :stable as their versioned release)"
+  description = "Ntopng Docker image version"
   type        = string
-  default     = "stable"
+  default     = "latest"
 }
 
 variable "ntopng_web_port" {
   description = "Ntopng web UI port"
   type        = number
   default     = 3001
+}
+
+variable "enable_ntopng" {
+  description = "Deploy ntopng traffic analysis container (amd64 only — disable on ARM/RPi)"
+  type        = bool
+  default     = false
 }
 
 variable "blackbox_http_targets" {

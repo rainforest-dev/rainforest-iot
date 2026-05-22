@@ -2,8 +2,15 @@ provider "docker" {
   alias = "raspberry-pi"
   host  = local.raspberry_pi_host
 
-  # SSH connection configuration for reliability
-  ssh_opts = ["-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=6"]
+  # Use IdentitiesOnly to avoid "Too many authentication failures" when SSH agent
+  # has many keys loaded. The Docker SSH client tries all agent keys by default,
+  # which exceeds the server's MaxAuthTries limit.
+  ssh_opts = [
+    "-i", "~/.ssh/id_ed25519.rpi5",
+    "-o", "IdentitiesOnly=yes",
+    "-o", "ServerAliveInterval=30",
+    "-o", "ServerAliveCountMax=6",
+  ]
 }
 
 # Kubernetes provider for K3s cluster
@@ -357,6 +364,7 @@ module "crowdsec" {
 }
 
 module "ntopng" {
+  count  = var.enable_ntopng ? 1 : 0
   source = "./modules/ntopng"
 
   providers = {
