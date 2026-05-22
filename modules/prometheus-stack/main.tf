@@ -97,20 +97,13 @@ locals {
     { target_label = "__address__", replacement = "prometheus-prometheus-blackbox-exporter:9115" },
   ]
 
+  # Note: mac-mini-docker (port 2375 dockerproxy) was removed — docker-socket-proxy
+  # has no /metrics endpoint (403 on all non-Docker-API paths). Mac Mini telemetry
+  # is handled by Grafana Alloy push → Pi Prometheus remote_write instead.
+  # mac-mini-minio was removed — MinIO is ClusterIP-only on Mac Mini, unreachable
+  # from Pi scraper. Alloy collects container/cluster metrics and pushes them.
+
   _base_scrape_jobs = [
-    {
-      job_name        = "mac-mini-docker"
-      static_configs  = [{ targets = ["${var.mac_mini_ip}:2375"] }]
-      metrics_path    = "/metrics"
-      scrape_interval = "30s"
-    },
-    {
-      job_name        = "mac-mini-minio"
-      static_configs  = [{ targets = ["${var.mac_mini_ip}:30900"] }]
-      metrics_path    = "/minio/v2/metrics/cluster"
-      scrape_interval = "30s"
-      scheme          = "http"
-    },
     # Pi-hole Prometheus exporter sidecar (port 9617).
     # Replaces the old /admin/api.php job which returned JSON, not Prometheus text-format.
     {
