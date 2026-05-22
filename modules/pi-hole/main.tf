@@ -161,3 +161,40 @@ resource "docker_container" "pihole_exporter" {
 
   depends_on = [docker_container.pihole]
 }
+
+# Open firewall ports for Prometheus scraping from K3s pods.
+# pihole-exporter and node-exporter use network_mode=host / hostNetwork=true,
+# so Docker's iptables bypass does NOT apply — UFW must explicitly allow the
+# K3s pod CIDR (10.42.0.0/24) to reach these ports.
+# This null_resource is idempotent: ufw add rules are silently no-ops when
+# the rule already exists; deletes gracefully handle missing rules.
+resource "null_resource" "monitoring_firewall_rules" {
+  triggers = {
+    container_id = docker_container.pihole_exporter.id
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        "sudo ufw allow from 10.42.0.0/24 to any port 9617 proto tcp comment 'pihole-exporter - K3s Prometheus scraping' && \
+         sudo ufw allow from 10.42.0.0/24 to any port 9100 proto tcp comment 'node-exporter - K3s Prometheus scraping' && \
+         sudo ufw reload"
+    BASH
+  }
+
+  provisioner "local-exec" {
+    when        = destroy
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p 22 rainforest@raspberrypi-5.local \
+        "sudo ufw delete allow from 10.42.0.0/24 to any port 9617 proto tcp || true && \
+         sudo ufw delete allow from 10.42.0.0/24 to any port 9100 proto tcp || true && \
+         sudo ufw reload"
+    BASH
+  }
+
+  depends_on = [docker_container.pihole_exporter]
+}
