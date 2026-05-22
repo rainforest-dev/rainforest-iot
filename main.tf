@@ -390,6 +390,19 @@ module "homepage_ingress" {
   raspberry_pi_ip       = "192.168.0.134" # Pi's actual IP address
 }
 
+module "docker_volume_backup" {
+  source = "./modules/docker-volume-backup"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  # MinIO credentials already used by Velero — reuse same values
+  minio_access_key = var.minio_access_key
+  minio_secret_key = var.minio_secret_key
+  log_opts         = local.common_log_opts
+}
+
 module "velero" {
   count      = var.enable_k8s_cluster ? 1 : 0
   source     = "./modules/velero"

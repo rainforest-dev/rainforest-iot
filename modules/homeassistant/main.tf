@@ -94,6 +94,14 @@ resource "docker_container" "homeassistant" {
 
   # Logging configuration
   log_opts = var.log_opts
+
+  # Stop this container before docker-volume-backup archives /config.
+  # Home Assistant uses a SQLite recorder database (home-assistant_v2.db) that
+  # must be quiesced before copying to avoid a corrupt backup.
+  labels {
+    label = "docker-volume-backup.stop-during-backup"
+    value = "true"
+  }
 }
 
 # Inject HTTP proxy config so HA accepts requests forwarded by Cloudflare Tunnel.
