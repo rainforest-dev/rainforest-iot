@@ -589,3 +589,137 @@ resource "kubernetes_config_map" "alerting_rules" {
     })
   }
 }
+
+# ---------------------------------------------------------------------------
+# Standalone blackbox exporter
+#
+# The kube-prometheus-stack Helm subchart (prometheus-blackbox-exporter) was
+# added to the Helm values AFTER the chart was first deployed (277 days ago),
+# so it was never rolled out via Helm.  These three resources mirror what was
+# deployed imperatively via `kubectl apply` so that Terraform owns the
+# lifecycle going forward.  Import them with:
+#   terraform import 'module.prometheus_stack[0].kubernetes_config_map.blackbox_exporter_config' 'monitoring/blackbox-exporter-config'
+#   terraform import 'module.prometheus_stack[0].kubernetes_deployment.blackbox_exporter'        'monitoring/prometheus-prometheus-blackbox-exporter'
+#   terraform import 'module.prometheus_stack[0].kubernetes_service.blackbox_exporter'           'monitoring/prometheus-prometheus-blackbox-exporter'
+# ---------------------------------------------------------------------------
+
+resource "kubernetes_config_map" "blackbox_exporter_config" {
+  metadata {
+    name      = "blackbox-exporter-config"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  data = {
+    # icmp probe uses preferred_ip_protocol: ip4 to avoid IPv6 issues on Pi.
+    # valid_status_codes: [] means Prometheus uses its default (2xx).
+    "config.yml" = <<-YAML
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 10s
+          http:
+            preferred_ip_protocol: ip4
+            valid_status_codes: []
+        icmp:
+          prober: icmp
+          timeout: 10s
+          icmp:
+            preferred_ip_protocol: ip4
+    YAML
+  }
+}
+
+resource "kubernetes_deployment" "blackbox_exporter" {
+  metadata {
+    name      = "prometheus-prometheus-blackbox-exporter"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "blackbox-exporter"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "blackbox-exporter"
+        }
+      }
+
+      spec {
+        container {
+          name  = "blackbox-exporter"
+          image = "prom/blackbox-exporter:v0.25.0"
+          args  = ["--config.file=/etc/blackbox_exporter/config.yml"]
+
+          port {
+            name           = "http"
+            container_port = 9115
+          }
+
+          resources {
+            requests = {
+              cpu    = "20m"
+              memory = "32Mi"
+            }
+            limits = {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/blackbox_exporter"
+          }
+        }
+
+        volume {
+          name = "config"
+          config_map {
+            name = kubernetes_config_map.blackbox_exporter_config.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_config_map.blackbox_exporter_config]
+}
+
+resource "kubernetes_service" "blackbox_exporter" {
+  metadata {
+    # Name must match the address used in scrape relabeling:
+    #   replacement = "prometheus-prometheus-blackbox-exporter:9115"
+    name      = "prometheus-prometheus-blackbox-exporter"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  spec {
+    selector = {
+      app = "blackbox-exporter"
+    }
+
+    port {
+      name        = "http"
+      port        = 9115
+      target_port = 9115
+    }
+
+    type = "ClusterIP"
+  }
+}
