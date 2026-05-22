@@ -47,7 +47,8 @@ module "homeassistant" {
   log_opts           = local.common_log_opts
 
   # Trust the Mac Mini as a reverse proxy (Cloudflare Tunnel routes through it)
-  trusted_proxies = ["192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
+  # Scoped to the local /24 subnet rather than broad RFC1918 ranges
+  trusted_proxies = ["192.168.0.0/24"]
   ssh_user        = var.raspberry_pi_user
   ssh_port        = var.raspberry_pi_port
 }

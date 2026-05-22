@@ -40,7 +40,7 @@
 - Passwordless sudo access limited to shutdown commands
 
 ### Breaking Changes
-- Homebridge container image changed from `latest` to `beta-2025-08-30`
+- Homebridge container image changed from `latest` to `2026-05-13`
 - Previous manual SSH setups may need to be redone with Ansible playbooks
 
 ### Migration Notes
