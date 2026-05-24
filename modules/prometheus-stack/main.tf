@@ -42,6 +42,113 @@ resource "kubernetes_config_map" "grafana_dashboard_kubernetes_cluster" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_pihole" {
+  metadata {
+    name      = "grafana-pihole-stats"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "pihole-stats.json" = file("${path.module}/dashboards/pihole-stats.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_crowdsec" {
+  metadata {
+    name      = "grafana-crowdsec-events"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "crowdsec-events.json" = file("${path.module}/dashboards/crowdsec-events.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_blackbox" {
+  metadata {
+    name      = "grafana-blackbox-uptime"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "blackbox-uptime.json" = file("${path.module}/dashboards/blackbox-uptime.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
+  metadata {
+    name      = "grafana-resource-comparison"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "resource-comparison.json" = file("${path.module}/dashboards/resource-comparison.json")
+  }
+}
+
+# Build the list of additional scrape job configs.
+# All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
+locals {
+  _resolved_ip = var.external_ip != "" ? var.external_ip : var.external_hostname
+
+  _relabel_blackbox = [
+    { source_labels = ["__address__"], target_label = "__param_target" },
+    { source_labels = ["__param_target"], target_label = "instance" },
+    { target_label = "__address__", replacement = "prometheus-prometheus-blackbox-exporter:9115" },
+  ]
+
+  # Note: mac-mini-docker (port 2375 dockerproxy) was removed — docker-socket-proxy
+  # has no /metrics endpoint (403 on all non-Docker-API paths). Mac Mini telemetry
+  # is handled by Grafana Alloy push → Pi Prometheus remote_write instead.
+  # mac-mini-minio was removed — MinIO is ClusterIP-only on Mac Mini, unreachable
+  # from Pi scraper. Alloy collects container/cluster metrics and pushes them.
+
+  _base_scrape_jobs = [
+    # Pi-hole Prometheus exporter sidecar (port 9617).
+    # Replaces the old /admin/api.php job which returned JSON, not Prometheus text-format.
+    {
+      job_name       = "pihole-exporter"
+      static_configs = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30s"
+    },
+    # CrowdSec IDS metrics (community bans + local decisions)
+    {
+      job_name       = "crowdsec"
+      static_configs = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30s"
+    },
+    # Blackbox Exporter — HTTP synthetic monitoring
+    {
+      job_name        = "blackbox-http"
+      metrics_path    = "/probe"
+      params          = { module = ["http_2xx"] }
+      static_configs  = [{ targets = var.blackbox_http_targets }]
+      relabel_configs = local._relabel_blackbox
+    },
+    # Blackbox Exporter — ICMP ping probes
+    {
+      job_name        = "blackbox-icmp"
+      metrics_path    = "/probe"
+      params          = { module = ["icmp"] }
+      static_configs  = [{ targets = var.blackbox_icmp_targets }]
+      relabel_configs = local._relabel_blackbox
+    },
+  ]
+
+  # Home Assistant job is optional — requires a long-lived token + HA Prometheus integration enabled.
+  _ha_scrape_job = var.homeassistant_token != "" ? [{
+    job_name       = "homeassistant"
+    static_configs = [{ targets = ["${local._resolved_ip}:8123"] }]
+    metrics_path    = "/api/prometheus"
+    authorization  = { credentials = var.homeassistant_token }
+    scrape_interval = "60s"
+  }] : []
+
+  _all_scrape_jobs = concat(local._base_scrape_jobs, local._ha_scrape_job)
+}
+
 # Create Secret for additional scrape configs (Prometheus operator expects Secret, not ConfigMap)
 resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   metadata {
@@ -50,13 +157,9 @@ resource "kubernetes_secret" "prometheus_additional_scrape_configs" {
   }
 
   data = {
-    "prometheus-additional.yaml" = templatefile("${path.module}/templates/additional-scrape-configs.yaml.tpl", {
-      mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
-      mac_mini_ip              = var.mac_mini_ip
-      pihole_endpoint          = var.pihole_endpoint
-      pihole_api_token         = var.pihole_api_token
-      external_hostname        = var.external_hostname
-    })
+    # yamlencode generates guaranteed-valid YAML, avoiding the whitespace-stripping
+    # issues that Terraform templatefile %{~ for ~} loops cause in YAML list contexts.
+    "prometheus-additional.yaml" = yamlencode(local._all_scrape_jobs)
   }
 
   type = "Opaque"
@@ -69,6 +172,7 @@ resource "helm_release" "prometheus_stack" {
   chart      = "kube-prometheus-stack"
   version    = var.chart_version
   namespace  = var.namespace
+  timeout    = 600 # 10 min — Pi 5 needs extra time to pull/roll pods
 
   # Pi 5 optimized values
   values = [
@@ -82,7 +186,7 @@ resource "helm_release" "prometheus_stack" {
               app = "prometheus"
             }
           }
-          
+
           # Resource limits for Pi 5
           resources = {
             requests = {
@@ -94,7 +198,7 @@ resource "helm_release" "prometheus_stack" {
               memory = var.prometheus_memory_limit
             }
           }
-          
+
           # Storage configuration
           retention = var.prometheus_retention
           storageSpec = {
@@ -110,38 +214,38 @@ resource "helm_release" "prometheus_stack" {
               }
             }
           }
-          
+
           # Additional scrape configs for comprehensive monitoring
           additionalScrapeConfigsSecret = {
             enabled = true
-            name = kubernetes_secret.prometheus_additional_scrape_configs.metadata[0].name
-            key  = "prometheus-additional.yaml"
+            name    = kubernetes_secret.prometheus_additional_scrape_configs.metadata[0].name
+            key     = "prometheus-additional.yaml"
           }
-          
+
           # External access
           serviceMonitorSelectorNilUsesHelmValues = false
           podMonitorSelectorNilUsesHelmValues     = false
           ruleSelectorNilUsesHelmValues           = false
-          
+
           # Enable external URL access
           externalUrl = "http://${var.external_hostname}:${var.prometheus_port}"
         }
-        
+
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.prometheus_port
         }
       }
-      
+
       # Grafana configuration
       grafana = {
         enabled = var.grafana_enabled
-        
+
         # Add pod labels for Homepage integration
         podLabels = {
           app = "grafana"
         }
-        
+
         # Resource limits
         resources = {
           requests = {
@@ -153,26 +257,26 @@ resource "helm_release" "prometheus_stack" {
             memory = var.grafana_memory_limit
           }
         }
-        
+
         # Admin credentials
         adminPassword = var.grafana_admin_password
-        
+
         # Persistence
         persistence = {
-          enabled = true
+          enabled          = true
           storageClassName = var.storage_class
-          size = var.grafana_storage_size
+          size             = var.grafana_storage_size
         }
-        
+
         # Service configuration
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.grafana_port
         }
-        
+
         # Default dashboards
         defaultDashboardsEnabled = true
-        
+
         # Additional data sources
         additionalDataSources = concat(var.grafana_additional_datasources, [
           {
@@ -183,7 +287,7 @@ resource "helm_release" "prometheus_stack" {
             isDefault = false
           }
         ])
-        
+
         # Grafana configuration
         "grafana.ini" = {
           server = {
@@ -193,11 +297,12 @@ resource "helm_release" "prometheus_stack" {
             enabled = false
           }
           security = {
-            admin_user     = "admin"
-            admin_password = var.grafana_admin_password
+            admin_user = "admin"
+            # admin_password is set via the top-level adminPassword value (K8s secret)
+            # Setting it here too triggers kube-prometheus-stack's assertNoLeakedSecrets check
           }
         }
-        
+
         # Sidecar resource limits
         sidecar = {
           dashboards = {
@@ -227,7 +332,7 @@ resource "helm_release" "prometheus_stack" {
             }
           }
         }
-        
+
         # Init container resource limits
         initChownData = {
           resources = {
@@ -242,11 +347,11 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
       # AlertManager configuration
       alertmanager = {
         enabled = var.alertmanager_enabled
-        
+
         alertmanagerSpec = {
           # Add pod labels for Homepage integration
           podMetadata = {
@@ -254,7 +359,7 @@ resource "helm_release" "prometheus_stack" {
               app = "alertmanager"
             }
           }
-          
+
           resources = {
             requests = {
               cpu    = var.alertmanager_cpu_request
@@ -265,7 +370,7 @@ resource "helm_release" "prometheus_stack" {
               memory = var.alertmanager_memory_limit
             }
           }
-          
+
           storage = {
             volumeClaimTemplate = {
               spec = {
@@ -279,20 +384,20 @@ resource "helm_release" "prometheus_stack" {
               }
             }
           }
-          
+
           externalUrl = "http://${var.external_hostname}:${var.alertmanager_port}"
         }
-        
+
         service = {
-          type = "NodePort"
+          type     = "NodePort"
           nodePort = var.alertmanager_port
         }
       }
-      
+
       # Node Exporter configuration
       nodeExporter = {
         enabled = var.node_exporter_enabled
-        
+
         resources = {
           requests = {
             cpu    = "50m"
@@ -304,11 +409,11 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
       # Kube State Metrics configuration
       kubeStateMetrics = {
         enabled = var.kube_state_metrics_enabled
-        
+
         resources = {
           requests = {
             cpu    = "50m"
@@ -320,7 +425,38 @@ resource "helm_release" "prometheus_stack" {
           }
         }
       }
-      
+
+      # Blackbox Exporter for HTTP health checks
+      "prometheus-blackbox-exporter" = {
+        enabled = true
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "32Mi"
+          }
+          limits = {
+            cpu    = "100m"
+            memory = "64Mi"
+          }
+        }
+
+        config = {
+          modules = {
+            http_2xx = {
+              prober  = "http"
+              timeout = "5s"
+              http = {
+                valid_status_codes    = []
+                valid_http_versions   = ["HTTP/1.1", "HTTP/2.0"]
+                follow_redirects      = true
+                preferred_ip_protocol = "ip4"
+              }
+            }
+          }
+        }
+      }
+
       # Admission webhook configuration with resource limits
       prometheusOperator = {
         admissionWebhooks = {
@@ -347,8 +483,19 @@ resource "helm_release" "prometheus_stack" {
             memory = "128Mi"
           }
         }
+        # config-reloader sidecar limits — required when ResourceQuota mandates limits on all containers
+        configReloaderResources = {
+          requests = {
+            cpu    = "10m"
+            memory = "32Mi"
+          }
+          limits = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+        }
       }
-      
+
       # Disable components that are too heavy for Pi
       kubeEtcd = {
         enabled = false
@@ -371,14 +518,14 @@ resource "helm_release" "prometheus_stack" {
 # Create custom alerting rules for homelab
 resource "kubernetes_config_map" "alerting_rules" {
   count = var.enable_custom_alerts ? 1 : 0
-  
+
   metadata {
     name      = "homelab-alerting-rules"
     namespace = var.namespace
     labels = {
       "app.kubernetes.io/name" = "prometheus"
-      "prometheus" = "kube-prometheus-prometheus"
-      "role" = "alert-rules"
+      "prometheus"             = "kube-prometheus-prometheus"
+      "role"                   = "alert-rules"
     }
   }
 
@@ -435,10 +582,181 @@ resource "kubernetes_config_map" "alerting_rules" {
                 summary     = "High disk usage detected"
                 description = "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}"
               }
+            },
+            # Homelab-specific alerts (consolidated from monitoring-integrations module)
+            {
+              alert = "HomelabServiceDown"
+              expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
+              for   = "2m"
+              labels = {
+                severity = "warning"
+              }
+              annotations = {
+                summary     = "Homelab service is down"
+                description = "Homelab service {{ $labels.job }} is not responding"
+              }
+            },
+            {
+              alert = "KubernetesNodeNotReady"
+              expr  = "kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 0"
+              for   = "5m"
+              labels = {
+                severity = "critical"
+              }
+              annotations = {
+                summary     = "Kubernetes node not ready"
+                description = "Kubernetes node {{ $labels.node }} is not ready"
+              }
+            },
+            {
+              alert = "KubernetesPodCrashLooping"
+              expr  = "rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 0"
+              for   = "5m"
+              labels = {
+                severity = "warning"
+              }
+              annotations = {
+                summary     = "Pod is crash looping"
+                description = "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+              }
             }
           ]
         }
       ]
     })
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Standalone blackbox exporter
+#
+# The kube-prometheus-stack Helm subchart (prometheus-blackbox-exporter) was
+# added to the Helm values AFTER the chart was first deployed (277 days ago),
+# so it was never rolled out via Helm.  These three resources mirror what was
+# deployed imperatively via `kubectl apply` so that Terraform owns the
+# lifecycle going forward.  Import them with:
+#   terraform import 'module.prometheus_stack[0].kubernetes_config_map.blackbox_exporter_config' 'monitoring/blackbox-exporter-config'
+#   terraform import 'module.prometheus_stack[0].kubernetes_deployment.blackbox_exporter'        'monitoring/prometheus-prometheus-blackbox-exporter'
+#   terraform import 'module.prometheus_stack[0].kubernetes_service.blackbox_exporter'           'monitoring/prometheus-prometheus-blackbox-exporter'
+# ---------------------------------------------------------------------------
+
+resource "kubernetes_config_map" "blackbox_exporter_config" {
+  metadata {
+    name      = "blackbox-exporter-config"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  data = {
+    # icmp probe uses preferred_ip_protocol: ip4 to avoid IPv6 issues on Pi.
+    # valid_status_codes: [] means Prometheus uses its default (2xx).
+    "config.yml" = <<-YAML
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 10s
+          http:
+            preferred_ip_protocol: ip4
+            valid_status_codes: []
+        icmp:
+          prober: icmp
+          timeout: 10s
+          icmp:
+            preferred_ip_protocol: ip4
+    YAML
+  }
+}
+
+resource "kubernetes_deployment" "blackbox_exporter" {
+  metadata {
+    name      = "prometheus-prometheus-blackbox-exporter"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "blackbox-exporter"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "blackbox-exporter"
+        }
+      }
+
+      spec {
+        container {
+          name  = "blackbox-exporter"
+          image = "prom/blackbox-exporter:v0.25.0"
+          args  = ["--config.file=/etc/blackbox_exporter/config.yml"]
+
+          port {
+            name           = "http"
+            container_port = 9115
+          }
+
+          resources {
+            requests = {
+              cpu    = "20m"
+              memory = "32Mi"
+            }
+            limits = {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/blackbox_exporter"
+          }
+        }
+
+        volume {
+          name = "config"
+          config_map {
+            name = kubernetes_config_map.blackbox_exporter_config.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_config_map.blackbox_exporter_config]
+}
+
+resource "kubernetes_service" "blackbox_exporter" {
+  metadata {
+    # Name must match the address used in scrape relabeling:
+    #   replacement = "prometheus-prometheus-blackbox-exporter:9115"
+    name      = "prometheus-prometheus-blackbox-exporter"
+    namespace = var.namespace
+    labels = {
+      app = "blackbox-exporter"
+    }
+  }
+
+  spec {
+    selector = {
+      app = "blackbox-exporter"
+    }
+
+    port {
+      name        = "http"
+      port        = 9115
+      target_port = 9115
+    }
+
+    type = "ClusterIP"
   }
 }

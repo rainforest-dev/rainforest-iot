@@ -18,11 +18,11 @@ output "alertmanager_url" {
 output "service_info" {
   description = "Prometheus stack service information"
   value = {
-    prometheus_port = var.prometheus_port
-    grafana_port = var.grafana_enabled ? var.grafana_port : null
+    prometheus_port   = var.prometheus_port
+    grafana_port      = var.grafana_enabled ? var.grafana_port : null
     alertmanager_port = var.alertmanager_enabled ? var.alertmanager_port : null
-    namespace = var.namespace
-    chart_version = var.chart_version
+    namespace         = var.namespace
+    chart_version     = var.chart_version
   }
 }
 
@@ -31,18 +31,18 @@ output "resource_config" {
   description = "Resource configuration for monitoring"
   value = {
     prometheus = {
-      cpu_limit = var.prometheus_cpu_limit
+      cpu_limit    = var.prometheus_cpu_limit
       memory_limit = var.prometheus_memory_limit
       storage_size = var.prometheus_storage_size
-      retention = var.prometheus_retention
+      retention    = var.prometheus_retention
     }
     grafana = var.grafana_enabled ? {
-      cpu_limit = var.grafana_cpu_limit
+      cpu_limit    = var.grafana_cpu_limit
       memory_limit = var.grafana_memory_limit
       storage_size = var.grafana_storage_size
     } : null
     alertmanager = var.alertmanager_enabled ? {
-      cpu_limit = var.alertmanager_cpu_limit
+      cpu_limit    = var.alertmanager_cpu_limit
       memory_limit = var.alertmanager_memory_limit
       storage_size = var.alertmanager_storage_size
     } : null
@@ -53,10 +53,10 @@ output "resource_config" {
 output "helm_release_info" {
   description = "Helm release information"
   value = {
-    name = helm_release.prometheus_stack.name
+    name      = helm_release.prometheus_stack.name
     namespace = helm_release.prometheus_stack.namespace
-    chart = helm_release.prometheus_stack.chart
-    version = helm_release.prometheus_stack.version
-    status = helm_release.prometheus_stack.status
+    chart     = helm_release.prometheus_stack.chart
+    version   = helm_release.prometheus_stack.version
+    status    = helm_release.prometheus_stack.status
   }
 }

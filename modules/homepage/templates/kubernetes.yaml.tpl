@@ -1,15 +1,8 @@
 %{ if homepage_enable_kubernetes_widgets ~}
-# Multiple Kubernetes cluster configuration
-clusters:
-  # Raspberry Pi 5 K3s cluster
-  - name: raspberrypi-5
-    mode: cluster
-    config: /tmp/kube/kubeconfig-pi5.yaml
-    # Uses mounted kubeconfig for Pi 5 K3s cluster with IP address
-  
-  # Mac Mini K8s cluster  
-  - name: mac-mini
-    mode: cluster
-    config: /tmp/kube/kubeconfig-mac.yaml
-    # Uses mounted kubeconfig for Mac Mini cluster with IP address
+# Kubernetes configuration for Raspberry Pi 5 K3s cluster
+# Uses custom kubeconfig with IP address instead of mDNS hostname
+mode: default
+
+# Homepage will use KUBECONFIG environment variable to find the config
+# The kubeconfig is mounted at /tmp/kube/kubeconfig-pi5.yaml
 %{ endif ~}

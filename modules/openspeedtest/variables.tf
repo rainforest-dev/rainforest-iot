@@ -6,7 +6,7 @@ variable "hostname" {
 
 variable "ports" {
   description = "External ports for OpenSpeedTest"
-  type        = object({
+  type = object({
     http  = number
     https = number
   })
@@ -29,4 +29,10 @@ variable "log_opts" {
     "max-size" = "50m"
     "max-file" = "3"
   }
+}
+
+variable "image_version" {
+  description = "OpenSpeedtest Docker image version"
+  type        = string
+  default     = "v2.0.6"
 }

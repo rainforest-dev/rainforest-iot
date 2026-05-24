@@ -19,7 +19,6 @@ output "container_info" {
     homepage      = module.homepage.container_status
     pihole        = module.pi-hole.container_status
     openspeedtest = module.openspeedtest.container_status
-    watchtower    = module.watchtower.container_status
   }
 }
 

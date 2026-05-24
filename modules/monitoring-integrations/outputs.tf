@@ -11,18 +11,18 @@ output "external_monitoring_enabled" {
 }
 
 output "custom_alerts_enabled" {
-  description = "Whether custom alerting rules are configured"
-  value       = var.enable_custom_alerts && length(kubernetes_config_map.homelab_alerting_rules) > 0
+  description = "Whether custom alerting rules are configured (managed by prometheus-stack module)"
+  value       = var.enable_custom_alerts
 }
 
 output "monitoring_integrations_summary" {
   description = "Summary of deployed monitoring integrations"
   value = {
-    namespace = var.namespace
-    loki_monitoring = var.enable_loki_monitoring
+    namespace           = var.namespace
+    loki_monitoring     = var.enable_loki_monitoring
     external_monitoring = var.enable_external_monitoring
-    custom_alerts = var.enable_custom_alerts
-    mac_mini_monitored = var.mac_mini_ip != ""
-    pihole_monitored = var.pihole_api_token != ""
+    custom_alerts       = var.enable_custom_alerts
+    mac_mini_monitored  = var.mac_mini_ip != ""
+    pihole_monitored    = var.pihole_api_token != ""
   }
 }

@@ -24,3 +24,44 @@ variable "log_opts" {
     "max-file" = "5"
   }
 }
+
+variable "image_version" {
+  description = "Pi-hole Docker image version"
+  type        = string
+  default     = "2026.05.0"
+}
+
+variable "ssh_user" {
+  description = "SSH user for Raspberry Pi"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "ssh_port" {
+  description = "SSH port for Raspberry Pi"
+  type        = number
+  default     = 22
+}
+
+variable "blocklists" {
+  description = "Additional threat blocklist URLs to add to Pi-hole gravity database"
+  type        = list(string)
+  default = [
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.txt",
+    "https://big.oisd.nl/",
+    "https://openphish.com/feed.txt",
+  ]
+}
+
+variable "exporter_version" {
+  description = "pihole-exporter Docker image version"
+  type        = string
+  default     = "v0.4.0"
+}
+
+variable "pihole_api_token" {
+  description = "Pi-hole API token for the exporter to authenticate"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

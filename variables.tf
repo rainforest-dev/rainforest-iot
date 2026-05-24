@@ -16,6 +16,12 @@ variable "raspberry_pi_port" {
   default     = 22
 }
 
+variable "raspberry_pi_ip" {
+  description = "IP address of the Raspberry Pi (used for container-to-host communication)"
+  type        = string
+  default     = "192.168.0.134"
+}
+
 variable "raspberry_pi_host" {
   description = "Complete SSH connection string for Raspberry Pi"
   type        = string
@@ -70,6 +76,12 @@ variable "openspeedtest_ports" {
   }
 }
 
+variable "music_assistant_memory" {
+  description = "Memory limit for Music Assistant container (MB)"
+  type        = number
+  default     = 512
+}
+
 variable "homebridge_web_port" {
   description = "External port for Homebridge web interface"
   type        = number
@@ -82,11 +94,6 @@ variable "homebridge_memory" {
   default     = 512
 }
 
-variable "watchtower_poll_interval" {
-  description = "Watchtower polling interval in seconds"
-  type        = number
-  default     = 86400 # 24 hours
-}
 
 variable "log_max_size" {
   description = "Maximum log file size"
@@ -141,9 +148,8 @@ variable "enable_mimir" {
 # This variable is redefined below with detailed component settings
 
 variable "grafana_admin_password" {
-  description = "Admin password for Grafana"
+  description = "Admin password for Grafana (set in terraform.tfvars — no default to prevent accidental use of a weak password)"
   type        = string
-  default     = "admin123"
   sensitive   = true
 }
 
@@ -220,13 +226,13 @@ variable "k8s_api_hostname" {
 variable "prometheus_chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "55.5.0"
+  default     = "77.10.0"
 }
 
 variable "loki_chart_version" {
   description = "Version of loki-stack Helm chart"
   type        = string
-  default     = "2.9.11"
+  default     = "6.40.0"
 }
 
 # Monitoring Service Ports (NodePort)
@@ -324,6 +330,51 @@ variable "pihole_api_token" {
   sensitive   = true
 }
 
+# Teleport Node Agent Configuration
+variable "enable_teleport_node" {
+  description = "Deploy a Teleport node agent on the Pi to join the Mac Mini Teleport cluster"
+  type        = bool
+  default     = false
+}
+
+variable "teleport_proxy_address" {
+  description = "Public address of the Teleport proxy hosted on Mac Mini (e.g. tp.rainforest.tools:443)"
+  type        = string
+  default     = ""
+}
+
+variable "teleport_auth_token" {
+  description = "Join token from the Teleport auth server (generate with: tctl tokens add --type=node,app)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+# Docker Image Versions
+variable "pihole_image_version" {
+  description = "Pi-hole Docker image version"
+  type        = string
+  default     = "2026.05.0"
+}
+
+variable "homebridge_image_version" {
+  description = "Homebridge Docker image version"
+  type        = string
+  default     = "2026-05-13"
+}
+
+variable "homepage_image_version" {
+  description = "Homepage Docker image version"
+  type        = string
+  default     = "v1.13.1"
+}
+
+variable "openspeedtest_image_version" {
+  description = "OpenSpeedtest Docker image version"
+  type        = string
+  default     = "v2.0.6"
+}
+
 # Detailed Resource Limits for All Components
 variable "monitoring_resource_limits" {
   description = "Detailed resource limits for all monitoring components"
@@ -401,4 +452,91 @@ variable "monitoring_resource_limits" {
     promtail_memory_request = "64Mi"
     promtail_memory_limit   = "128Mi"
   }
+}
+
+variable "pihole_exporter_version" {
+  description = "pihole-exporter Docker image version"
+  type        = string
+  default     = "v0.4.0"
+}
+
+variable "pi_ssh_private_key" {
+  description = "SSH private key content for Pi-hole gravity CronJob (store in terraform.tfvars only)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "crowdsec_version" {
+  description = "CrowdSec Agent Docker image version"
+  type        = string
+  default     = "v1.6.3"
+}
+
+variable "crowdsec_bouncer_version" {
+  description = "CrowdSec Firewall Bouncer image version"
+  type        = string
+  default     = "v0.0.29"
+}
+
+variable "crowdsec_bouncer_api_key" {
+  description = "CrowdSec LAPI key for firewall bouncer (set in terraform.tfvars after first run)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "ntopng_image_version" {
+  description = "Ntopng Docker image version"
+  type        = string
+  default     = "latest"
+}
+
+variable "ntopng_web_port" {
+  description = "Ntopng web UI port"
+  type        = number
+  default     = 3001
+}
+
+variable "enable_ntopng" {
+  description = "Deploy ntopng traffic analysis container (amd64 only — disable on ARM/RPi)"
+  type        = bool
+  default     = false
+}
+
+variable "blackbox_http_targets" {
+  description = "HTTP/HTTPS endpoints for Blackbox Exporter synthetic monitoring"
+  type        = list(string)
+  default = [
+    "https://open-webui.rainforest.tools",
+    "https://n8n.rainforest.tools",
+    "https://calibre-web.rainforest.tools",
+    "https://whisper.rainforest.tools",
+  ]
+}
+
+variable "blackbox_icmp_targets" {
+  description = "IP addresses for ICMP ping probes"
+  type        = list(string)
+  default     = ["192.168.0.1", "1.1.1.1"]
+}
+
+# Velero Backup Configuration
+variable "velero_chart_version" {
+  description = "Velero Helm chart version"
+  type        = string
+  default     = "12.0.1"
+}
+
+variable "minio_access_key" {
+  description = "MinIO root user for Velero S3 access"
+  type        = string
+  sensitive   = true
+  default     = "minioadmin"
+}
+
+variable "minio_secret_key" {
+  description = "MinIO root password for Velero S3 access"
+  type        = string
+  sensitive   = true
 }

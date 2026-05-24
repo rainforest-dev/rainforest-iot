@@ -1,0 +1,48 @@
+{
+  "id": null,
+  "uid": "resource-comparison",
+  "title": "Mac Mini vs RPi Resource Comparison",
+  "tags": ["homelab", "resources"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Usage %",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode='idle',job='mac-mini-node'}[5m])) * 100)",
+          "legendFormat": "Mac Mini"
+        },
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\"}[5m])) * 100)",
+          "legendFormat": "RPi 5"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 } },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "id": 2,
+      "title": "Memory Usage %",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job='mac-mini-node'} / node_memory_MemTotal_bytes{job='mac-mini-node'}))",
+          "legendFormat": "Mac Mini"
+        },
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}))",
+          "legendFormat": "RPi 5"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 } },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    }
+  ],
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s"
+}

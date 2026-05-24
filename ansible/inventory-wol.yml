@@ -1,0 +1,31 @@
+---
+# Ansible inventory for Wake-on-LAN setup
+# Configure both the Raspberry Pi (Homebridge) and target machines
+
+all:
+  children:
+    raspberry_pi:
+      hosts:
+        raspberrypi-5:
+          ansible_host: raspberrypi-5.local
+          ansible_user: rainforest
+          ansible_port: 22
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          
+    target_machines:
+      hosts:
+        rainforest-ubuntu:
+          ansible_host: 192.168.100.10
+          ansible_user: rainforest
+          ansible_port: 22
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          mac_address: d8:43:ae:cb:e3:75
+          wol_name: rainforest-ubuntu
+          
+        # Add additional target machines here
+        # example-pc:
+        #   ansible_host: 192.168.100.20
+        #   ansible_user: user2
+        #   ansible_port: 22
+        #   mac_address: aa:bb:cc:dd:ee:ff
+        #   wol_name: example-pc

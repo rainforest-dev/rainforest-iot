@@ -54,3 +54,9 @@ variable "pihole_api_token" {
   default     = ""
   sensitive   = true
 }
+
+variable "ntopng_port" {
+  description = "Ntopng web UI port (for health check)"
+  type        = number
+  default     = 3001
+}

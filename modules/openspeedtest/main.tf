@@ -9,7 +9,7 @@ terraform {
 }
 
 resource "docker_image" "openspeedtest" {
-  name = "openspeedtest/latest"
+  name = "openspeedtest/latest:${var.image_version}"
 }
 
 resource "docker_container" "openspeedtest" {
@@ -18,7 +18,7 @@ resource "docker_container" "openspeedtest" {
   restart = "unless-stopped"
 
   # Resource limits
-  memory = 256
+  memory      = 256
   memory_swap = 512
 
   # Lifecycle management to prevent unnecessary recreation
@@ -28,6 +28,8 @@ resource "docker_container" "openspeedtest" {
       memory,
       memory_swap,
       network_mode,
+      # Docker normalises "60s" → "1m0s"; ignore to prevent perpetual in-place diff
+      healthcheck,
     ]
     replace_triggered_by = [
       docker_image.openspeedtest.image_id,

@@ -1,0 +1,132 @@
+---
+# Simple Ansible playbook to set up Homebridge Wake-on-LAN SSH keys
+# Usage: ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge-wol.yml
+
+- name: Set up SSH keys for Homebridge WoL
+  hosts: raspberry_pi
+  become: false
+  gather_facts: false
+  vars:
+    homebridge_container: "homebridge"
+    target_hosts:
+      - { host: "192.168.100.10", user: "rainforest", name: "rainforest-ubuntu" }
+      # Add more hosts as needed:
+      # - { host: "192.168.100.20", user: "user2", name: "machine2" }
+
+  tasks:
+    - name: Check Homebridge container is running
+      command: docker ps --filter name={{ homebridge_container }} --format "table {{.Names}}\t{{.Status}}"
+      register: container_check
+      changed_when: false
+      failed_when: "'{{ homebridge_container }}' not in container_check.stdout"
+
+    - name: Check if SSH directory exists in container
+      command: docker exec {{ homebridge_container }} test -d /root/.ssh
+      register: ssh_dir_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Create SSH directory in container
+      command: docker exec {{ homebridge_container }} mkdir -p /root/.ssh
+      when: ssh_dir_exists.rc != 0
+
+    - name: Check if SSH key exists
+      command: docker exec {{ homebridge_container }} test -f /root/.ssh/id_ed25519
+      register: key_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Generate SSH key in container
+      command: docker exec {{ homebridge_container }} ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N '' -C 'homebridge@{{ inventory_hostname }}'
+      when: key_exists.rc != 0
+
+    - name: Get public key from container
+      command: docker exec {{ homebridge_container }} cat /root/.ssh/id_ed25519.pub
+      register: pubkey
+      changed_when: false
+
+    - name: Display public key
+      debug:
+        msg: "Public key to authorize: {{ pubkey.stdout }}"
+
+    - name: Authorize key on target machines
+      shell: |
+        ssh {{ item.user }}@{{ item.host }} 'sh -s' <<'REMOTE'
+        set -e
+        umask 077
+        mkdir -p "$HOME/.ssh"
+        touch "$HOME/.ssh/authorized_keys"
+        chmod 700 "$HOME/.ssh"
+        chmod 600 "$HOME/.ssh/authorized_keys"
+        key="{{ pubkey.stdout }}"
+        if grep -qxF "$key" "$HOME/.ssh/authorized_keys"; then
+          echo "present"
+        else
+          printf '%s\n' "$key" >> "$HOME/.ssh/authorized_keys"
+          echo "added"
+        fi
+        REMOTE
+      loop: "{{ target_hosts }}"
+      register: auth_results
+      changed_when: "'added' in auth_results.stdout"
+
+    - name: Test SSH connections from container
+      command: docker exec {{ homebridge_container }} ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 {{ item.user }}@{{ item.host }} 'hostname'
+      loop: "{{ target_hosts }}"
+      register: ssh_tests
+      changed_when: false
+
+    - name: Test sudo commands from container
+      command: docker exec {{ homebridge_container }} ssh -o StrictHostKeyChecking=no {{ item.user }}@{{ item.host }} 'sudo shutdown --help >/dev/null && echo "OK"'
+      loop: "{{ target_hosts }}"
+      register: sudo_tests
+      changed_when: false
+
+    - name: SSH setup results
+      debug:
+        msg: |
+          SSH Key Setup Complete!
+          
+          Target: {{ item.item.name }} ({{ item.item.host }})
+          SSH Test: {{ 'PASS' if item.rc == 0 else 'FAIL' }}
+          Hostname: {{ item.stdout if item.rc == 0 else 'N/A' }}
+      loop: "{{ ssh_tests.results }}"
+
+    - name: Sudo access results  
+      debug:
+        msg: |
+          Sudo Test Results:
+          
+          Target: {{ item.item.name }} ({{ item.item.host }})
+          Sudo Access: {{ 'PASS' if item.rc == 0 else 'FAIL' }}
+      loop: "{{ sudo_tests.results }}"
+
+- name: Display manual configuration steps
+  hosts: raspberry_pi
+  gather_facts: false
+  tasks:
+    - name: Show Homebridge configuration
+      debug:
+        msg: |
+          
+          ====== NEXT STEPS ======
+          
+          1. The SSH keys are now set up for Homebridge WoL
+          
+          2. Add WoL accessories to Homebridge config.json manually:
+          
+          {
+            "accessory": "NetworkDevice",
+            "name": "rainforest-ubuntu", 
+            "manufacturer": "homebridge-wol",
+            "model": "NetworkDevice",
+            "mac": "d8:43:ae:cb:e3:75",
+            "host": "192.168.100.10",
+            "broadcastAddress": "192.168.100.255",
+            "shutdownCommand": "ssh -o StrictHostKeyChecking=no rainforest@192.168.100.10 'sudo shutdown -h now'",
+            "logLevel": "Debug"
+          }
+          
+          3. Restart Homebridge: docker restart homebridge
+          
+          4. Test in HomeKit - ON=Wake, OFF=Shutdown

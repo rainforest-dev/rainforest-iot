@@ -12,7 +12,7 @@ A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture wi
 
 **🐳 Layer 2 (Terraform)** - Workloads
 
-- **Docker services**: HomeAssistant, Homebridge, Pi-hole, Homepage, Watchtower
+- **Docker services**: HomeAssistant, Homebridge, Pi-hole, Homepage
 - **Kubernetes monitoring**: Prometheus, Grafana, Loki with dependency management
 - **Remote Helm deployment** with automatic CRD handling
 
@@ -42,8 +42,8 @@ A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture wi
 # Configure Ansible inventory
 # Edit ansible/inventory.yml with your Pi's IP/hostname
 
-# Deploy K3s cluster and hardening
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/k3s-install.yml
+# Complete infrastructure deployment (system hardening + K3s)
+ansible-playbook -i ansible/inventory.yml ansible/site.yml
 
 # Validate infrastructure
 ansible-playbook -i ansible/inventory.yml ansible/playbooks/validate-setup.yml
@@ -65,6 +65,13 @@ terraform plan    # Safe to run repeatedly
 terraform apply   # Deploy with automatic sequencing
 ```
 
+3. **Configure Services (Optional)**
+
+```bash
+# Set up Wake-on-LAN for Homebridge (automated)
+ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge-wol.yml
+```
+
 ## Services
 
 | Service           | Description                            | Port      | Status    |
@@ -73,7 +80,6 @@ terraform apply   # Deploy with automatic sequencing
 | **Homebridge**    | HomeKit bridge for non-HomeKit devices | 8581      | ✅ Active |
 | **Homepage**      | Dashboard and service portal           | 80        | ✅ Active |
 | **Pi-hole**       | DNS-based ad blocker                   | 8080      | ✅ Active |
-| **Watchtower**    | Automatic container updates            | -         | ✅ Active |
 | **OpenSpeedTest** | Network speed testing                  | 3000/3001 | ✅ Active |
 
 ## Security Features
@@ -100,13 +106,18 @@ terraform apply   # Deploy with automatic sequencing
 
 1. Access Homebridge at `http://your-pi-hostname:8581`
 2. Complete the setup wizard (auto-generates PIN and QR codes)
-3. Install Wake-on-LAN plugin:
-   - Go to Plugins tab
-   - Search for "homebridge-wol"
-   - Configure with your PC's MAC address
-4. Add to iOS Home app using the QR code or PIN
+3. **Wake-on-LAN Setup**: Use automated Ansible playbook (recommended)
+   ```bash
+   # Automated SSH key setup for WoL functionality
+   ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge-wol.yml
+   ```
+4. Install Wake-on-LAN plugin via web UI:
+   - Go to Plugins tab → Search "homebridge-wol" → Install
+5. Add to iOS Home app using the QR code or PIN
 
-See detailed setup guide: [docs/homebridge-setup.md](docs/homebridge-setup.md)
+**Detailed Setup Guides:**
+- [Homebridge Infrastructure & Configuration](docs/homebridge-setup.md)
+- [Wake-on-LAN Setup Guide](docs/homebridge-wol-manual-setup.md) - **Automated + Manual methods**
 
 ### USB Device Support
 
@@ -128,7 +139,7 @@ docker logs pihole
 
 ### Update Containers
 
-Watchtower automatically updates containers daily. Manual update:
+Updates are managed via Terraform. To update a container:
 
 ```bash
 docker pull ghcr.io/home-assistant/home-assistant:stable

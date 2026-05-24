@@ -10,6 +10,12 @@ variable "raspberry_pi_hostname" {
   default     = "raspberrypi-5"
 }
 
+variable "raspberry_pi_ip" {
+  description = "Raspberry Pi IP address for widget URLs (avoids mDNS issues in containers)"
+  type        = string
+  default     = "192.168.0.134"
+}
+
 variable "raspberry_pi_user" {
   description = "Raspberry Pi SSH user for kubeconfig path"
   type        = string
@@ -67,6 +73,19 @@ variable "grafana_port" {
   default     = 30080
 }
 
+variable "grafana_username" {
+  description = "Grafana admin username for the homepage widget"
+  type        = string
+  default     = "admin"
+}
+
+variable "grafana_password" {
+  description = "Grafana admin password for the homepage widget"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "prometheus_port" {
   description = "Prometheus service port"
   type        = number
@@ -77,6 +96,12 @@ variable "alertmanager_port" {
   description = "AlertManager service port"
   type        = number
   default     = 30093
+}
+
+variable "loki_port" {
+  description = "Loki service port"
+  type        = number
+  default     = 30100
 }
 
 variable "memory_limit" {
@@ -95,4 +120,10 @@ variable "raspberry_pi_kubeconfig_path" {
   description = "Path to Raspberry Pi kubeconfig file"
   type        = string
   default     = "~/.kube/config-raspberrypi-5"
+}
+
+variable "image_version" {
+  description = "Homepage Docker image version"
+  type        = string
+  default     = "v1.13.1"
 }

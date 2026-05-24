@@ -1,0 +1,137 @@
+---
+- name: Configure backup timers on Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+
+  vars:
+    mac_mini_ip: "192.168.0.126"
+    mac_mini_user: "rainforest"
+    backup_dest: "~/homelab-backups/rpi-k3s"
+    rsync_source: "/var/lib/rancher/k3s/storage/"
+
+  tasks:
+    # ── rsync timer ────────────────────────────────────────────────────────────
+
+    - name: Create backup destination directory on Mac Mini
+      become: no
+      shell: |
+        ssh -o StrictHostKeyChecking=accept-new \
+          {{ mac_mini_user }}@{{ mac_mini_ip }} \
+          "mkdir -p {{ backup_dest }}"
+      changed_when: false
+
+    - name: Write rsync backup script
+      copy:
+        dest: /usr/local/bin/rpi-backup-rsync.sh
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          rsync -az --delete \
+            {{ rsync_source }} \
+            {{ mac_mini_user }}@{{ mac_mini_ip }}:{{ backup_dest }}/
+          echo "$(date): rsync backup completed" >> /var/log/homelab-backup.log
+
+    - name: Create rsync systemd service unit
+      copy:
+        dest: /etc/systemd/system/homelab-rsync-backup.service
+        content: |
+          [Unit]
+          Description=RPi K3s storage rsync backup to Mac Mini
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          User=root
+          ExecStart=/usr/local/bin/rpi-backup-rsync.sh
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Create rsync systemd timer unit
+      copy:
+        dest: /etc/systemd/system/homelab-rsync-backup.timer
+        content: |
+          [Unit]
+          Description=RPi K3s rsync backup — every 6 hours
+          Wants=homelab-rsync-backup.service
+
+          [Timer]
+          OnBootSec=10min
+          OnUnitActiveSec=6h
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable and start rsync timer
+      systemd:
+        name: homelab-rsync-backup.timer
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # ── CrowdSec hub update timer ──────────────────────────────────────────────
+
+    - name: Write CrowdSec hub update script
+      copy:
+        dest: /usr/local/bin/crowdsec-hub-update.sh
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          docker exec homelab-crowdsec cscli hub update
+          docker exec homelab-crowdsec cscli hub upgrade
+          echo "$(date): CrowdSec hub updated" >> /var/log/crowdsec-hub-update.log
+
+    - name: Create CrowdSec update systemd service unit
+      copy:
+        dest: /etc/systemd/system/crowdsec-hub-update.service
+        content: |
+          [Unit]
+          Description=Update CrowdSec hub parsers and scenarios
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          User=root
+          ExecStart=/usr/local/bin/crowdsec-hub-update.sh
+          StandardOutput=journal
+          StandardError=journal
+
+    - name: Create CrowdSec update systemd timer
+      copy:
+        dest: /etc/systemd/system/crowdsec-hub-update.timer
+        content: |
+          [Unit]
+          Description=Daily CrowdSec hub update at 04:00
+          Wants=crowdsec-hub-update.service
+
+          [Timer]
+          OnCalendar=*-*-* 04:00:00
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable and start CrowdSec update timer
+      systemd:
+        name: crowdsec-hub-update.timer
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # ── Verification ──────────────────────────────────────────────────────────
+
+    - name: List active timers
+      command: systemctl list-timers --all
+      register: timers_output
+      changed_when: false
+
+    - name: Show timer status
+      debug:
+        msg: "{{ timers_output.stdout_lines | select('search', 'homelab|crowdsec') | list }}"

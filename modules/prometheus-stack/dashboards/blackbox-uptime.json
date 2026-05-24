@@ -1,0 +1,48 @@
+{
+  "id": null,
+  "uid": "blackbox-uptime",
+  "title": "Service Uptime (Blackbox Exporter)",
+  "tags": ["homelab", "uptime", "monitoring"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Status",
+      "type": "table",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "probe_success", "legendFormat": "{{instance}}", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }]
+        }
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "id": 2,
+      "title": "Probe Duration (ms)",
+      "type": "table",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "probe_duration_seconds * 1000", "legendFormat": "{{instance}}", "instant": true }],
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "id": 3,
+      "title": "SSL Certificate Expiry (days)",
+      "type": "table",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "(probe_ssl_earliest_cert_expiry - time()) / 86400", "legendFormat": "{{instance}}", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 14 }, { "color": "green", "value": 30 }] }
+        }
+      },
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 }
+    }
+  ],
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "5m"
+}

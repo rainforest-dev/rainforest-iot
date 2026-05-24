@@ -7,7 +7,7 @@ variable "namespace" {
 variable "chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "55.5.0"  # Stable version
+  default     = "55.5.0" # Stable version
 }
 
 variable "storage_class" {
@@ -117,7 +117,7 @@ variable "grafana_port" {
 
 variable "grafana_additional_datasources" {
   description = "Additional data sources for Grafana"
-  type        = list(object({
+  type = list(object({
     name      = string
     type      = string
     url       = string
@@ -202,16 +202,17 @@ variable "mac_mini_hostname" {
   default     = "rainforest-mini.local"
 }
 
-variable "mac_mini_docker_endpoint" {
-  description = "Mac mini Docker endpoint for monitoring"
+variable "external_ip" {
+  description = "Raspberry Pi LAN IP address. Must be a raw IP (not .local hostname) so scrape targets resolve inside K3s pods via CoreDNS."
   type        = string
-  default     = "dockerproxy.orb.local:2375"
+  default     = ""
 }
 
-variable "pihole_endpoint" {
-  description = "Pi-hole endpoint for monitoring"
+variable "homeassistant_token" {
+  description = "Home Assistant long-lived access token for /api/prometheus endpoint. Leave empty to skip HA scraping."
   type        = string
-  default     = "localhost:8080"
+  default     = ""
+  sensitive   = true
 }
 
 variable "pihole_api_token" {
@@ -219,4 +220,21 @@ variable "pihole_api_token" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+variable "blackbox_http_targets" {
+  description = "HTTP/HTTPS endpoints for Blackbox Exporter to probe"
+  type        = list(string)
+  default = [
+    "https://open-webui.rainforest.tools",
+    "https://n8n.rainforest.tools",
+    "https://calibre-web.rainforest.tools",
+    "https://whisper.rainforest.tools",
+  ]
+}
+
+variable "blackbox_icmp_targets" {
+  description = "IP addresses for ICMP ping probes"
+  type        = list(string)
+  default     = ["192.168.0.1", "1.1.1.1"]
 }

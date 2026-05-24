@@ -16,7 +16,7 @@ output "service_url" {
 output "volume_names" {
   description = "Pi-hole volume names"
   value = {
-    config = docker_volume.pihole.name
+    config  = docker_volume.pihole.name
     dnsmasq = docker_volume.dnsmasq.name
   }
 }

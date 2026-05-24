@@ -1,0 +1,52 @@
+{
+  "id": null,
+  "uid": "crowdsec-events",
+  "title": "CrowdSec Security Events",
+  "tags": ["homelab", "security", "crowdsec"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Decisions (Banned IPs)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "cs_active_decisions", "legendFormat": "Banned IPs" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] }
+        }
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 }
+    },
+    {
+      "id": 2,
+      "title": "Alerts (last 1h)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "increase(cs_alerts[1h])", "legendFormat": "Alerts" }],
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 }
+    },
+    {
+      "id": 3,
+      "title": "Parsed Lines Rate",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rate(cs_parsed_count[5m])", "legendFormat": "Lines/s" }],
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 }
+    },
+    {
+      "id": 4,
+      "title": "Decisions Over Time",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "cs_active_decisions", "legendFormat": "Active bans" },
+        { "expr": "increase(cs_alerts[5m])", "legendFormat": "New alerts" }
+      ],
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }
+    }
+  ],
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m"
+}

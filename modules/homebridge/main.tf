@@ -13,7 +13,7 @@ resource "docker_volume" "homebridge_data" {
 }
 
 resource "docker_image" "homebridge" {
-  name = "homebridge/homebridge:latest"
+  name = "homebridge/homebridge:${var.image_version}"
 }
 
 resource "docker_container" "homebridge" {
@@ -32,6 +32,8 @@ resource "docker_container" "homebridge" {
       # Ignore Docker-managed attributes that don't affect functionality
       memory,
       memory_swap,
+      # Docker normalises "60s" → "1m0s"; ignore to prevent perpetual in-place diff
+      healthcheck,
     ]
     replace_triggered_by = [
       docker_image.homebridge.image_id,

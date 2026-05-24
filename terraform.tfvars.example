@@ -24,8 +24,7 @@ openspeedtest_ports = {
   https = 3001
 }
 
-# Maintenance settings
-watchtower_poll_interval = 86400  # 24 hours in seconds
+# Log settings
 log_max_size = "50m"
 log_max_files = 3
 
@@ -57,3 +56,6 @@ mac_mini_hostname = "rainforest-mini.local"
 mac_mini_ip = "100.86.67.66"
 mac_mini_docker_endpoint = "dockerproxy.orb.local:2375"
 # pihole_api_token = ""  # Optional: Pi-hole API token for metrics
+
+# Monitoring credentials (required — no defaults to prevent accidental use of weak passwords)
+grafana_admin_password = "changeme"  # Set to your actual Grafana admin password

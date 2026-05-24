@@ -46,3 +46,9 @@ variable "log_opts" {
     "max-file" = "5"
   }
 }
+
+variable "image_version" {
+  description = "Homebridge Docker image version"
+  type        = string
+  default     = "2026-05-13"
+}

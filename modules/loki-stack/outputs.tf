@@ -13,10 +13,10 @@ output "loki_internal_url" {
 output "service_info" {
   description = "Loki stack service information"
   value = {
-    loki_port = var.loki_port
-    namespace = var.namespace
-    chart_version = var.chart_version
-    promtail_enabled = var.promtail_enabled
+    loki_port          = var.loki_port
+    namespace          = var.namespace
+    chart_version      = var.chart_version
+    promtail_enabled   = var.promtail_enabled
     fluent_bit_enabled = var.fluent_bit_enabled
   }
 }
@@ -26,13 +26,13 @@ output "resource_config" {
   description = "Resource configuration for Loki stack"
   value = {
     loki = {
-      cpu_limit = var.loki_cpu_limit
+      cpu_limit    = var.loki_cpu_limit
       memory_limit = var.loki_memory_limit
       storage_size = var.loki_storage_size
-      retention = var.loki_retention
+      retention    = var.loki_retention
     }
     promtail = var.promtail_enabled ? {
-      cpu_limit = var.promtail_cpu_limit
+      cpu_limit    = var.promtail_cpu_limit
       memory_limit = var.promtail_memory_limit
     } : null
   }
@@ -42,11 +42,11 @@ output "resource_config" {
 output "helm_release_info" {
   description = "Helm release information"
   value = {
-    name = helm_release.loki_stack.name
+    name      = helm_release.loki_stack.name
     namespace = helm_release.loki_stack.namespace
-    chart = helm_release.loki_stack.chart
-    version = helm_release.loki_stack.version
-    status = helm_release.loki_stack.status
+    chart     = helm_release.loki_stack.chart
+    version   = helm_release.loki_stack.version
+    status    = helm_release.loki_stack.status
   }
 }
 
