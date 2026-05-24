@@ -107,6 +107,11 @@ resource "docker_container" "crowdsec_bouncer" {
 
   memory = 64
 
+  # Docker sets memory_swap to 2× memory when unspecified, causing perpetual diff.
+  lifecycle {
+    ignore_changes = [memory_swap]
+  }
+
   log_driver = "json-file"
   log_opts   = var.log_opts
 }

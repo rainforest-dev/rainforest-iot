@@ -178,6 +178,11 @@ resource "docker_container" "pihole_exporter" {
 resource "null_resource" "monitoring_firewall_rules" {
   triggers = {
     container_id = docker_container.pihole_exporter.id
+    # Capture SSH connection vars so the destroy provisioner can use self.triggers
+    # (var.* is not available during destroy; self.triggers always is)
+    hostname  = var.hostname
+    ssh_port  = var.ssh_port
+    ssh_user  = var.ssh_user
   }
 
   provisioner "local-exec" {
@@ -196,7 +201,7 @@ resource "null_resource" "monitoring_firewall_rules" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-BASH
       ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-        -p 22 rainforest@raspberrypi-5.local \
+        -p ${self.triggers.ssh_port} ${self.triggers.ssh_user}@${self.triggers.hostname} \
         "sudo ufw delete allow from 10.42.0.0/24 to any port 9617 proto tcp || true && \
          sudo ufw delete allow from 10.42.0.0/24 to any port 9100 proto tcp || true && \
          sudo ufw reload"

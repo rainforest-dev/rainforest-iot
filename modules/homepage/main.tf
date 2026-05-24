@@ -99,7 +99,7 @@ resource "local_file" "kubeconfig_pi5_content" {
   content = replace(
     file(var.raspberry_pi_kubeconfig_path),
     "https://raspberrypi-5.local:6443",
-    "https://192.168.0.134:6443"
+    "https://${var.raspberry_pi_ip}:6443"
   )
   filename   = "${local.build_dir}/kubeconfig-pi5.yaml"
   depends_on = [null_resource.create_build_dir]
@@ -210,14 +210,16 @@ resource "docker_container" "homepage" {
   memory      = var.memory_limit
   memory_swap = var.memory_limit * 2
 
-  # Lifecycle management - recreate when config updater runs
+  # Lifecycle management - recreate when config or kubeconfig updater runs
   lifecycle {
     replace_triggered_by = [
-      docker_container.config_updater.id
+      docker_container.config_updater.id,
+      docker_container.kubeconfig_updater.id,
     ]
     # Docker reads back network_mode="bridge" (its default) after creation.
-    # Ignoring it prevents forced replacement on every plan.
-    ignore_changes = [network_mode]
+    # healthcheck intervals are normalised by Docker ("30s" → "30s" but may drift).
+    # Ignoring these prevents forced replacement on every plan.
+    ignore_changes = [network_mode, healthcheck]
   }
 
   # Environment variables for host validation
