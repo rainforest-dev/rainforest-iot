@@ -1,48 +1,161 @@
 {
   "id": null,
   "uid": "blackbox-uptime",
-  "title": "Service Uptime (Blackbox Exporter)",
-  "tags": ["homelab", "uptime", "monitoring"],
+  "title": "Network Health (Blackbox Exporter)",
+  "tags": ["homelab", "uptime", "monitoring", "network"],
   "timezone": "browser",
   "schemaVersion": 39,
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m",
   "panels": [
     {
       "id": 1,
-      "title": "Service Status",
-      "type": "table",
+      "title": "Router (LAN)",
+      "description": "192.168.0.1 — if this fails, problem is inside the house",
+      "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "probe_success", "legendFormat": "{{instance}}", "instant": true }],
+      "targets": [{ "expr": "probe_success{instance=\"192.168.0.1\"}", "instant": true }],
       "fieldConfig": {
         "defaults": {
-          "mappings": [{ "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }]
+          "mappings": [
+            { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         }
       },
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value" },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 2,
-      "title": "Probe Duration (ms)",
-      "type": "table",
+      "title": "ISP / WAN (1.1.1.1)",
+      "description": "Cloudflare DNS — if router is UP but this is DOWN, problem is ISP",
+      "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "probe_duration_seconds * 1000", "legendFormat": "{{instance}}", "instant": true }],
-      "fieldConfig": { "defaults": { "unit": "ms" } },
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+      "targets": [{ "expr": "probe_success{instance=\"1.1.1.1\"}", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value" },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 3,
-      "title": "SSL Certificate Expiry (days)",
+      "title": "Router Latency (now)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "probe_duration_seconds{instance=\"192.168.0.1\"} * 1000", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 50 }] }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 4,
+      "title": "ISP Latency (now)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "probe_duration_seconds{instance=\"1.1.1.1\"} * 1000", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 50 }, { "color": "red", "value": 150 }] }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 5,
+      "title": "Latency History — Router vs ISP",
+      "description": "Router spike alone = LAN issue. ISP spike with router normal = ISP congestion. Both fail = router/power down.",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "probe_duration_seconds{instance=\"192.168.0.1\", job=\"blackbox-icmp\"} * 1000", "legendFormat": "Router (LAN)" },
+        { "expr": "probe_duration_seconds{instance=\"1.1.1.1\", job=\"blackbox-icmp\"} * 1000", "legendFormat": "ISP (1.1.1.1)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 100 }, { "color": "red", "value": 200 }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Router (LAN)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] },
+          { "matcher": { "id": "byName", "options": "ISP (1.1.1.1)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 9 }
+    },
+    {
+      "id": 6,
+      "title": "Packet Loss — Router vs ISP",
+      "description": "% of probes that failed in each 5-minute window. Any loss on router = LAN fault. Loss only on ISP = ISP fault.",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "(1 - avg_over_time(probe_success{instance=\"192.168.0.1\", job=\"blackbox-icmp\"}[5m])) * 100", "legendFormat": "Router loss %" },
+        { "expr": "(1 - avg_over_time(probe_success{instance=\"1.1.1.1\", job=\"blackbox-icmp\"}[5m])) * 100", "legendFormat": "ISP loss %" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "lineWidth": 2, "fillOpacity": 20 },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 5 }, { "color": "red", "value": 20 }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Router loss %" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] },
+          { "matcher": { "id": "byName", "options": "ISP loss %" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 8 }
+    },
+    {
+      "id": 7,
+      "title": "Uptime % — Last 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "avg_over_time(probe_success{instance=\"192.168.0.1\", job=\"blackbox-icmp\"}[24h]) * 100", "legendFormat": "Router" },
+        { "expr": "avg_over_time(probe_success{instance=\"1.1.1.1\", job=\"blackbox-icmp\"}[24h]) * 100", "legendFormat": "ISP" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 95 }, { "color": "green", "value": 99 }] }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "gridPos": { "x": 0, "y": 21, "w": 12, "h": 4 }
+    },
+    {
+      "id": 8,
+      "title": "SSL Certificate Expiry",
       "type": "table",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "(probe_ssl_earliest_cert_expiry - time()) / 86400", "legendFormat": "{{instance}}", "instant": true }],
       "fieldConfig": {
         "defaults": {
           "unit": "d",
-          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 14 }, { "color": "green", "value": 30 }] }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 14 }, { "color": "green", "value": 30 }] }
         }
       },
-      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 }
+      "gridPos": { "x": 12, "y": 21, "w": 12, "h": 4 }
     }
-  ],
-  "time": { "from": "now-24h", "to": "now" },
-  "refresh": "5m"
+  ]
 }

@@ -226,10 +226,19 @@ variable "blackbox_http_targets" {
   description = "HTTP/HTTPS endpoints for Blackbox Exporter to probe"
   type        = list(string)
   default = [
+    # Core AI / productivity
     "https://open-webui.rainforest.tools",
     "https://n8n.rainforest.tools",
+    "https://flowise.rainforest.tools",
+    # Media / books
     "https://calibre-web.rainforest.tools",
+    # IoT / home
+    "https://homeassistant.rainforest.tools",
+    "https://bambii.rainforest.tools",
+    # Infrastructure
     "https://whisper.rainforest.tools",
+    "https://minio.rainforest.tools",
+    "https://pgadmin.rainforest.tools",
   ]
 }
 
