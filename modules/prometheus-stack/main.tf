@@ -145,6 +145,15 @@ locals {
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
+    # Speedtest exporter on Mac Mini — runs every 30 min to verify ISP bandwidth
+    # Uses wired Ethernet for accurate results. Metrics: download/upload Mbps, ping ms.
+    {
+      job_name        = "speedtest"
+      static_configs  = [{ targets = ["${var.mac_mini_ip}:9798"], labels = { instance = "mac-mini", service = "speedtest" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30m" # Don't run too frequently — each test uses ~200MB of bandwidth
+      scrape_timeout  = "90s" # Speedtest takes up to 60s to complete
+    },
     # CrowdSec IDS metrics (community bans + local decisions)
     {
       job_name       = "crowdsec"
