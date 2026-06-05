@@ -31,7 +31,7 @@ locals {
   # Normalize hostnames for allowed hosts logic
   # Use split to derive the short hostname robustly (works if input is short or FQDN)
   short_hostname = element(split(".", var.raspberry_pi_hostname), 0)
-  allowed_hosts  = "${local.short_hostname},${local.short_hostname}.local,${local.short_hostname}:${var.external_port},${local.short_hostname}.local:${var.external_port}"
+  allowed_hosts  = "${local.short_hostname},${local.short_hostname}.local,${local.short_hostname}:${var.external_port},${local.short_hostname}.local:${var.external_port},homepage.rainforest.tools"
 }
 
 # Ensure build directory exists

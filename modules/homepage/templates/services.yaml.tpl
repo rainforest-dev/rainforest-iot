@@ -61,7 +61,7 @@
         description: "Multi-Room Music Player"
         icon: mdi-music
         server: pi5-docker
-        container: music-assistant-server
+        container: music-assistant
     - Homebridge:
         href: http://${raspberry_pi_hostname}:8581
         description: "HomeKit Bridge"
