@@ -86,6 +86,39 @@ resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_ai_automation" {
+  metadata {
+    name      = "grafana-ai-automation"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ai-automation.json" = file("${path.module}/dashboards/ai-automation.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_home_music" {
+  metadata {
+    name      = "grafana-home-music"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "home-music.json" = file("${path.module}/dashboards/home-music.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_security" {
+  metadata {
+    name      = "grafana-ha-security"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-security.json" = file("${path.module}/dashboards/ha-security.json")
+  }
+}
+
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
 locals {
