@@ -180,6 +180,8 @@ resource "helm_release" "prometheus_stack" {
       # Prometheus configuration
       prometheus = {
         prometheusSpec = {
+          enableRemoteWriteReceiver = true
+
           # Add pod labels for Homepage integration
           podMetadata = {
             labels = {
