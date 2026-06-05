@@ -109,14 +109,16 @@ resource "helm_release" "loki_stack" {
           }
 
           limits_config = {
-            reject_old_samples                    = true
-            reject_old_samples_max_age            = "168h"
-            ingestion_rate_mb                     = 16 # Increased: Alloy ships from 2 machines
-            ingestion_burst_size_mb               = 32
-            max_concurrent_tail_requests          = 20
-            max_outstanding_requests_per_tenant   = 512 # Prevent "too many outstanding requests" with multiple dashboards
-            max_query_parallelism                 = 8
-            retention_period                      = var.loki_retention
+            reject_old_samples           = true
+            reject_old_samples_max_age   = "168h"
+            ingestion_rate_mb            = 16 # Increased: Alloy ships from 2 machines
+            ingestion_burst_size_mb      = 32
+            max_concurrent_tail_requests = 20
+            retention_period             = var.loki_retention
+          }
+
+          frontend = {
+            max_outstanding_per_tenant = 512 # Prevent "too many outstanding requests" with multiple dashboards open
           }
 
           chunk_store_config = {
