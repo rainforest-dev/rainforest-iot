@@ -1,88 +1,308 @@
 {
-  "annotations": {"list": []},
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "graphTooltip": 0,
   "panels": [
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "title": "Home Assistant",
       "type": "row"
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}, "overrides": []},
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "id": 2,
-      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
       "title": "Automations Fired (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({container_name=\"homeassistant\"} |= \"Executing script\" [24h]))", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "sum(count_over_time({container_name=\"homeassistant\"} |= \"Executing script\" [24h]))",
+          "refId": "A"
+        }
+      ]
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}]}}, "overrides": []},
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "id": 3,
-      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
       "title": "HA Errors (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({container_name=\"homeassistant\"} |= \"ERROR\" [24h]))", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "sum(count_over_time({container_name=\"homeassistant\"} |= \"ERROR\" [24h]))",
+          "refId": "A"
+        }
+      ]
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {}},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
       "id": 4,
-      "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
       "title": "HA Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{container_name=\"homeassistant\"} | level != \"debug\"", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "{container_name=\"homeassistant\"}",
+          "refId": "A"
+        }
+      ]
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {}},
-      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 5},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
       "id": 5,
-      "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
       "title": "Google Home Commands",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{container_name=\"homeassistant\"} |= \"google_assistant\"", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "{container_name=\"homeassistant\"} |= \"google_assistant\"",
+          "refId": "A"
+        }
+      ]
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 11},
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
       "id": 6,
       "title": "Music Assistant",
       "type": "row"
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}, "overrides": []},
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 12},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 12
+      },
       "id": 7,
-      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
       "title": "Tracks Played (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({container_name=\"music-assistant-server\"} |= \"Playing\" [24h]))", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "sum(count_over_time({container_name=\"music-assistant\"} |= \"Playing\" [24h]))",
+          "refId": "A"
+        }
+      ]
     },
     {
-      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
-      "fieldConfig": {"defaults": {}},
-      "gridPos": {"h": 6, "w": 18, "x": 6, "y": 12},
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 18,
+        "x": 6,
+        "y": 12
+      },
       "id": 8,
-      "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
       "title": "Music Assistant Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{container_name=\"music-assistant-server\"}", "refId": "A"}]
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "expr": "{container_name=\"music-assistant\"}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "5m",
   "schemaVersion": 38,
-  "tags": ["homelab", "analytics", "home"],
-  "templating": {"list": []},
-  "time": {"from": "now-24h", "to": "now"},
+  "tags": [
+    "homelab",
+    "analytics",
+    "home"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timezone": "browser",
   "title": "Home & Music",
   "uid": "homelab-home-music",
