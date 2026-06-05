@@ -419,3 +419,41 @@ module "velero" {
   minio_access_key = var.minio_access_key
   minio_secret_key = var.minio_secret_key
 }
+
+resource "null_resource" "alloy_pi_config" {
+  triggers = {
+    config_hash = filemd5("${path.module}/modules/grafana-alloy-pi/alloy.river")
+  }
+
+  connection {
+    type        = "ssh"
+    host        = var.raspberry_pi_ip
+    user        = var.raspberry_pi_user
+    private_key = file("~/.ssh/id_ed25519.rpi5")
+    port        = var.raspberry_pi_port
+  }
+
+  provisioner "remote-exec" {
+    inline = ["mkdir -p /opt/homelab/alloy"]
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/modules/grafana-alloy-pi/alloy.river"
+    destination = "/opt/homelab/alloy/alloy.river"
+  }
+}
+
+module "grafana_alloy_pi" {
+  source     = "./modules/grafana-alloy-pi"
+  depends_on = [null_resource.alloy_pi_config]
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  project_name   = "homelab"
+  image_version  = var.alloy_pi_version
+  prometheus_url = "http://${var.raspberry_pi_ip}:30090/api/v1/write"
+  loki_url       = "http://${var.raspberry_pi_ip}:30100/loki/api/v1/push"
+  log_opts       = {}
+}

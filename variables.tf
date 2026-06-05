@@ -540,3 +540,9 @@ variable "minio_secret_key" {
   type        = string
   sensitive   = true
 }
+
+variable "alloy_pi_version" {
+  description = "Grafana Alloy version for Pi deployment"
+  type        = string
+  default     = "v1.8.2"
+}
