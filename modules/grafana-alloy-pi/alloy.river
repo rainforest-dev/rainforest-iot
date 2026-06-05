@@ -1,0 +1,84 @@
+// ─── Prometheus: Pi system metrics ──────────────────────────────────────────
+
+prometheus.exporter.unix "pi" {}
+
+prometheus.scrape "unix" {
+  targets         = prometheus.exporter.unix.pi.targets
+  forward_to      = [prometheus.remote_write.local.receiver]
+  scrape_interval = "30s"
+  job_name        = "pi-node-alloy"
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = env("PROMETHEUS_REMOTE_WRITE_URL")
+
+    queue_config {
+      max_samples_per_send = 1000
+      batch_send_deadline  = "5s"
+    }
+  }
+}
+
+// ─── Loki: Pi Docker container logs ─────────────────────────────────────────
+
+discovery.docker "running" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_labels" {
+  targets = discovery.docker.running.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_id"]
+    target_label  = "container_id"
+  }
+
+  rule {
+    replacement  = "docker"
+    target_label = "job"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.docker_labels.output
+  forward_to = [loki.process.drop_self.receiver]
+}
+
+loki.process "drop_self" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.drop {
+    source = "container_name"
+    value  = "homelab-alloy-pi"
+  }
+}
+
+// ─── Loki: K3s pod logs ──────────────────────────────────────────────────────
+
+local.file_match "k3s_pods" {
+  path_targets = [{
+    __path__ = "/var/log/pods/**/*.log"
+    job      = "k3s-pods"
+  }]
+}
+
+loki.source.file "k3s_pods" {
+  targets    = local.file_match.k3s_pods.targets
+  forward_to = [loki.write.local.receiver]
+}
+
+// ─── Loki: Push to local Loki ────────────────────────────────────────────────
+
+loki.write "local" {
+  endpoint {
+    url = env("LOKI_PUSH_URL")
+  }
+}
