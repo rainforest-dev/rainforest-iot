@@ -11,34 +11,34 @@
       "type": "row"
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "id": 2,
       "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
       "title": "n8n Executions (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"Execution\" | json [24h]))", "legendFormat": "executions", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"Execution\" | json [24h]))", "legendFormat": "executions", "refId": "A"}]
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "id": 3,
       "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
       "title": "n8n Errors (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"ERROR\" [24h]))", "legendFormat": "errors", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"ERROR\" [24h]))", "legendFormat": "errors", "refId": "A"}]
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {}},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 1},
       "id": 4,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
       "title": "n8n Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "{namespace=\"homelab\", pod=~\"n8n.*\"}", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{namespace=\"homelab\", pod=~\"n8n.*\"}", "refId": "A"}]
     },
     {
       "collapsed": false,
@@ -48,24 +48,24 @@
       "type": "row"
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
       "id": 6,
       "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["sum"]}},
       "title": "Transcription Requests (24h)",
       "type": "stat",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "sum(count_over_time({container_name=\"homelab-whisper\"} |= \"transcription\" [24h]))", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "sum(count_over_time({container_name=\"homelab-whisper\"} |= \"transcription\" [24h]))", "refId": "A"}]
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {}},
       "gridPos": {"h": 6, "w": 18, "x": 6, "y": 8},
       "id": 7,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
       "title": "Whisper Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "{container_name=\"homelab-whisper\"}", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{container_name=\"homelab-whisper\"}", "refId": "A"}]
     },
     {
       "collapsed": false,
@@ -75,24 +75,24 @@
       "type": "row"
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {}},
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 15},
       "id": 9,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
       "title": "Open WebUI Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "{namespace=\"homelab\", pod=~\"open-webui.*\"}", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{namespace=\"homelab\", pod=~\"open-webui.*\"}", "refId": "A"}]
     },
     {
-      "datasource": {"type": "loki", "uid": "${loki_uid}"},
+      "datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"},
       "fieldConfig": {"defaults": {}},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 15},
       "id": 10,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending"},
       "title": "Flowise Recent Logs",
       "type": "logs",
-      "targets": [{"datasource": {"type": "loki", "uid": "${loki_uid}"}, "expr": "{namespace=\"homelab\", pod=~\".*flowise.*\"}", "refId": "A"}]
+      "targets": [{"datasource": {"type": "loki", "uid": "P8E80F9AEF21F6940"}, "expr": "{namespace=\"homelab\", pod=~\".*flowise.*\"}", "refId": "A"}]
     }
   ],
   "refresh": "5m",
