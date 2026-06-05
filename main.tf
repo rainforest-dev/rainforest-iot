@@ -429,12 +429,12 @@ resource "null_resource" "alloy_pi_config" {
     type        = "ssh"
     host        = var.raspberry_pi_ip
     user        = var.raspberry_pi_user
-    private_key = file("~/.ssh/id_ed25519.rpi5")
+    private_key = var.pi_ssh_private_key
     port        = var.raspberry_pi_port
   }
 
   provisioner "remote-exec" {
-    inline = ["mkdir -p /opt/homelab/alloy"]
+    inline = ["sudo mkdir -p /opt/homelab/alloy && sudo chown ${var.raspberry_pi_user}:${var.raspberry_pi_user} /opt/homelab/alloy"]
   }
 
   provisioner "file" {

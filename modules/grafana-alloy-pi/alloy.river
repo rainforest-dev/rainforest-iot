@@ -65,8 +65,8 @@ loki.process "drop_self" {
 
 local.file_match "k3s_pods" {
   path_targets = [{
-    __path__ = "/var/log/pods/**/*.log"
-    job      = "k3s-pods"
+    __path__ = "/var/log/pods/**/*.log",
+    job      = "k3s-pods",
   }]
 }
 
