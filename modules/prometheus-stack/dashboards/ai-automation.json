@@ -155,7 +155,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{namespace=\"homelab\", pod=~\"n8n.*\"}",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     },
@@ -252,7 +253,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{container_name=\"homelab-whisper\"}",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     },
@@ -298,7 +300,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{namespace=\"homelab\", pod=~\"open-webui.*\"}",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     },
@@ -332,7 +335,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{namespace=\"homelab\", pod=~\".*flowise.*\"}",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     }

@@ -156,7 +156,8 @@
           },
           "expr": "sum(count_over_time({container_name=\"homeassistant\"} |= \"invalid authentication\" [5m]))",
           "legendFormat": "failed logins",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     },
@@ -190,7 +191,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{container_name=\"homeassistant\"} |= \"invalid authentication\"",
-          "refId": "A"
+          "refId": "A",
+          "queryType": "range"
         }
       ]
     }
