@@ -182,7 +182,7 @@ resource "null_resource" "ha_prometheus_config" {
     BASH
   }
 
-  depends_on = [null_resource.ha_trusted_proxy]
+  depends_on = [null_resource.ha_proxy_config]
 }
 
 # HACS (Home Assistant Community Store) installation
