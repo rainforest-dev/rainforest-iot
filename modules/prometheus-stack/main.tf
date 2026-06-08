@@ -119,6 +119,61 @@ resource "kubernetes_config_map" "grafana_dashboard_ha_security" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_ha_home_comfort" {
+  metadata {
+    name      = "grafana-ha-home-comfort"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-home-comfort.json" = file("${path.module}/dashboards/ha-home-comfort.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_robot_maid" {
+  metadata {
+    name      = "grafana-ha-robot-maid"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-robot-maid.json" = file("${path.module}/dashboards/ha-robot-maid.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_network_pulse" {
+  metadata {
+    name      = "grafana-ha-network-pulse"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-network-pulse.json" = file("${path.module}/dashboards/ha-network-pulse.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_daily_rhythm" {
+  metadata {
+    name      = "grafana-ha-daily-rhythm"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-daily-rhythm.json" = file("${path.module}/dashboards/ha-daily-rhythm.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_maintenance_hub" {
+  metadata {
+    name      = "grafana-ha-maintenance-hub"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-maintenance-hub.json" = file("${path.module}/dashboards/ha-maintenance-hub.json")
+  }
+}
+
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
 locals {
