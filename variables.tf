@@ -323,8 +323,8 @@ variable "mac_mini_docker_endpoint" {
   default     = "dockerproxy.orb.local:2375"
 }
 
-variable "pihole_api_token" {
-  description = "Pi-hole API token for metrics"
+variable "pihole_password" {
+  description = "Pi-hole web password for metrics exporter (Pi-hole v6+)"
   type        = string
   default     = ""
   sensitive   = true

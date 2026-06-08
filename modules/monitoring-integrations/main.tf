@@ -120,21 +120,9 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
         scrape_interval = "30s"
         scheme          = "http"
       },
-      # Pi-hole monitoring
-      {
-        job_name = "pi-hole"
-        static_configs = [
-          {
-            targets = ["${var.raspberry_pi_hostname}:${var.pihole_port}"]
-          }
-        ]
-        metrics_path = "/admin/api.php"
-        params = {
-          auth = [var.pihole_api_token]
-        }
-        scrape_interval = "60s"
-      },
-      # Pi-hole Prometheus exporter (port 9617)
+      # Pi-hole Prometheus exporter (port 9617) — Pi-hole v6 compatible
+      # The exporter handles password auth internally via PIHOLE_PASSWORD env var.
+      # Direct /admin/api.php scrape removed: Pi-hole v6 dropped this endpoint.
       {
         job_name = "pihole-exporter"
         static_configs = [

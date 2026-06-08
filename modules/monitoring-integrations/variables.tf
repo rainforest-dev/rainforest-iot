@@ -48,8 +48,8 @@ variable "pihole_port" {
   default     = 8080
 }
 
-variable "pihole_api_token" {
-  description = "Pi-hole API token for metrics scraping"
+variable "pihole_password" {
+  description = "Pi-hole web password for metrics scraping (Pi-hole v6+)"
   type        = string
   default     = ""
   sensitive   = true

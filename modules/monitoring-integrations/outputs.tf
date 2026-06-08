@@ -23,6 +23,6 @@ output "monitoring_integrations_summary" {
     external_monitoring = var.enable_external_monitoring
     custom_alerts       = var.enable_custom_alerts
     mac_mini_monitored  = var.mac_mini_ip != ""
-    pihole_monitored    = var.pihole_api_token != ""
+    pihole_monitored    = var.pihole_password != ""
   }
 }

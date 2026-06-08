@@ -59,8 +59,8 @@ variable "exporter_version" {
   default     = "v0.4.0"
 }
 
-variable "pihole_api_token" {
-  description = "Pi-hole API token for the exporter to authenticate"
+variable "pihole_password" {
+  description = "Pi-hole web password for the exporter to authenticate (Pi-hole v6+)"
   type        = string
   sensitive   = true
   default     = ""

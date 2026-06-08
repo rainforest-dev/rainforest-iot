@@ -3,11 +3,8 @@ resource "docker_image" "crowdsec" {
   keep_locally = true
 }
 
-resource "docker_image" "bouncer" {
-  count        = var.enable_bouncer ? 1 : 0
-  name         = "crowdsecurity/firewall-bouncer-iptables:${var.bouncer_version}"
-  keep_locally = true
-}
+# Bouncer is installed natively via apt (not Docker) so it can modify host iptables.
+# Docker bouncers can only affect the container's network namespace.
 
 resource "docker_network" "crowdsec" {
   name = "${var.project_name}-crowdsec"
@@ -85,33 +82,49 @@ resource "docker_container" "crowdsec" {
   }
 }
 
-resource "docker_container" "crowdsec_bouncer" {
+# Install CrowdSec firewall bouncer natively via apt.
+# Runs as a systemd service on the Pi host with direct iptables access.
+# Triggers re-install if the API key changes.
+resource "null_resource" "crowdsec_bouncer" {
   count = var.enable_bouncer ? 1 : 0
-  name  = "${var.project_name}-crowdsec-bouncer"
-  image = docker_image.bouncer[0].image_id
 
-  restart = "unless-stopped"
-
-  capabilities {
-    add = ["NET_ADMIN", "NET_RAW"]
+  triggers = {
+    bouncer_api_key = var.bouncer_api_key
+    hostname        = var.hostname
+    ssh_port        = var.ssh_port
+    ssh_user        = var.ssh_user
   }
 
-  network_mode = "host"
-
-  env = [
-    "TZ=${var.timezone}",
-    "CROWDSEC_LAPI_URL=http://127.0.0.1:6081",
-    "CROWDSEC_LAPI_KEY=${var.bouncer_api_key}",
-    "GID=1000",
-  ]
-
-  memory = 64
-
-  # Docker sets memory_swap to 2× memory when unspecified, causing perpetual diff.
-  lifecycle {
-    ignore_changes = [memory_swap]
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} bash << 'ENDSSH'
+        set -e
+        # Add CrowdSec repo if not present
+        if ! dpkg -l crowdsec-firewall-bouncer-iptables &>/dev/null; then
+          curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash
+          sudo apt-get install -y crowdsec-firewall-bouncer-iptables
+        fi
+        # Configure the bouncer API key and LAPI URL
+        sudo sed -i "s|^api_key:.*|api_key: ${var.bouncer_api_key}|" /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+        sudo sed -i "s|^api_url:.*|api_url: http://127.0.0.1:6081/|" /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+        sudo systemctl enable crowdsec-firewall-bouncer
+        sudo systemctl restart crowdsec-firewall-bouncer
+        sudo systemctl is-active crowdsec-firewall-bouncer
+ENDSSH
+    BASH
   }
 
-  log_driver = "json-file"
-  log_opts   = var.log_opts
+  provisioner "local-exec" {
+    when        = destroy
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${self.triggers.ssh_port} ${self.triggers.ssh_user}@${self.triggers.hostname} \
+        "sudo systemctl stop crowdsec-firewall-bouncer || true && sudo apt-get remove -y crowdsec-firewall-bouncer-iptables || true"
+    BASH
+  }
+
+  depends_on = [docker_container.crowdsec]
 }

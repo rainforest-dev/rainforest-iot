@@ -158,7 +158,7 @@ module "pi-hole" {
   ssh_user         = var.raspberry_pi_user
   ssh_port         = var.raspberry_pi_port
   exporter_version = var.pihole_exporter_version
-  pihole_api_token = var.pihole_api_token
+  pihole_password = var.pihole_password
 }
 
 # K3s Cluster configuration (when enabled)
@@ -260,7 +260,7 @@ module "monitoring_integrations" {
   mac_mini_ip              = var.mac_mini_ip
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_port              = var.pihole_web_port
-  pihole_api_token         = var.pihole_api_token
+  pihole_password         = var.pihole_password
   ntopng_port              = var.ntopng_web_port
 }
 
@@ -355,8 +355,11 @@ module "crowdsec" {
 
   project_name     = "homelab"
   crowdsec_version = var.crowdsec_version
-  bouncer_version  = var.crowdsec_bouncer_version
   bouncer_api_key  = var.crowdsec_bouncer_api_key
+  enable_bouncer   = var.crowdsec_bouncer_api_key != ""
+  hostname         = var.raspberry_pi_ip
+  ssh_user         = var.raspberry_pi_user
+  ssh_port         = var.raspberry_pi_port
   timezone         = var.timezone
   log_opts         = local.common_log_opts
 }
