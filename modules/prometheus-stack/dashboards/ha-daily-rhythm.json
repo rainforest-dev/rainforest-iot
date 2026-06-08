@@ -1,83 +1,183 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "graphTooltip": 1,
   "panels": [
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 1 } },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "options": {
-        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "min"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
-      "targets": [{
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_cover{entity_id=~\"cover\\\\..*\"}",
-        "legendFormat": "{{entity_id}}",
-        "instant": false,
-        "range": true,
-        "refId": "A"
-      }],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_cover{entity_id=~\"cover\\\\..*\"}",
+          "legendFormat": "{{entity_id}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
       "title": "Cover / Curtain Positions",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
       "id": 2,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "targets": [{
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_switch_state{entity_id=~\"switch\\\\..*kitchen.*|switch\\\\..*light.*\"}",
-        "legendFormat": "{{entity_id}}",
-        "instant": true,
-        "refId": "A"
-      }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_switch_state{friendly_name=\"Kitchen Light\"}",
+          "legendFormat": "{{entity_id}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
       "title": "Kitchen Switch State",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 1 } },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
       "id": 3,
       "options": {
-        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "min"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
-      "targets": [{
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_binary_sensor_state",
-        "legendFormat": "{{entity_id}}",
-        "instant": false,
-        "range": true,
-        "refId": "A"
-      }],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_binary_sensor_state",
+          "legendFormat": "{{entity_id}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
       "title": "Binary Sensors (Presence / Motion)",
       "type": "timeseries"
     }
   ],
   "schemaVersion": 39,
-  "tags": ["homeassistant"],
-  "time": { "from": "now-24h", "to": "now" },
+  "tags": [
+    "homeassistant"
+  ],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "Asia/Taipei",
-  "title": "🌅 Daily Rhythm",
+  "title": "\ud83c\udf05 Daily Rhythm",
   "uid": "ha-daily01",
   "version": 1
 }

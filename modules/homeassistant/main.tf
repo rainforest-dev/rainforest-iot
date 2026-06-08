@@ -185,6 +185,39 @@ resource "null_resource" "ha_prometheus_config" {
   depends_on = [null_resource.ha_proxy_config]
 }
 
+# Inject a template sensor that exports the vacuum state as a numeric value.
+# HA's Prometheus integration skips the vacuum domain because its state is a
+# string (docked/cleaning/returning/…). A template sensor converts it to a
+# number so Prometheus can store it.
+#
+# State mapping:  0=unknown  1=cleaning  2=returning  3=docked  4=paused  5=idle  6=error
+resource "null_resource" "ha_vacuum_template_sensor" {
+  triggers = {
+    container_id = docker_container.homeassistant.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      if ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+          -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+          "docker exec homeassistant grep -q 'roborock_state_numeric' /config/configuration.yaml" 2>/dev/null; then
+        echo "HA vacuum template sensor already present, skipping"
+        exit 0
+      fi
+      BLOCK=$(printf '\ntemplate:\n  - sensor:\n      - name: "Roborock State Numeric"\n        unique_id: roborock_state_numeric\n        icon: mdi:robot-vacuum\n        state: >\n          {%% set s = states('"'"'vacuum.roborock_qrevo_c_pro'"'"') %%}\n          {%% if s == '"'"'cleaning'"'"' %%}1{%% elif s == '"'"'returning'"'"' %%}2{%% elif s == '"'"'docked'"'"' %%}3{%% elif s == '"'"'paused'"'"' %%}4{%% elif s == '"'"'idle'"'"' %%}5{%% elif s == '"'"'error'"'"' %%}6{%% else %%}0{%% endif %%}\n' | base64 | tr -d '\n')
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        "echo '$${BLOCK}' | base64 -d | docker exec --interactive homeassistant sh -c 'cat >> /config/configuration.yaml'"
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+      echo "HA vacuum template sensor written, HA restarted"
+    BASH
+  }
+
+  depends_on = [null_resource.ha_prometheus_config]
+}
+
 # HACS (Home Assistant Community Store) installation
 resource "null_resource" "hacs_installation" {
   count = var.enable_hacs ? 1 : 0
