@@ -154,6 +154,37 @@ resource "null_resource" "ha_proxy_config" {
   }
 }
 
+resource "null_resource" "ha_prometheus_config" {
+  triggers = {
+    container_id = docker_container.homeassistant.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      # Exit early if the prometheus: block is already present (config volume persists
+      # across container recreation, so this is the common path after a redeploy).
+      if ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+          -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+          "docker exec homeassistant grep -q '^prometheus:' /config/configuration.yaml" 2>/dev/null; then
+        echo "HA prometheus config already present, skipping"
+        exit 0
+      fi
+      # Base64-encode the YAML block locally and decode+append inside the
+      # container — avoids all SSH/docker-exec quoting complexity.
+      BLOCK=$(printf '\nprometheus:\n' | base64 | tr -d '\n')
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} \
+        "echo '$${BLOCK}' | base64 -d | docker exec --interactive homeassistant sh -c 'cat >> /config/configuration.yaml'"
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} docker restart homeassistant
+      echo "HA prometheus config written, HA restarted"
+    BASH
+  }
+
+  depends_on = [null_resource.ha_trusted_proxy]
+}
+
 # HACS (Home Assistant Community Store) installation
 resource "null_resource" "hacs_installation" {
   count = var.enable_hacs ? 1 : 0
