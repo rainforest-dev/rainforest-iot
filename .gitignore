@@ -48,3 +48,4 @@ configs/teleport/data
 data
 .DS_Store
 .claude/
+.worktrees/
