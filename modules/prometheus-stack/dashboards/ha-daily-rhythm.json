@@ -29,25 +29,24 @@
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 1 } },
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
         "overrides": []
       },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "id": 2,
-      "options": {
-        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_light{entity_id=~\"light\\\\..*\"}",
+        "expr": "homeassistant_switch_state{entity_id=~\"switch\\\\..*kitchen.*|switch\\\\..*light.*\"}",
         "legendFormat": "{{entity_id}}",
-        "instant": false,
-        "range": true,
+        "instant": true,
         "refId": "A"
       }],
-      "title": "Light Brightness",
-      "type": "timeseries"
+      "title": "Kitchen Switch State",
+      "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -63,7 +62,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_binary_sensor{entity_id=~\"binary_sensor\\\\..*occupancy.*|binary_sensor\\\\..*motion.*|binary_sensor\\\\..*presence.*\"}",
+        "expr": "homeassistant_binary_sensor_state",
         "legendFormat": "{{entity_id}}",
         "instant": false,
         "range": true,

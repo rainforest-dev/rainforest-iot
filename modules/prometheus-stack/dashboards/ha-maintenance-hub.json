@@ -21,7 +21,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*battery.*\"}",
+        "expr": "homeassistant_sensor_battery_percent",
         "format": "table",
         "instant": true,
         "legendFormat": "",
@@ -35,10 +35,8 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "max": 100,
-          "min": 0,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
-          "unit": "percent"
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 100 }] },
+          "unit": "h"
         },
         "overrides": []
       },
@@ -52,7 +50,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*brush.*|sensor\\\\..*filter.*|sensor\\\\..*sensor_dirty.*|sensor\\\\..*consumable.*\"}",
+        "expr": "homeassistant_sensor_duration_h",
         "legendFormat": "{{entity_id}}",
         "instant": true,
         "refId": "A"
@@ -74,7 +72,7 @@
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "count(homeassistant_sensor_{entity_id=~\"sensor\\\\..*battery.*\"} < 20)",
+        "expr": "count(homeassistant_sensor_battery_percent < 20)",
         "legendFormat": "Low Battery Devices",
         "instant": true,
         "refId": "A"
@@ -96,7 +94,7 @@
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "count(homeassistant_sensor_{entity_id=~\"sensor\\\\..*battery.*\"} < 10)",
+        "expr": "count(homeassistant_sensor_battery_percent < 10)",
         "legendFormat": "Critical Battery Devices",
         "instant": true,
         "refId": "A"

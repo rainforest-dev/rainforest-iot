@@ -17,7 +17,7 @@
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_vacuum{entity_id=~\"vacuum\\\\..*\"}",
+        "expr": "homeassistant_switch_state{entity_id=~\"switch\\\\.roborock.*\"}",
         "legendFormat": "{{entity_id}}",
         "instant": true,
         "refId": "A"
@@ -39,7 +39,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_m_{entity_id=~\"sensor\\\\..*cleaning_area.*|sensor\\\\..*area.*\"}",
+        "expr": "homeassistant_sensor_unit_mu0xb2",
         "legendFormat": "{{entity_id}}",
         "instant": false,
         "range": true,
@@ -52,101 +52,109 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "max": 100,
-          "min": 0,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
-          "unit": "percent"
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1 },
+          "unit": "h"
         },
         "overrides": []
       },
       "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
       "id": 3,
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*main_brush.*\"}",
+        "expr": "homeassistant_sensor_duration_h{entity_id=~\".*main_brush.*\"}",
         "legendFormat": "{{entity_id}}",
-        "instant": true,
+        "instant": false,
+        "range": true,
         "refId": "A"
       }],
       "title": "Main Brush Life Remaining",
-      "type": "gauge"
+      "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "max": 100,
-          "min": 0,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
-          "unit": "percent"
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1 },
+          "unit": "h"
         },
         "overrides": []
       },
       "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
       "id": 4,
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*side_brush.*\"}",
+        "expr": "homeassistant_sensor_duration_h{entity_id=~\".*filter.*\"}",
         "legendFormat": "{{entity_id}}",
-        "instant": true,
+        "instant": false,
+        "range": true,
         "refId": "A"
       }],
-      "title": "Side Brush Life",
-      "type": "gauge"
+      "title": "Filter Life",
+      "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "max": 100,
-          "min": 0,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
-          "unit": "percent"
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1 },
+          "unit": "h"
         },
         "overrides": []
       },
       "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
       "id": 5,
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*filter.*\"}",
+        "expr": "homeassistant_sensor_duration_h{entity_id=~\".*dock_strainer.*|.*strainer.*\"}",
         "legendFormat": "{{entity_id}}",
-        "instant": true,
+        "instant": false,
+        "range": true,
         "refId": "A"
       }],
-      "title": "Filter Life",
-      "type": "gauge"
+      "title": "Dock Strainer Life",
+      "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "max": 100,
-          "min": 0,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
-          "unit": "percent"
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1 },
+          "unit": "h"
         },
         "overrides": []
       },
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
       "id": 6,
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max", "min"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*sensor_dirty.*\"}",
-        "legendFormat": "{{entity_id}}",
-        "instant": true,
+        "expr": "homeassistant_sensor_duration_min",
+        "legendFormat": "Cleaning time (min)",
+        "instant": false,
+        "range": true,
         "refId": "A"
       }],
-      "title": "Sensor Dirty Remaining",
-      "type": "gauge"
+      "title": "Cleaning Time",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 39,

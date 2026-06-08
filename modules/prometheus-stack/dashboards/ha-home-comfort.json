@@ -17,7 +17,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor__C{entity_id=~\"sensor\\\\..*temperature.*\"}",
+        "expr": "homeassistant_sensor_temperature_celsius",
         "legendFormat": "{{entity_id}}",
         "instant": false,
         "range": true,
@@ -40,7 +40,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_{entity_id=~\"sensor\\\\..*humidity.*\"}",
+        "expr": "homeassistant_sensor_humidity_percent",
         "legendFormat": "{{entity_id}}",
         "instant": false,
         "range": true,
@@ -63,7 +63,7 @@
       },
       "targets": [{
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "expr": "homeassistant_sensor_lx{entity_id=~\"sensor\\\\..*illuminance.*|sensor\\\\..*light.*\"}",
+        "expr": "homeassistant_sensor_illuminance_lx",
         "legendFormat": "{{entity_id}}",
         "instant": false,
         "range": true,
