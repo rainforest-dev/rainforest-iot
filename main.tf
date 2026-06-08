@@ -229,6 +229,9 @@ module "prometheus_stack" {
   external_ip           = var.raspberry_pi_ip
   blackbox_http_targets = var.blackbox_http_targets
   blackbox_icmp_targets = var.blackbox_icmp_targets
+
+  # Home Assistant Prometheus scraping — set token to enable the HA scrape job
+  homeassistant_token = var.homeassistant_token
 }
 
 # Wait for Prometheus CRDs to be available

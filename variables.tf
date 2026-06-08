@@ -153,6 +153,13 @@ variable "grafana_admin_password" {
   sensitive   = true
 }
 
+variable "homeassistant_token" {
+  description = "Home Assistant long-lived access token for Prometheus scraping via /api/prometheus"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Additional K8s configuration variables (added to existing K8s section above)
 variable "k8s_enable_monitoring" {
   description = "Enable monitoring namespace and features"
