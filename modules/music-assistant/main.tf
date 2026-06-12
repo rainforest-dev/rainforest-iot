@@ -54,9 +54,12 @@ resource "docker_container" "music_assistant" {
   }
 
   # Environment variables
-  env = [
-    "TZ=${var.timezone}",
-  ]
+  env = concat(
+    [
+      "TZ=${var.timezone}",
+    ],
+    var.base_url != "" ? ["MA_SERVER_BASE_URL=${var.base_url}"] : [],
+  )
 
   # Data volume
   volumes {

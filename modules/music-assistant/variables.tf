@@ -16,6 +16,12 @@ variable "timezone" {
   default     = "Asia/Taipei"
 }
 
+variable "base_url" {
+  description = "Public base URL for Music Assistant (used for OAuth redirects)"
+  type        = string
+  default     = ""
+}
+
 variable "log_opts" {
   description = "Logging options for the container"
   type        = map(string)

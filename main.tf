@@ -64,6 +64,7 @@ module "music_assistant" {
   memory_limit = var.music_assistant_memory
   timezone     = var.timezone
   log_opts     = local.common_log_opts
+  base_url     = "https://music-assistant.rainforest.tools"
 }
 
 module "homebridge" {
