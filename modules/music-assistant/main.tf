@@ -54,12 +54,9 @@ resource "docker_container" "music_assistant" {
   }
 
   # Environment variables
-  env = concat(
-    [
-      "TZ=${var.timezone}",
-    ],
-    var.base_url != "" ? ["MA_SERVER_BASE_URL=${var.base_url}"] : [],
-  )
+  env = [
+    "TZ=${var.timezone}",
+  ]
 
   # Data volume
   volumes {
@@ -69,4 +66,47 @@ resource "docker_container" "music_assistant" {
 
   # Logging configuration
   log_opts = var.log_opts
+}
+
+resource "null_resource" "ma_base_url_config" {
+  count = var.base_url != "" ? 1 : 0
+
+  triggers = {
+    container_id = docker_container.music_assistant.id
+    base_url     = var.base_url
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
+
+      # Idempotent: skip if base_url already set to this value
+      CURRENT=$($SSH "docker exec music-assistant python3 -c \"
+import json
+with open('/data/settings.json') as f:
+    s = json.load(f)
+print(s.get('core', {}).get('webserver', {}).get('values', {}).get('base_url', ''))
+\"" 2>/dev/null || echo "")
+
+      if [ "$CURRENT" = "${var.base_url}" ]; then
+        echo "MA base_url already set to ${var.base_url}, skipping"
+        exit 0
+      fi
+
+      $SSH "docker exec music-assistant python3 -c \"
+import json
+with open('/data/settings.json') as f:
+    s = json.load(f)
+s.setdefault('core', {}).setdefault('webserver', {}).setdefault('values', {})['base_url'] = '${var.base_url}'
+with open('/data/settings.json', 'w') as f:
+    json.dump(s, f, indent=2)
+print('base_url set to ${var.base_url}')
+\""
+      $SSH "docker restart music-assistant"
+      echo "MA settings.json updated and container restarted"
+    BASH
+  }
+
+  depends_on = [docker_container.music_assistant]
 }

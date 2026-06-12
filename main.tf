@@ -60,11 +60,14 @@ module "music_assistant" {
     docker = docker.raspberry-pi
   }
 
-  hostname     = var.raspberry_pi_hostname
-  memory_limit = var.music_assistant_memory
-  timezone     = var.timezone
-  log_opts     = local.common_log_opts
-  base_url     = "https://music-assistant.rainforest.tools"
+  hostname             = var.raspberry_pi_hostname
+  memory_limit         = var.music_assistant_memory
+  timezone             = var.timezone
+  log_opts             = local.common_log_opts
+  base_url             = "https://music-assistant.rainforest.tools"
+  ssh_user             = var.raspberry_pi_user
+  ssh_port             = var.raspberry_pi_port
+  ssh_private_key_path = "~/.ssh/id_ed25519.rpi5"
 }
 
 module "homebridge" {

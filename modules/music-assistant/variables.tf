@@ -22,6 +22,24 @@ variable "base_url" {
   default     = ""
 }
 
+variable "ssh_user" {
+  description = "SSH user for the Raspberry Pi"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "ssh_port" {
+  description = "SSH port for the Raspberry Pi"
+  type        = number
+  default     = 22
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key for the Raspberry Pi"
+  type        = string
+  default     = "~/.ssh/id_ed25519.rpi5"
+}
+
 variable "log_opts" {
   description = "Logging options for the container"
   type        = map(string)
