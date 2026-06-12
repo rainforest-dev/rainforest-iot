@@ -58,4 +58,16 @@ resource "docker_container" "alloy" {
     retries      = 3
     start_period = "30s"
   }
+
+  lifecycle {
+    ignore_changes = [
+      # Docker normalises "30s" → "30s" but healthcheck interval representation drifts
+      healthcheck,
+      # Docker provider drops read_only after apply; ignore to prevent perpetual replacement
+      volumes,
+    ]
+    replace_triggered_by = [
+      docker_image.alloy.image_id,
+    ]
+  }
 }
