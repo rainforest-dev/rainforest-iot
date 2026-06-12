@@ -88,9 +88,9 @@ resource "null_resource" "ma_base_url_config" {
 
       # Patch settings.json via a temp container reusing the already-pulled
       # MA image, so no extra pull is needed.
-      $SSH "docker run --rm -v music_assistant_data:/data \
+      $SSH "docker run --rm --entrypoint python3 -v music_assistant_data:/data \
         ghcr.io/music-assistant/server:stable \
-        python3 -c \"
+        -c \"
 import json
 with open('/data/settings.json') as f:
     s = json.load(f)
