@@ -60,7 +60,7 @@ module "music_assistant" {
     docker = docker.raspberry-pi
   }
 
-  hostname             = var.raspberry_pi_hostname
+  hostname             = var.raspberry_pi_ip
   memory_limit         = var.music_assistant_memory
   timezone             = var.timezone
   log_opts             = local.common_log_opts
