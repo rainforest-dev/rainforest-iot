@@ -86,6 +86,94 @@ resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_ai_automation" {
+  metadata {
+    name      = "grafana-ai-automation"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ai-automation.json" = file("${path.module}/dashboards/ai-automation.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_home_music" {
+  metadata {
+    name      = "grafana-home-music"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "home-music.json" = file("${path.module}/dashboards/home-music.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_security" {
+  metadata {
+    name      = "grafana-ha-security"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-security.json" = file("${path.module}/dashboards/ha-security.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_home_comfort" {
+  metadata {
+    name      = "grafana-ha-home-comfort"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-home-comfort.json" = file("${path.module}/dashboards/ha-home-comfort.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_robot_maid" {
+  metadata {
+    name      = "grafana-ha-robot-maid"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-robot-maid.json" = file("${path.module}/dashboards/ha-robot-maid.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_network_pulse" {
+  metadata {
+    name      = "grafana-ha-network-pulse"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-network-pulse.json" = file("${path.module}/dashboards/ha-network-pulse.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_daily_rhythm" {
+  metadata {
+    name      = "grafana-ha-daily-rhythm"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-daily-rhythm.json" = file("${path.module}/dashboards/ha-daily-rhythm.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_ha_maintenance_hub" {
+  metadata {
+    name      = "grafana-ha-maintenance-hub"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "ha-maintenance-hub.json" = file("${path.module}/dashboards/ha-maintenance-hub.json")
+  }
+}
+
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
 locals {
@@ -111,6 +199,15 @@ locals {
       static_configs = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30s"
+    },
+    # Speedtest exporter on Mac Mini — runs every 30 min to verify ISP bandwidth
+    # Uses wired Ethernet for accurate results. Metrics: download/upload Mbps, ping ms.
+    {
+      job_name        = "speedtest"
+      static_configs  = [{ targets = ["${var.mac_mini_ip}:9798"], labels = { instance = "mac-mini", service = "speedtest" } }]
+      metrics_path    = "/metrics"
+      scrape_interval = "30m" # Don't run too frequently — each test uses ~200MB of bandwidth
+      scrape_timeout  = "90s" # Speedtest takes up to 60s to complete
     },
     # CrowdSec IDS metrics (community bans + local decisions)
     {
@@ -180,6 +277,8 @@ resource "helm_release" "prometheus_stack" {
       # Prometheus configuration
       prometheus = {
         prometheusSpec = {
+          enableRemoteWriteReceiver = true
+
           # Add pod labels for Homepage integration
           podMetadata = {
             labels = {

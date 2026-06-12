@@ -52,7 +52,7 @@ resource "docker_container" "pihole" {
   env = [
     "TZ=${var.timezone}",
     "WEBPASSWORD_FILE=/run/secrets/pihole_password",
-    "DNSMASQ_LISTENING=local"
+    "DNSMASQ_LISTENING=all"
   ]
 
   # Health check
@@ -129,41 +129,64 @@ SCRIPT_EOF
   depends_on = [docker_container.pihole]
 }
 
-resource "docker_image" "pihole_exporter" {
-  name         = "ekofr/pihole-exporter:${var.exporter_version}"
-  keep_locally = true
-}
-
-resource "docker_container" "pihole_exporter" {
-  name  = "pihole-exporter"
-  image = docker_image.pihole_exporter.image_id
-
-  restart = "unless-stopped"
-
-  env = [
-    "PIHOLE_HOSTNAME=localhost",
-    "PIHOLE_PORT=${var.web_port}",
-    "PIHOLE_API_TOKEN=${var.pihole_api_token}",
-    "INTERVAL=30s",
-    "PORT=9617",
-  ]
-
-  network_mode = "host"
-
-  memory = 32
-
-  # Docker sets memory_swap to 2× memory by default; ignore to avoid perpetual diff
-  lifecycle {
-    ignore_changes = [memory_swap]
+# Native Pi-hole v6 Prometheus exporter — deployed as a systemd service.
+# ekofr/pihole-exporter:v0.4.0 uses the removed Pi-hole v5 /admin/api.php endpoint
+# and cannot be used with Pi-hole v6. This minimal Python stdlib exporter uses the
+# v6 /api/ REST interface directly (no Docker Hub pull required).
+resource "null_resource" "pihole_exporter" {
+  triggers = {
+    script_hash = sha256(local.pihole_exporter_script)
+    password    = var.pihole_password
+    hostname    = var.hostname
+    ssh_port    = var.ssh_port
+    ssh_user    = var.ssh_user
   }
 
-  log_opts = var.log_opts
+  # Copy script and install systemd service
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      TMPSCRIPT=$(mktemp /tmp/pihole-exporter-XXXXXX.py)
+      cat > "$TMPSCRIPT" << 'PYEOF'
+${local.pihole_exporter_script}
+PYEOF
+      scp -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -P ${var.ssh_port} "$TMPSCRIPT" ${var.ssh_user}@${var.hostname}:/tmp/pihole_exporter.py
+      rm -f "$TMPSCRIPT"
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${var.ssh_port} ${var.ssh_user}@${var.hostname} bash << 'ENDSSH'
+        sudo cp /tmp/pihole_exporter.py /usr/local/bin/pihole_exporter.py
+        sudo chmod +x /usr/local/bin/pihole_exporter.py
+        sudo tee /etc/systemd/system/pihole-exporter.service > /dev/null << 'SVC'
+[Unit]
+Description=Pi-hole v6 Prometheus Exporter
+After=docker.service
 
-  # pihole-exporter is a scratch-based Go binary — no shell/wget/curl available.
-  # Explicitly disable healthcheck with ["NONE"] so Docker doesn't inherit a
-  # stale wget probe. Health is verified by Prometheus scraping port 9617.
-  healthcheck {
-    test = ["NONE"]
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/pihole_exporter.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+SVC
+        sudo systemctl daemon-reload
+        sudo systemctl enable pihole-exporter
+        sudo systemctl restart pihole-exporter
+        sleep 3
+        sudo systemctl is-active pihole-exporter
+ENDSSH
+    BASH
+  }
+
+  provisioner "local-exec" {
+    when        = destroy
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-BASH
+      ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+        -p ${self.triggers.ssh_port} ${self.triggers.ssh_user}@${self.triggers.hostname} \
+        "sudo systemctl stop pihole-exporter || true && sudo systemctl disable pihole-exporter || true && sudo rm -f /etc/systemd/system/pihole-exporter.service /usr/local/bin/pihole_exporter.py && sudo systemctl daemon-reload"
+    BASH
   }
 
   depends_on = [docker_container.pihole]
@@ -177,12 +200,10 @@ resource "docker_container" "pihole_exporter" {
 # the rule already exists; deletes gracefully handle missing rules.
 resource "null_resource" "monitoring_firewall_rules" {
   triggers = {
-    container_id = docker_container.pihole_exporter.id
-    # Capture SSH connection vars so the destroy provisioner can use self.triggers
-    # (var.* is not available during destroy; self.triggers always is)
-    hostname  = var.hostname
-    ssh_port  = var.ssh_port
-    ssh_user  = var.ssh_user
+    exporter_id = null_resource.pihole_exporter.id
+    hostname    = var.hostname
+    ssh_port    = var.ssh_port
+    ssh_user    = var.ssh_user
   }
 
   provisioner "local-exec" {
@@ -208,5 +229,5 @@ resource "null_resource" "monitoring_firewall_rules" {
     BASH
   }
 
-  depends_on = [docker_container.pihole_exporter]
+  depends_on = [null_resource.pihole_exporter]
 }

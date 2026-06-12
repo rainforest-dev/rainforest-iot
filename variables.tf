@@ -153,6 +153,13 @@ variable "grafana_admin_password" {
   sensitive   = true
 }
 
+variable "homeassistant_token" {
+  description = "Home Assistant long-lived access token for Prometheus scraping via /api/prometheus"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Additional K8s configuration variables (added to existing K8s section above)
 variable "k8s_enable_monitoring" {
   description = "Enable monitoring namespace and features"
@@ -323,8 +330,8 @@ variable "mac_mini_docker_endpoint" {
   default     = "dockerproxy.orb.local:2375"
 }
 
-variable "pihole_api_token" {
-  description = "Pi-hole API token for metrics"
+variable "pihole_password" {
+  description = "Pi-hole web password for metrics exporter (Pi-hole v6+)"
   type        = string
   default     = ""
   sensitive   = true
@@ -539,4 +546,10 @@ variable "minio_secret_key" {
   description = "MinIO root password for Velero S3 access"
   type        = string
   sensitive   = true
+}
+
+variable "alloy_pi_version" {
+  description = "Grafana Alloy version for Pi deployment"
+  type        = string
+  default     = "v1.8.2"
 }

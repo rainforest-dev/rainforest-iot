@@ -51,11 +51,17 @@
 
 - "Raspberry Pi 5 (IoT Platform)":
     - HomeAssistant:
-        href: http://${raspberry_pi_hostname}:8123
+        href: https://homeassistant.rainforest.tools
         description: "Home Automation"
         icon: home-assistant.png
         server: pi5-docker
         container: homeassistant
+    - Music Assistant:
+        href: https://music-assistant.rainforest.tools
+        description: "Multi-Room Music Player"
+        icon: mdi-music
+        server: pi5-docker
+        container: music-assistant
     - Homebridge:
         href: http://${raspberry_pi_hostname}:8581
         description: "HomeKit Bridge"

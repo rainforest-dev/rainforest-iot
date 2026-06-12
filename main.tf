@@ -158,7 +158,7 @@ module "pi-hole" {
   ssh_user         = var.raspberry_pi_user
   ssh_port         = var.raspberry_pi_port
   exporter_version = var.pihole_exporter_version
-  pihole_api_token = var.pihole_api_token
+  pihole_password = var.pihole_password
 }
 
 # K3s Cluster configuration (when enabled)
@@ -229,6 +229,9 @@ module "prometheus_stack" {
   external_ip           = var.raspberry_pi_ip
   blackbox_http_targets = var.blackbox_http_targets
   blackbox_icmp_targets = var.blackbox_icmp_targets
+
+  # Home Assistant Prometheus scraping — set token to enable the HA scrape job
+  homeassistant_token = var.homeassistant_token
 }
 
 # Wait for Prometheus CRDs to be available
@@ -260,7 +263,7 @@ module "monitoring_integrations" {
   mac_mini_ip              = var.mac_mini_ip
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_port              = var.pihole_web_port
-  pihole_api_token         = var.pihole_api_token
+  pihole_password         = var.pihole_password
   ntopng_port              = var.ntopng_web_port
 }
 
@@ -355,8 +358,11 @@ module "crowdsec" {
 
   project_name     = "homelab"
   crowdsec_version = var.crowdsec_version
-  bouncer_version  = var.crowdsec_bouncer_version
   bouncer_api_key  = var.crowdsec_bouncer_api_key
+  enable_bouncer   = var.crowdsec_bouncer_api_key != ""
+  hostname         = var.raspberry_pi_ip
+  ssh_user         = var.raspberry_pi_user
+  ssh_port         = var.raspberry_pi_port
   timezone         = var.timezone
   log_opts         = local.common_log_opts
 }
@@ -418,4 +424,42 @@ module "velero" {
   # Module default (http://192.168.0.126:9000) is correct; mac_mini_ip is Tailscale
   minio_access_key = var.minio_access_key
   minio_secret_key = var.minio_secret_key
+}
+
+resource "null_resource" "alloy_pi_config" {
+  triggers = {
+    config_hash = filemd5("${path.module}/modules/grafana-alloy-pi/alloy.river")
+  }
+
+  connection {
+    type        = "ssh"
+    host        = var.raspberry_pi_ip
+    user        = var.raspberry_pi_user
+    private_key = var.pi_ssh_private_key
+    port        = var.raspberry_pi_port
+  }
+
+  provisioner "remote-exec" {
+    inline = ["sudo mkdir -p /opt/homelab/alloy && sudo chown ${var.raspberry_pi_user}:${var.raspberry_pi_user} /opt/homelab/alloy"]
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/modules/grafana-alloy-pi/alloy.river"
+    destination = "/opt/homelab/alloy/alloy.river"
+  }
+}
+
+module "grafana_alloy_pi" {
+  source     = "./modules/grafana-alloy-pi"
+  depends_on = [null_resource.alloy_pi_config]
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  project_name   = "homelab"
+  image_version  = var.alloy_pi_version
+  prometheus_url = "http://${var.raspberry_pi_ip}:30090/api/v1/write"
+  loki_url       = "http://${var.raspberry_pi_ip}:30100/loki/api/v1/push"
+  log_opts       = {}
 }

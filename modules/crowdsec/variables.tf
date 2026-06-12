@@ -23,9 +23,27 @@ variable "bouncer_api_key" {
 }
 
 variable "enable_bouncer" {
-  description = "Enable firewall bouncer container (requires Docker Hub auth for CrowdSec bouncer images)"
+  description = "Enable native iptables bouncer (installed via apt on the Pi host)"
   type        = bool
   default     = false
+}
+
+variable "hostname" {
+  description = "Hostname or IP of the Raspberry Pi for SSH bouncer install"
+  type        = string
+  default     = "raspberrypi-5.local"
+}
+
+variable "ssh_user" {
+  description = "SSH user for Raspberry Pi"
+  type        = string
+  default     = "rainforest"
+}
+
+variable "ssh_port" {
+  description = "SSH port for Raspberry Pi"
+  type        = number
+  default     = 22
 }
 
 variable "timezone" {
