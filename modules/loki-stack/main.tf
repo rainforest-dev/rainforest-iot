@@ -29,6 +29,21 @@ resource "helm_release" "loki_stack" {
       loki = {
         enabled = true
 
+        # Do NOT mark Loki as Grafana's default datasource. The loki-stack chart
+        # defaults this to true, which collides with kube-prometheus-stack marking
+        # Prometheus as default. Grafana then rejects the whole provisioning file
+        # ("Only one datasource per organization can be marked as default") and
+        # crash-loops. Prometheus is the default; prometheus-stack already
+        # provisions Loki separately with isDefault = false.
+        isDefault = false
+
+        # Pin the Loki image: loki-stack depends on the loki subchart at ^2.15.2,
+        # whose default image is still 2.6.1 — too old for the LogQL that Grafana 13
+        # health checks emit ("parse error ... unexpected IDENTIFIER").
+        image = {
+          tag = "2.9.3"
+        }
+
         # Resource limits for Pi 5
         resources = {
           requests = {
