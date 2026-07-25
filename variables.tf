@@ -233,7 +233,13 @@ variable "k8s_api_hostname" {
 variable "prometheus_chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "77.10.0"
+  # 87.19.0 ships Grafana 13.x (the Grafana image is pinned to 13.1.1 in
+  # modules/prometheus-stack — 13.0.0 has a storage-migration bug that can lose
+  # dashboards). Upgrading MAJOR versions requires applying the matching
+  # prometheus-operator CRDs first; Helm never upgrades CRDs itself:
+  #   kubectl apply --server-side --force-conflicts -f \
+  #     https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.87.0/example/prometheus-operator-crd/monitoring.coreos.com_<crd>.yaml
+  default = "87.19.0"
 }
 
 variable "loki_chart_version" {

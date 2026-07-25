@@ -340,6 +340,12 @@ resource "helm_release" "prometheus_stack" {
       grafana = {
         enabled = var.grafana_enabled
 
+        # Pin Grafana 13.1.1 explicitly — chart 87.19.0 bundles 13.x, but we must
+        # avoid 13.0.0 (a storage-migration bug can lose dashboards; fixed in 13.0.1+).
+        image = {
+          tag = "13.1.1"
+        }
+
         # Add pod labels for Homepage integration
         podLabels = {
           app = "grafana"
