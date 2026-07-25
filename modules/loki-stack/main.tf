@@ -222,13 +222,20 @@ resource "helm_release" "loki_stack" {
                     action        = "replace"
                     target_label  = "component"
                   },
-                  # Tell promtail where to read logs from (k8s/containerd paths)
+                  # Tell promtail where to read logs from (k8s/containerd paths).
+                  # Real layout: /var/log/pods/<ns>_<pod>_<uid>/<container>/0.log
+                  # With separator "/" the default regex (.*) captures BOTH source
+                  # labels as a single group, so $1 is already "<uid>/<container>".
+                  # The old replacement referenced $2, which never existed — every
+                  # target resolved to an unmatchable path ("no path for target"),
+                  # promtail ended up with zero active targets, and its /ready probe
+                  # returned 500 forever, so no Pi pod logs reached Loki.
                   {
                     action        = "replace"
                     source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
                     target_label  = "__path__"
                     separator     = "/"
-                    replacement   = "/var/log/pods/*$1/*$2/*.log"
+                    replacement   = "/var/log/pods/*$1/*.log"
                   }
                 ]
               },
