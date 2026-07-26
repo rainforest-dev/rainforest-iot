@@ -601,6 +601,32 @@ resource "helm_release" "prometheus_stack" {
         }
       }
 
+      # Blackbox probes have no default rule in kube-prometheus-stack, so a public
+      # endpoint could go down silently. probe_success is emitted per target by the
+      # blackbox exporter.
+      additionalPrometheusRulesMap = {
+        blackbox-rules = {
+          groups = [
+            {
+              name = "blackbox"
+              rules = [
+                {
+                  alert = "BlackboxProbeFailed"
+                  expr  = "probe_success == 0"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary = "Probe failing for {{ $labels.instance }}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+
       # Disable components that are too heavy for Pi
       kubeEtcd = {
         enabled = false
