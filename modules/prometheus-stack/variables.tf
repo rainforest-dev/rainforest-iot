@@ -183,12 +183,6 @@ variable "kube_state_metrics_enabled" {
   default     = true
 }
 
-variable "enable_custom_alerts" {
-  description = "Enable custom alerting rules"
-  type        = bool
-  default     = true
-}
-
 # External monitoring targets
 variable "mac_mini_ip" {
   description = "Mac mini IP address for monitoring"

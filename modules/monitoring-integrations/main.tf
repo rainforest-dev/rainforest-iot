@@ -162,8 +162,8 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
   }
 }
 
-# NOTE: Custom alerting rules were previously managed here but have been consolidated
-# into modules/prometheus-stack/main.tf (kubernetes_config_map.alerting_rules) to
-# avoid Terraform managing two resources that point to the same Kubernetes ConfigMap.
-# The three homelab-specific alerts (HomelabServiceDown, KubernetesNodeNotReady,
-# KubernetesPodCrashLooping) were merged into prometheus-stack at the same time.
+# NOTE: Custom alerting rules were previously managed here. They now live in
+# modules/prometheus-stack/main.tf under the Helm value additionalPrometheusRulesMap,
+# which renders PrometheusRule CRDs — the only rule source the Prometheus Operator
+# reads. KubernetesNodeNotReady and KubernetesPodCrashLooping were dropped as
+# duplicates of the built-in KubeNodeNotReady / KubePodCrashLooping rules.

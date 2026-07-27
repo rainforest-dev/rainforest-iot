@@ -625,6 +625,56 @@ resource "helm_release" "prometheus_stack" {
             }
           ]
         }
+
+        # Homelab host/service alerts. These previously lived in a plain ConfigMap
+        # labelled role=alert-rules, which the Prometheus Operator never reads —
+        # it only picks up PrometheusRule CRDs, so they never loaded. Rules that
+        # duplicated kube-prometheus-stack built-ins were dropped rather than ported.
+        homelab-rules = {
+          groups = [
+            {
+              name = "homelab.rules"
+              rules = [
+                {
+                  alert = "HighCPUUsage"
+                  expr  = "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100) > 80"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "High CPU usage detected"
+                    description = "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+                  }
+                },
+                {
+                  alert = "HighMemoryUsage"
+                  expr  = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "High memory usage detected"
+                    description = "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+                  }
+                },
+                {
+                  alert = "HomelabServiceDown"
+                  expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
+                  for   = "2m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "Homelab service is down"
+                    description = "Homelab service {{ $labels.job }} is not responding"
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
 
       # Disable components that are too heavy for Pi
@@ -644,118 +694,6 @@ resource "helm_release" "prometheus_stack" {
   ]
 
   depends_on = [kubernetes_secret.prometheus_additional_scrape_configs]
-}
-
-# Create custom alerting rules for homelab
-resource "kubernetes_config_map" "alerting_rules" {
-  count = var.enable_custom_alerts ? 1 : 0
-
-  metadata {
-    name      = "homelab-alerting-rules"
-    namespace = var.namespace
-    labels = {
-      "app.kubernetes.io/name" = "prometheus"
-      "prometheus"             = "kube-prometheus-prometheus"
-      "role"                   = "alert-rules"
-    }
-  }
-
-  data = {
-    "homelab.rules.yaml" = yamlencode({
-      groups = [
-        {
-          name = "homelab.rules"
-          rules = [
-            {
-              alert = "HighCPUUsage"
-              expr  = "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100) > 80"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "High CPU usage detected"
-                description = "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
-              }
-            },
-            {
-              alert = "HighMemoryUsage"
-              expr  = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "High memory usage detected"
-                description = "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
-              }
-            },
-            {
-              alert = "ServiceDown"
-              expr  = "up == 0"
-              for   = "1m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "Service is down"
-                description = "Service {{ $labels.job }} on {{ $labels.instance }} is down"
-              }
-            },
-            {
-              alert = "HighDiskUsage"
-              expr  = "(1 - (node_filesystem_avail_bytes{fstype!=\"tmpfs\"} / node_filesystem_size_bytes{fstype!=\"tmpfs\"})) * 100 > 90"
-              for   = "5m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "High disk usage detected"
-                description = "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}"
-              }
-            },
-            # Homelab-specific alerts (consolidated from monitoring-integrations module)
-            {
-              alert = "HomelabServiceDown"
-              expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
-              for   = "2m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "Homelab service is down"
-                description = "Homelab service {{ $labels.job }} is not responding"
-              }
-            },
-            {
-              alert = "KubernetesNodeNotReady"
-              expr  = "kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 0"
-              for   = "5m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "Kubernetes node not ready"
-                description = "Kubernetes node {{ $labels.node }} is not ready"
-              }
-            },
-            {
-              alert = "KubernetesPodCrashLooping"
-              expr  = "rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 0"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "Pod is crash looping"
-                description = "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
-              }
-            }
-          ]
-        }
-      ]
-    })
-  }
 }
 
 # ---------------------------------------------------------------------------
