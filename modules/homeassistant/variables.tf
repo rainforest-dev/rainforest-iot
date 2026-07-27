@@ -52,6 +52,12 @@ variable "ssh_private_key_path" {
   default     = "~/.ssh/id_ed25519.rpi5"
 }
 
+variable "n8n_webhook_url" {
+  description = "n8n HA-event-bridge webhook URL (on the Mac Mini, reached over the LAN). HA POSTs home events here for logging to Obsidian."
+  type        = string
+  default     = "http://192.168.0.126:5678/webhook/ha-events"
+}
+
 variable "log_opts" {
   description = "Logging options for the container"
   type        = map(string)

@@ -239,3 +239,102 @@ resource "null_resource" "hacs_installation" {
 
   depends_on = [docker_container.homeassistant]
 }
+
+# ─── n8n event bridge (Theme A Component 2, HA side) ────────────────────────
+# Adds a rest_command HA can call, plus two ADDITIVE automations that log when
+# Bambii's calming music turns on/off — the existing bambii_music_start/stop
+# automations are left untouched. HA POSTs to the n8n webhook on the Mac Mini,
+# which appends a #home-event bullet to the Obsidian daily note.
+#
+# Safety: both files are backed up before the append, the whole config is run
+# through HA's check_config, and on any failure the files are rolled back and HA
+# is NOT restarted — a bad edit can never take the family's HA down.
+locals {
+  ha_n8n_rest_command = join("\n", [
+    "",
+    "rest_command:",
+    "  n8n_ha_event:",
+    "    url: \"${var.n8n_webhook_url}\"",
+    "    method: POST",
+    "    content_type: \"application/json\"",
+    "    payload: '{\"event\": \"{{ event }}\", \"detail\": \"{{ detail }}\", \"ts\": \"{{ now() }}\"}'",
+    "",
+  ])
+
+  ha_n8n_bambii_automations = join("\n", [
+    "",
+    "- id: bambii_music_log_on",
+    "  alias: \"Bambii Music - Log ON to n8n\"",
+    "  trigger:",
+    "    - platform: state",
+    "      entity_id: input_boolean.bambii_music",
+    "      to: \"on\"",
+    "  action:",
+    "    - service: rest_command.n8n_ha_event",
+    "      data:",
+    "        event: \"bambii_music_on\"",
+    "        detail: \"calming music started\"",
+    "  mode: single",
+    "- id: bambii_music_log_off",
+    "  alias: \"Bambii Music - Log OFF to n8n\"",
+    "  trigger:",
+    "    - platform: state",
+    "      entity_id: input_boolean.bambii_music",
+    "      to: \"off\"",
+    "  action:",
+    "    - service: rest_command.n8n_ha_event",
+    "      data:",
+    "        event: \"bambii_music_off\"",
+    "        detail: \"calming music stopped\"",
+    "  mode: single",
+    "",
+  ])
+}
+
+resource "null_resource" "ha_n8n_bridge_config" {
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    rest_command = local.ha_n8n_rest_command
+    automations  = local.ha_n8n_bambii_automations
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
+      CHANGED=0
+
+      # 1. rest_command -> configuration.yaml (idempotent on marker 'n8n_ha_event')
+      if ! $${SSH} "docker exec homeassistant grep -q n8n_ha_event /config/configuration.yaml" 2>/dev/null; then
+        echo "${base64encode(local.ha_n8n_rest_command)}" | base64 -d \
+          | $${SSH} "docker exec -i homeassistant sh -c 'cp -n /config/configuration.yaml /config/configuration.yaml.n8nbak; cat >> /config/configuration.yaml'"
+        CHANGED=1
+      fi
+
+      # 2. logging automations -> automations.yaml (idempotent on marker 'bambii_music_log_on')
+      if ! $${SSH} "docker exec homeassistant grep -q bambii_music_log_on /config/automations.yaml" 2>/dev/null; then
+        echo "${base64encode(local.ha_n8n_bambii_automations)}" | base64 -d \
+          | $${SSH} "docker exec -i homeassistant sh -c 'cp -n /config/automations.yaml /config/automations.yaml.n8nbak; cat >> /config/automations.yaml'"
+        CHANGED=1
+      fi
+
+      if [ "$${CHANGED}" = "0" ]; then
+        echo "HA n8n bridge config already present, skipping"
+        exit 0
+      fi
+
+      # 3. Validate the whole config; roll back BOTH files and skip the restart on failure.
+      if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
+        echo "HA config check FAILED — rolling back n8n bridge changes, NOT restarting"
+        $${SSH} "docker exec homeassistant sh -c 'test -f /config/configuration.yaml.n8nbak && mv /config/configuration.yaml.n8nbak /config/configuration.yaml; test -f /config/automations.yaml.n8nbak && mv /config/automations.yaml.n8nbak /config/automations.yaml'"
+        exit 1
+      fi
+
+      $${SSH} "docker exec homeassistant sh -c 'rm -f /config/configuration.yaml.n8nbak /config/automations.yaml.n8nbak'"
+      $${SSH} "docker restart homeassistant"
+      echo "HA n8n bridge config written & validated, HA restarted"
+    BASH
+  }
+
+  depends_on = [null_resource.ha_vacuum_template_sensor]
+}
