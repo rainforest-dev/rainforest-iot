@@ -19,7 +19,10 @@ variable "raspberry_pi_port" {
 variable "raspberry_pi_ip" {
   description = "IP address of the Raspberry Pi (used for container-to-host communication)"
   type        = string
-  default     = "192.168.0.134"
+  # The Pi is at .128; it briefly held .134 (a DHCP-lease drift, since corrected).
+  # terraform.tfvars overrides this, but a fresh clone would otherwise deploy against
+  # a host that no longer exists.
+  default = "192.168.0.128"
 }
 
 variable "raspberry_pi_host" {
