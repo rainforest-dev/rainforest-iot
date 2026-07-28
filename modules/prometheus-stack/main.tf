@@ -169,16 +169,16 @@ locals {
     # Pi-hole Prometheus exporter sidecar (port 9617).
     # Replaces the old /admin/api.php job which returned JSON, not Prometheus text-format.
     {
-      job_name       = "pihole-exporter"
-      static_configs = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
+      job_name        = "pihole-exporter"
+      static_configs  = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
     # Speedtest exporter — two WiFi sample points at different locations.
     # Both run every 30 min. Use 'instance' label to compare locations.
     {
-      job_name       = "speedtest"
-      metrics_path   = "/metrics"
+      job_name        = "speedtest"
+      metrics_path    = "/metrics"
       scrape_interval = "30m" # Don't run too frequently — each test uses ~200MB of bandwidth
       scrape_timeout  = "90s" # Speedtest takes up to 60s to complete
       static_configs = [{
@@ -205,8 +205,8 @@ locals {
     },
     # CrowdSec IDS metrics (community bans + local decisions)
     {
-      job_name       = "crowdsec"
-      static_configs = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
+      job_name        = "crowdsec"
+      static_configs  = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
@@ -240,10 +240,10 @@ locals {
 
   # Home Assistant job is optional — requires a long-lived token + HA Prometheus integration enabled.
   _ha_scrape_job = var.homeassistant_token != "" ? [{
-    job_name       = "homeassistant"
-    static_configs = [{ targets = ["${local._resolved_ip}:8123"] }]
+    job_name        = "homeassistant"
+    static_configs  = [{ targets = ["${local._resolved_ip}:8123"] }]
     metrics_path    = "/api/prometheus"
-    authorization  = { credentials = var.homeassistant_token }
+    authorization   = { credentials = var.homeassistant_token }
     scrape_interval = "60s"
   }] : []
 

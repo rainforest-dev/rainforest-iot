@@ -22,7 +22,8 @@ variable "raspberry_pi_ip" {
   # The Pi is at .128; it briefly held .134 (a DHCP-lease drift, since corrected).
   # terraform.tfvars overrides this, but a fresh clone would otherwise deploy against
   # a host that no longer exists.
-  default = "192.168.0.128"
+  # No default: real value lives in terraform.tfvars (gitignored) so this
+  # public repo does not disclose the internal network. 
 }
 
 variable "raspberry_pi_host" {

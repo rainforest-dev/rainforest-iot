@@ -187,7 +187,8 @@ variable "kube_state_metrics_enabled" {
 variable "mac_mini_ip" {
   description = "Mac mini LAN IP address for monitoring (use LAN IP, not Tailscale)"
   type        = string
-  default     = "192.168.0.126"
+  # No default: real value lives in terraform.tfvars (gitignored) so this
+  # public repo does not disclose the internal network. 
 }
 
 variable "mac_mini_hostname" {
