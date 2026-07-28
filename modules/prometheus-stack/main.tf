@@ -14,33 +14,6 @@ terraform {
 }
 
 # Grafana dashboards as ConfigMaps for sidecar auto-import
-resource "kubernetes_config_map" "grafana_dashboard_homelab_overview" {
-  metadata {
-    name      = "grafana-homelab-overview"
-    namespace = var.namespace
-    labels = {
-      grafana_dashboard = "1"
-    }
-  }
-
-  data = {
-    "homelab-overview.json" = file("${path.module}/dashboards/homelab-overview.json")
-  }
-}
-
-resource "kubernetes_config_map" "grafana_dashboard_kubernetes_cluster" {
-  metadata {
-    name      = "grafana-kubernetes-cluster"
-    namespace = var.namespace
-    labels = {
-      grafana_dashboard = "1"
-    }
-  }
-
-  data = {
-    "kubernetes-cluster.json" = file("${path.module}/dashboards/kubernetes-cluster.json")
-  }
-}
 
 resource "kubernetes_config_map" "grafana_dashboard_pihole" {
   metadata {
@@ -64,25 +37,14 @@ resource "kubernetes_config_map" "grafana_dashboard_crowdsec" {
   }
 }
 
-resource "kubernetes_config_map" "grafana_dashboard_blackbox" {
+resource "kubernetes_config_map" "grafana_dashboard_service_status" {
   metadata {
-    name      = "grafana-blackbox-uptime"
+    name      = "grafana-service-status"
     namespace = var.namespace
     labels    = { grafana_dashboard = "1" }
   }
   data = {
-    "blackbox-uptime.json" = file("${path.module}/dashboards/blackbox-uptime.json")
-  }
-}
-
-resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
-  metadata {
-    name      = "grafana-resource-comparison"
-    namespace = var.namespace
-    labels    = { grafana_dashboard = "1" }
-  }
-  data = {
-    "resource-comparison.json" = file("${path.module}/dashboards/resource-comparison.json")
+    "service-status.json" = file("${path.module}/dashboards/service-status.json")
   }
 }
 
@@ -141,17 +103,6 @@ resource "kubernetes_config_map" "grafana_dashboard_ha_robot_maid" {
   }
 }
 
-resource "kubernetes_config_map" "grafana_dashboard_ha_network_pulse" {
-  metadata {
-    name      = "grafana-ha-network-pulse"
-    namespace = var.namespace
-    labels    = { grafana_dashboard = "1" }
-  }
-  data = {
-    "ha-network-pulse.json" = file("${path.module}/dashboards/ha-network-pulse.json")
-  }
-}
-
 resource "kubernetes_config_map" "grafana_dashboard_ha_daily_rhythm" {
   metadata {
     name      = "grafana-ha-daily-rhythm"
@@ -173,6 +124,29 @@ resource "kubernetes_config_map" "grafana_dashboard_ha_maintenance_hub" {
     "ha-maintenance-hub.json" = file("${path.module}/dashboards/ha-maintenance-hub.json")
   }
 }
+
+resource "kubernetes_config_map" "grafana_dashboard_isp_network" {
+  metadata {
+    name      = "grafana-isp-network"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "isp-network.json" = file("${path.module}/dashboards/isp-network.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_local_machines" {
+  metadata {
+    name      = "grafana-local-machines"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "local-machines.json" = file("${path.module}/dashboards/local-machines.json")
+  }
+}
+
 
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
@@ -200,14 +174,34 @@ locals {
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
-    # Speedtest exporter on Mac Mini — runs every 30 min to verify ISP bandwidth
-    # Uses wired Ethernet for accurate results. Metrics: download/upload Mbps, ping ms.
+    # Speedtest exporter — two WiFi sample points at different locations.
+    # Both run every 30 min. Use 'instance' label to compare locations.
     {
-      job_name        = "speedtest"
-      static_configs  = [{ targets = ["${var.mac_mini_ip}:9798"], labels = { instance = "mac-mini", service = "speedtest" } }]
-      metrics_path    = "/metrics"
+      job_name       = "speedtest"
+      metrics_path   = "/metrics"
       scrape_interval = "30m" # Don't run too frequently — each test uses ~200MB of bandwidth
       scrape_timeout  = "90s" # Speedtest takes up to 60s to complete
+      static_configs = [{
+        targets = [
+          "${var.mac_mini_ip}:9798",
+          "${local._resolved_ip}:9799",
+        ]
+        labels = { service = "speedtest" }
+      }]
+      relabel_configs = [
+        {
+          source_labels = ["__address__"]
+          regex         = "${replace(var.mac_mini_ip, ".", "\\.")}:.*"
+          target_label  = "instance"
+          replacement   = "mac-mini"
+        },
+        {
+          source_labels = ["__address__"]
+          regex         = "${replace(local._resolved_ip, ".", "\\.")}:.*"
+          target_label  = "instance"
+          replacement   = "raspberry-pi"
+        },
+      ]
     },
     # CrowdSec IDS metrics (community bans + local decisions)
     {
@@ -230,6 +224,16 @@ locals {
       metrics_path    = "/probe"
       params          = { module = ["icmp"] }
       static_configs  = [{ targets = var.blackbox_icmp_targets }]
+      relabel_configs = local._relabel_blackbox
+    },
+    # Blackbox Exporter — MCP OAuth gateway liveness
+    # Probes /.well-known/oauth-authorization-server which returns 200 without auth.
+    # A 200 here confirms the Cloudflare Worker + tunnel routing stack is healthy end-to-end.
+    {
+      job_name        = "blackbox-mcp"
+      metrics_path    = "/probe"
+      params          = { module = ["http_2xx"] }
+      static_configs  = [{ targets = [for t in var.blackbox_mcp_targets : "${t}/.well-known/oauth-authorization-server"] }]
       relabel_configs = local._relabel_blackbox
     },
   ]
@@ -379,8 +383,8 @@ resource "helm_release" "prometheus_stack" {
           nodePort = var.grafana_port
         }
 
-        # Default dashboards
-        defaultDashboardsEnabled = true
+        # Default dashboards (disabled — Kubernetes/* and Node Exporter/* defaults add clutter)
+        defaultDashboardsEnabled = false
 
         # Additional data sources
         additionalDataSources = concat(var.grafana_additional_datasources, [
@@ -827,5 +831,83 @@ resource "kubernetes_service" "blackbox_exporter" {
     }
 
     type = "ClusterIP"
+  }
+}
+
+# ─── Speedtest exporter on Raspberry Pi (WiFi sample point) ─────────────────
+
+resource "kubernetes_deployment" "speedtest_exporter" {
+  metadata {
+    name      = "speedtest-exporter"
+    namespace = var.namespace
+    labels    = { app = "speedtest-exporter" }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = { app = "speedtest-exporter" }
+    }
+
+    template {
+      metadata {
+        labels = { app = "speedtest-exporter" }
+      }
+
+      spec {
+        container {
+          name  = "speedtest-exporter"
+          image = "ghcr.io/miguelndecarvalho/speedtest-exporter:v3.5.4"
+
+          port {
+            container_port = 9798
+          }
+
+          # A speedtest run buffers ~200MB of download, so a 128Mi limit got the
+          # container OOMKilled (exit 137) mid-test — it crash-looped 8000+ times
+          # and never reported a result. 320Mi covers a run with headroom.
+          resources {
+            requests = { cpu = "50m", memory = "96Mi" }
+            limits   = { cpu = "500m", memory = "320Mi" }
+          }
+
+          # Probe the landing page, NOT /healthz (this image has no such route —
+          # it returned 404, so the kubelet SIGKILLed the container ~every 2 min:
+          # 627 restarts, exit 137 misread as OOM). Root "/" returns 200 instantly;
+          # do NOT use "/metrics" — that path runs a real speedtest on every hit.
+          liveness_probe {
+            http_get {
+              path = "/"
+              port = 9798
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 30
+            timeout_seconds       = 5
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "speedtest_exporter" {
+  metadata {
+    name      = "speedtest-exporter"
+    namespace = var.namespace
+    labels    = { app = "speedtest-exporter" }
+  }
+
+  spec {
+    selector = { app = "speedtest-exporter" }
+
+    port {
+      name        = "metrics"
+      port        = 9799
+      target_port = 9798
+      node_port   = 30099
+    }
+
+    type = "NodePort"
   }
 }

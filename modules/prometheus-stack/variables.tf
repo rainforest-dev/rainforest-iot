@@ -185,9 +185,9 @@ variable "kube_state_metrics_enabled" {
 
 # External monitoring targets
 variable "mac_mini_ip" {
-  description = "Mac mini IP address for monitoring"
+  description = "Mac mini LAN IP address for monitoring (use LAN IP, not Tailscale)"
   type        = string
-  default     = "100.86.67.66"
+  default     = "192.168.0.126"
 }
 
 variable "mac_mini_hostname" {
@@ -223,7 +223,6 @@ variable "blackbox_http_targets" {
     # Core AI / productivity
     "https://open-webui.rainforest.tools",
     "https://n8n.rainforest.tools",
-    "https://flowise.rainforest.tools",
     # Media / books
     "https://calibre-web.rainforest.tools",
     # IoT / home
@@ -240,4 +239,10 @@ variable "blackbox_icmp_targets" {
   description = "IP addresses for ICMP ping probes"
   type        = list(string)
   default     = ["192.168.0.1", "1.1.1.1"]
+}
+
+variable "blackbox_mcp_targets" {
+  description = "MCP OAuth gateway base URLs — probed via /.well-known/oauth-authorization-server"
+  type        = list(string)
+  default     = []
 }

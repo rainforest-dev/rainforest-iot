@@ -1,0 +1,911 @@
+{
+  "uid": "homelab-isp-network",
+  "title": "\ud83d\udce1 ISP & Network",
+  "tags": [
+    "homelab",
+    "network",
+    "isp"
+  ],
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "\ud83d\udcca Current Status",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Router Latency",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "probe_duration_seconds{job=\"blackbox-icmp\",instance=\"192.168.0.1\"}*1000",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "ISP Latency (1.1.1.1)",
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 150
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "probe_duration_seconds{job=\"blackbox-icmp\",instance=\"1.1.1.1\"}*1000",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Packet Loss",
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(1 - avg_over_time(probe_success{job=\"blackbox-icmp\",instance=\"1.1.1.1\"}[10m]))*100",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Router Download Now",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MBs",
+          "noValue": "\u2014",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 35
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_sensor_data_rate_kib_per_s{entity=~\".*[Dd]ownload.*\"}/1024",
+          "refId": "A",
+          "legendFormat": "Download"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Router Upload Now",
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MBs",
+          "noValue": "\u2014",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 35
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_sensor_data_rate_kib_per_s{entity=~\".*[Uu]pload.*\"}/1024",
+          "refId": "A",
+          "legendFormat": "Upload"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Speedtest Download",
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "noValue": "Pending\u2026",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "green",
+                "value": 280
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "last_over_time(speedtest_download_bits_per_second[35m])/1e6",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "\ud83d\udce1 Latency",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Latency Over Time",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "probe_duration_seconds{job=\"blackbox-icmp\",instance=\"192.168.0.1\"}*1000",
+          "refId": "A",
+          "legendFormat": "Router (LAN)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "probe_duration_seconds{job=\"blackbox-icmp\",instance=\"1.1.1.1\"}*1000",
+          "refId": "B",
+          "legendFormat": "Cloudflare 1.1.1.1 (ISP)"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "\ud83c\udf10 Real-time Router Traffic (SCR 50AXE)",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Router Throughput",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MBs",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Approx. 300 Mbps (37.5 MiB/s)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "rgba(255,220,0,0.7)"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    4
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_sensor_data_rate_kib_per_s{entity=~\".*[Dd]ownload.*\"}/1024",
+          "refId": "A",
+          "legendFormat": "Download (MiB/s)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homeassistant_sensor_data_rate_kib_per_s{entity=~\".*[Uu]pload.*\"}/1024",
+          "refId": "B",
+          "legendFormat": "Upload (MiB/s)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "35",
+          "refId": "C",
+          "legendFormat": "Approx. 300 Mbps (37.5 MiB/s)"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "\u26a1 ISP Speedtest History (every 30 min) \u2014 ISP promise: 300/300 Mbps",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "type": "stat",
+      "title": "Last Download",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "noValue": "Pending\u2026",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "green",
+                "value": 280
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "last_over_time(speedtest_download_bits_per_second[35m])/1e6",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "Last Upload",
+      "gridPos": {
+        "x": 6,
+        "y": 22,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "noValue": "Pending\u2026",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "green",
+                "value": 280
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "last_over_time(speedtest_upload_bits_per_second[35m])/1e6",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "stat",
+      "title": "Speedtest Ping",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "Pending\u2026",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "last_over_time(speedtest_ping_latency_milliseconds[35m])",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "Speedtest Jitter",
+      "gridPos": {
+        "x": 18,
+        "y": 22,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "Pending\u2026",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "last_over_time(speedtest_ping_jitter_milliseconds[35m])",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "type": "timeseries",
+      "title": "Download & Upload vs 300 Mbps Promise",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ISP promise (300 Mbps)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "rgba(255,220,0,0.8)"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    4
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "speedtest_download_bits_per_second/1e6",
+          "refId": "A",
+          "legendFormat": "Download Mbps"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "speedtest_upload_bits_per_second/1e6",
+          "refId": "B",
+          "legendFormat": "Upload Mbps"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "300",
+          "refId": "C",
+          "legendFormat": "ISP promise (300 Mbps)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
