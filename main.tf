@@ -68,6 +68,7 @@ module "music_assistant" {
   ssh_user             = var.raspberry_pi_user
   ssh_port             = var.raspberry_pi_port
   ssh_private_key_path = "~/.ssh/id_ed25519.rpi5"
+  log_level            = "INFO"
 }
 
 module "homebridge" {
@@ -230,9 +231,11 @@ module "prometheus_stack" {
 
   # External monitoring targets — use IPs, not .local hostnames (K3s CoreDNS can't resolve mDNS).
   # Mac Mini metrics come via Grafana Alloy push (remote_write) rather than pull-based scraping.
+  mac_mini_ip           = var.mac_mini_ip
   external_ip           = var.raspberry_pi_ip
   blackbox_http_targets = var.blackbox_http_targets
   blackbox_icmp_targets = var.blackbox_icmp_targets
+  blackbox_mcp_targets  = var.blackbox_mcp_targets
 
   # Home Assistant Prometheus scraping — set token to enable the HA scrape job
   homeassistant_token = var.homeassistant_token

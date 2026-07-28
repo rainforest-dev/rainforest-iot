@@ -524,10 +524,37 @@ variable "blackbox_http_targets" {
   description = "HTTP/HTTPS endpoints for Blackbox Exporter synthetic monitoring"
   type        = list(string)
   default = [
+    # AI & Automation
     "https://open-webui.rainforest.tools",
     "https://n8n.rainforest.tools",
-    "https://calibre-web.rainforest.tools",
     "https://whisper.rainforest.tools",
+    "https://comfyui.rainforest.tools",
+    # Media & Reading
+    "https://calibre-web.rainforest.tools",
+    "https://calibre.rainforest.tools",
+    "https://rss.rainforest.tools",
+    # Infrastructure & Storage
+    "https://minio.rainforest.tools",
+    "https://pgadmin.rainforest.tools",
+    # NOTE: docker-mcp is intentionally absent — its OAuth Worker serves no root
+    # handler, so "/" always 404s. It is probed by the blackbox-mcp job instead,
+    # which hits /.well-known/oauth-authorization-server and returns 200.
+    # IoT & Home
+    "https://homepage.rainforest.tools",
+    "https://homeassistant.rainforest.tools",
+    "https://music-assistant.rainforest.tools",
+    "https://bambii.rainforest.tools",
+    "https://gfn.rainforest.tools",
+  ]
+}
+
+variable "blackbox_mcp_targets" {
+  description = "MCP OAuth gateway endpoints — probed via /.well-known/oauth-authorization-server (200 = OAuth layer up, no token needed)"
+  type        = list(string)
+  default = [
+    "https://docker-mcp.rainforest.tools",
+    "https://obsidian.rainforest.tools",
+    "https://calibre-mcp.rainforest.tools",
   ]
 }
 
