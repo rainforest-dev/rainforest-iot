@@ -40,6 +40,12 @@ variable "ssh_private_key_path" {
   default     = "~/.ssh/id_ed25519.rpi5"
 }
 
+variable "log_level" {
+  description = "Log level for Music Assistant (DEBUG, INFO, WARNING, ERROR)"
+  type        = string
+  default     = "INFO"
+}
+
 variable "log_opts" {
   description = "Logging options for the container"
   type        = map(string)
