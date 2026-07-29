@@ -14,33 +14,6 @@ terraform {
 }
 
 # Grafana dashboards as ConfigMaps for sidecar auto-import
-resource "kubernetes_config_map" "grafana_dashboard_homelab_overview" {
-  metadata {
-    name      = "grafana-homelab-overview"
-    namespace = var.namespace
-    labels = {
-      grafana_dashboard = "1"
-    }
-  }
-
-  data = {
-    "homelab-overview.json" = file("${path.module}/dashboards/homelab-overview.json")
-  }
-}
-
-resource "kubernetes_config_map" "grafana_dashboard_kubernetes_cluster" {
-  metadata {
-    name      = "grafana-kubernetes-cluster"
-    namespace = var.namespace
-    labels = {
-      grafana_dashboard = "1"
-    }
-  }
-
-  data = {
-    "kubernetes-cluster.json" = file("${path.module}/dashboards/kubernetes-cluster.json")
-  }
-}
 
 resource "kubernetes_config_map" "grafana_dashboard_pihole" {
   metadata {
@@ -64,25 +37,14 @@ resource "kubernetes_config_map" "grafana_dashboard_crowdsec" {
   }
 }
 
-resource "kubernetes_config_map" "grafana_dashboard_blackbox" {
+resource "kubernetes_config_map" "grafana_dashboard_service_status" {
   metadata {
-    name      = "grafana-blackbox-uptime"
+    name      = "grafana-service-status"
     namespace = var.namespace
     labels    = { grafana_dashboard = "1" }
   }
   data = {
-    "blackbox-uptime.json" = file("${path.module}/dashboards/blackbox-uptime.json")
-  }
-}
-
-resource "kubernetes_config_map" "grafana_dashboard_resource_comparison" {
-  metadata {
-    name      = "grafana-resource-comparison"
-    namespace = var.namespace
-    labels    = { grafana_dashboard = "1" }
-  }
-  data = {
-    "resource-comparison.json" = file("${path.module}/dashboards/resource-comparison.json")
+    "service-status.json" = file("${path.module}/dashboards/service-status.json")
   }
 }
 
@@ -141,17 +103,6 @@ resource "kubernetes_config_map" "grafana_dashboard_ha_robot_maid" {
   }
 }
 
-resource "kubernetes_config_map" "grafana_dashboard_ha_network_pulse" {
-  metadata {
-    name      = "grafana-ha-network-pulse"
-    namespace = var.namespace
-    labels    = { grafana_dashboard = "1" }
-  }
-  data = {
-    "ha-network-pulse.json" = file("${path.module}/dashboards/ha-network-pulse.json")
-  }
-}
-
 resource "kubernetes_config_map" "grafana_dashboard_ha_daily_rhythm" {
   metadata {
     name      = "grafana-ha-daily-rhythm"
@@ -174,6 +125,29 @@ resource "kubernetes_config_map" "grafana_dashboard_ha_maintenance_hub" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_isp_network" {
+  metadata {
+    name      = "grafana-isp-network"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "isp-network.json" = file("${path.module}/dashboards/isp-network.json")
+  }
+}
+
+resource "kubernetes_config_map" "grafana_dashboard_local_machines" {
+  metadata {
+    name      = "grafana-local-machines"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "local-machines.json" = file("${path.module}/dashboards/local-machines.json")
+  }
+}
+
+
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.
 locals {
@@ -195,24 +169,44 @@ locals {
     # Pi-hole Prometheus exporter sidecar (port 9617).
     # Replaces the old /admin/api.php job which returned JSON, not Prometheus text-format.
     {
-      job_name       = "pihole-exporter"
-      static_configs = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
+      job_name        = "pihole-exporter"
+      static_configs  = [{ targets = ["${local._resolved_ip}:9617"], labels = { instance = "raspberry-pi-5", service = "pihole" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
-    # Speedtest exporter on Mac Mini — runs every 30 min to verify ISP bandwidth
-    # Uses wired Ethernet for accurate results. Metrics: download/upload Mbps, ping ms.
+    # Speedtest exporter — two WiFi sample points at different locations.
+    # Both run every 30 min. Use 'instance' label to compare locations.
     {
       job_name        = "speedtest"
-      static_configs  = [{ targets = ["${var.mac_mini_ip}:9798"], labels = { instance = "mac-mini", service = "speedtest" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30m" # Don't run too frequently — each test uses ~200MB of bandwidth
       scrape_timeout  = "90s" # Speedtest takes up to 60s to complete
+      static_configs = [{
+        targets = [
+          "${var.mac_mini_ip}:9798",
+          "${local._resolved_ip}:9799",
+        ]
+        labels = { service = "speedtest" }
+      }]
+      relabel_configs = [
+        {
+          source_labels = ["__address__"]
+          regex         = "${replace(var.mac_mini_ip, ".", "\\.")}:.*"
+          target_label  = "instance"
+          replacement   = "mac-mini"
+        },
+        {
+          source_labels = ["__address__"]
+          regex         = "${replace(local._resolved_ip, ".", "\\.")}:.*"
+          target_label  = "instance"
+          replacement   = "raspberry-pi"
+        },
+      ]
     },
     # CrowdSec IDS metrics (community bans + local decisions)
     {
-      job_name       = "crowdsec"
-      static_configs = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
+      job_name        = "crowdsec"
+      static_configs  = [{ targets = ["${local._resolved_ip}:6060"], labels = { instance = "raspberry-pi-5", service = "crowdsec" } }]
       metrics_path    = "/metrics"
       scrape_interval = "30s"
     },
@@ -232,14 +226,24 @@ locals {
       static_configs  = [{ targets = var.blackbox_icmp_targets }]
       relabel_configs = local._relabel_blackbox
     },
+    # Blackbox Exporter — MCP OAuth gateway liveness
+    # Probes /.well-known/oauth-authorization-server which returns 200 without auth.
+    # A 200 here confirms the Cloudflare Worker + tunnel routing stack is healthy end-to-end.
+    {
+      job_name        = "blackbox-mcp"
+      metrics_path    = "/probe"
+      params          = { module = ["http_2xx"] }
+      static_configs  = [{ targets = [for t in var.blackbox_mcp_targets : "${t}/.well-known/oauth-authorization-server"] }]
+      relabel_configs = local._relabel_blackbox
+    },
   ]
 
   # Home Assistant job is optional — requires a long-lived token + HA Prometheus integration enabled.
   _ha_scrape_job = var.homeassistant_token != "" ? [{
-    job_name       = "homeassistant"
-    static_configs = [{ targets = ["${local._resolved_ip}:8123"] }]
+    job_name        = "homeassistant"
+    static_configs  = [{ targets = ["${local._resolved_ip}:8123"] }]
     metrics_path    = "/api/prometheus"
-    authorization  = { credentials = var.homeassistant_token }
+    authorization   = { credentials = var.homeassistant_token }
     scrape_interval = "60s"
   }] : []
 
@@ -340,6 +344,12 @@ resource "helm_release" "prometheus_stack" {
       grafana = {
         enabled = var.grafana_enabled
 
+        # Pin Grafana 13.1.1 explicitly — chart 87.19.0 bundles 13.x, but we must
+        # avoid 13.0.0 (a storage-migration bug can lose dashboards; fixed in 13.0.1+).
+        image = {
+          tag = "13.1.1"
+        }
+
         # Add pod labels for Homepage integration
         podLabels = {
           app = "grafana"
@@ -373,8 +383,8 @@ resource "helm_release" "prometheus_stack" {
           nodePort = var.grafana_port
         }
 
-        # Default dashboards
-        defaultDashboardsEnabled = true
+        # Default dashboards (disabled — Kubernetes/* and Node Exporter/* defaults add clutter)
+        defaultDashboardsEnabled = false
 
         # Additional data sources
         additionalDataSources = concat(var.grafana_additional_datasources, [
@@ -595,6 +605,82 @@ resource "helm_release" "prometheus_stack" {
         }
       }
 
+      # Blackbox probes have no default rule in kube-prometheus-stack, so a public
+      # endpoint could go down silently. probe_success is emitted per target by the
+      # blackbox exporter.
+      additionalPrometheusRulesMap = {
+        blackbox-rules = {
+          groups = [
+            {
+              name = "blackbox"
+              rules = [
+                {
+                  alert = "BlackboxProbeFailed"
+                  expr  = "probe_success == 0"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary = "Probe failing for {{ $labels.instance }}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+
+        # Homelab host/service alerts. These previously lived in a plain ConfigMap
+        # labelled role=alert-rules, which the Prometheus Operator never reads —
+        # it only picks up PrometheusRule CRDs, so they never loaded. Rules that
+        # duplicated kube-prometheus-stack built-ins were dropped rather than ported.
+        homelab-rules = {
+          groups = [
+            {
+              name = "homelab.rules"
+              rules = [
+                {
+                  alert = "HighCPUUsage"
+                  expr  = "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100) > 80"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "High CPU usage detected"
+                    description = "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+                  }
+                },
+                {
+                  alert = "HighMemoryUsage"
+                  expr  = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "High memory usage detected"
+                    description = "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+                  }
+                },
+                {
+                  alert = "HomelabServiceDown"
+                  expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
+                  for   = "2m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "Homelab service is down"
+                    description = "Homelab service {{ $labels.job }} is not responding"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+
       # Disable components that are too heavy for Pi
       kubeEtcd = {
         enabled = false
@@ -612,118 +698,6 @@ resource "helm_release" "prometheus_stack" {
   ]
 
   depends_on = [kubernetes_secret.prometheus_additional_scrape_configs]
-}
-
-# Create custom alerting rules for homelab
-resource "kubernetes_config_map" "alerting_rules" {
-  count = var.enable_custom_alerts ? 1 : 0
-
-  metadata {
-    name      = "homelab-alerting-rules"
-    namespace = var.namespace
-    labels = {
-      "app.kubernetes.io/name" = "prometheus"
-      "prometheus"             = "kube-prometheus-prometheus"
-      "role"                   = "alert-rules"
-    }
-  }
-
-  data = {
-    "homelab.rules.yaml" = yamlencode({
-      groups = [
-        {
-          name = "homelab.rules"
-          rules = [
-            {
-              alert = "HighCPUUsage"
-              expr  = "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100) > 80"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "High CPU usage detected"
-                description = "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
-              }
-            },
-            {
-              alert = "HighMemoryUsage"
-              expr  = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "High memory usage detected"
-                description = "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
-              }
-            },
-            {
-              alert = "ServiceDown"
-              expr  = "up == 0"
-              for   = "1m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "Service is down"
-                description = "Service {{ $labels.job }} on {{ $labels.instance }} is down"
-              }
-            },
-            {
-              alert = "HighDiskUsage"
-              expr  = "(1 - (node_filesystem_avail_bytes{fstype!=\"tmpfs\"} / node_filesystem_size_bytes{fstype!=\"tmpfs\"})) * 100 > 90"
-              for   = "5m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "High disk usage detected"
-                description = "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}"
-              }
-            },
-            # Homelab-specific alerts (consolidated from monitoring-integrations module)
-            {
-              alert = "HomelabServiceDown"
-              expr  = "up{job=~\"mac-mini-.*|pi-hole\"} == 0"
-              for   = "2m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "Homelab service is down"
-                description = "Homelab service {{ $labels.job }} is not responding"
-              }
-            },
-            {
-              alert = "KubernetesNodeNotReady"
-              expr  = "kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 0"
-              for   = "5m"
-              labels = {
-                severity = "critical"
-              }
-              annotations = {
-                summary     = "Kubernetes node not ready"
-                description = "Kubernetes node {{ $labels.node }} is not ready"
-              }
-            },
-            {
-              alert = "KubernetesPodCrashLooping"
-              expr  = "rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 0"
-              for   = "5m"
-              labels = {
-                severity = "warning"
-              }
-              annotations = {
-                summary     = "Pod is crash looping"
-                description = "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
-              }
-            }
-          ]
-        }
-      ]
-    })
-  }
 }
 
 # ---------------------------------------------------------------------------
@@ -857,5 +831,83 @@ resource "kubernetes_service" "blackbox_exporter" {
     }
 
     type = "ClusterIP"
+  }
+}
+
+# ─── Speedtest exporter on Raspberry Pi (WiFi sample point) ─────────────────
+
+resource "kubernetes_deployment" "speedtest_exporter" {
+  metadata {
+    name      = "speedtest-exporter"
+    namespace = var.namespace
+    labels    = { app = "speedtest-exporter" }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = { app = "speedtest-exporter" }
+    }
+
+    template {
+      metadata {
+        labels = { app = "speedtest-exporter" }
+      }
+
+      spec {
+        container {
+          name  = "speedtest-exporter"
+          image = "ghcr.io/miguelndecarvalho/speedtest-exporter:v3.5.4"
+
+          port {
+            container_port = 9798
+          }
+
+          # A speedtest run buffers ~200MB of download, so a 128Mi limit got the
+          # container OOMKilled (exit 137) mid-test — it crash-looped 8000+ times
+          # and never reported a result. 320Mi covers a run with headroom.
+          resources {
+            requests = { cpu = "50m", memory = "96Mi" }
+            limits   = { cpu = "500m", memory = "320Mi" }
+          }
+
+          # Probe the landing page, NOT /healthz (this image has no such route —
+          # it returned 404, so the kubelet SIGKILLed the container ~every 2 min:
+          # 627 restarts, exit 137 misread as OOM). Root "/" returns 200 instantly;
+          # do NOT use "/metrics" — that path runs a real speedtest on every hit.
+          liveness_probe {
+            http_get {
+              path = "/"
+              port = 9798
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 30
+            timeout_seconds       = 5
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "speedtest_exporter" {
+  metadata {
+    name      = "speedtest-exporter"
+    namespace = var.namespace
+    labels    = { app = "speedtest-exporter" }
+  }
+
+  spec {
+    selector = { app = "speedtest-exporter" }
+
+    port {
+      name        = "metrics"
+      port        = 9799
+      target_port = 9798
+      node_port   = 30099
+    }
+
+    type = "NodePort"
   }
 }

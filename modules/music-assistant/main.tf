@@ -56,6 +56,7 @@ resource "docker_container" "music_assistant" {
   # Environment variables
   env = [
     "TZ=${var.timezone}",
+    "LOG_LEVEL=${var.log_level}",
   ]
 
   # Data volume

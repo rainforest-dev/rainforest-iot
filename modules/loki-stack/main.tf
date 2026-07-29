@@ -29,6 +29,21 @@ resource "helm_release" "loki_stack" {
       loki = {
         enabled = true
 
+        # Do NOT mark Loki as Grafana's default datasource. The loki-stack chart
+        # defaults this to true, which collides with kube-prometheus-stack marking
+        # Prometheus as default. Grafana then rejects the whole provisioning file
+        # ("Only one datasource per organization can be marked as default") and
+        # crash-loops. Prometheus is the default; prometheus-stack already
+        # provisions Loki separately with isDefault = false.
+        isDefault = false
+
+        # Pin the Loki image: loki-stack depends on the loki subchart at ^2.15.2,
+        # whose default image is still 2.6.1 — too old for the LogQL that Grafana 13
+        # health checks emit ("parse error ... unexpected IDENTIFIER").
+        image = {
+          tag = "2.9.3"
+        }
+
         # Resource limits for Pi 5
         resources = {
           requests = {
@@ -207,13 +222,20 @@ resource "helm_release" "loki_stack" {
                     action        = "replace"
                     target_label  = "component"
                   },
-                  # Tell promtail where to read logs from (k8s/containerd paths)
+                  # Tell promtail where to read logs from (k8s/containerd paths).
+                  # Real layout: /var/log/pods/<ns>_<pod>_<uid>/<container>/0.log
+                  # With separator "/" the default regex (.*) captures BOTH source
+                  # labels as a single group, so $1 is already "<uid>/<container>".
+                  # The old replacement referenced $2, which never existed — every
+                  # target resolved to an unmatchable path ("no path for target"),
+                  # promtail ended up with zero active targets, and its /ready probe
+                  # returned 500 forever, so no Pi pod logs reached Loki.
                   {
                     action        = "replace"
                     source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
                     target_label  = "__path__"
                     separator     = "/"
-                    replacement   = "/var/log/pods/*$1/*$2/*.log"
+                    replacement   = "/var/log/pods/*$1/*.log"
                   }
                 ]
               },

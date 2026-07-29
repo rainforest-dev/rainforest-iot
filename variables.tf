@@ -19,7 +19,11 @@ variable "raspberry_pi_port" {
 variable "raspberry_pi_ip" {
   description = "IP address of the Raspberry Pi (used for container-to-host communication)"
   type        = string
-  default     = "192.168.0.134"
+  # The Pi is at .128; it briefly held .134 (a DHCP-lease drift, since corrected).
+  # terraform.tfvars overrides this, but a fresh clone would otherwise deploy against
+  # a host that no longer exists.
+  # No default: real value lives in terraform.tfvars (gitignored) so this
+  # public repo does not disclose the internal network. 
 }
 
 variable "raspberry_pi_host" {
@@ -233,7 +237,13 @@ variable "k8s_api_hostname" {
 variable "prometheus_chart_version" {
   description = "Version of kube-prometheus-stack Helm chart"
   type        = string
-  default     = "77.10.0"
+  # 87.19.0 ships Grafana 13.x (the Grafana image is pinned to 13.1.1 in
+  # modules/prometheus-stack — 13.0.0 has a storage-migration bug that can lose
+  # dashboards). Upgrading MAJOR versions requires applying the matching
+  # prometheus-operator CRDs first; Helm never upgrades CRDs itself:
+  #   kubectl apply --server-side --force-conflicts -f \
+  #     https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.87.0/example/prometheus-operator-crd/monitoring.coreos.com_<crd>.yaml
+  default = "87.19.0"
 }
 
 variable "loki_chart_version" {
@@ -515,10 +525,37 @@ variable "blackbox_http_targets" {
   description = "HTTP/HTTPS endpoints for Blackbox Exporter synthetic monitoring"
   type        = list(string)
   default = [
+    # AI & Automation
     "https://open-webui.rainforest.tools",
     "https://n8n.rainforest.tools",
-    "https://calibre-web.rainforest.tools",
     "https://whisper.rainforest.tools",
+    "https://comfyui.rainforest.tools",
+    # Media & Reading
+    "https://calibre-web.rainforest.tools",
+    "https://calibre.rainforest.tools",
+    "https://rss.rainforest.tools",
+    # Infrastructure & Storage
+    "https://minio.rainforest.tools",
+    "https://pgadmin.rainforest.tools",
+    # NOTE: docker-mcp is intentionally absent — its OAuth Worker serves no root
+    # handler, so "/" always 404s. It is probed by the blackbox-mcp job instead,
+    # which hits /.well-known/oauth-authorization-server and returns 200.
+    # IoT & Home
+    "https://homepage.rainforest.tools",
+    "https://homeassistant.rainforest.tools",
+    "https://music-assistant.rainforest.tools",
+    "https://bambii.rainforest.tools",
+    "https://gfn.rainforest.tools",
+  ]
+}
+
+variable "blackbox_mcp_targets" {
+  description = "MCP OAuth gateway endpoints — probed via /.well-known/oauth-authorization-server (200 = OAuth layer up, no token needed)"
+  type        = list(string)
+  default = [
+    "https://docker-mcp.rainforest.tools",
+    "https://obsidian.rainforest.tools",
+    "https://calibre-mcp.rainforest.tools",
   ]
 }
 

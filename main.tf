@@ -46,6 +46,9 @@ module "homeassistant" {
   timezone           = var.timezone
   log_opts           = local.common_log_opts
 
+  # Built from mac_mini_ip rather than hard-coded, so no LAN address is committed.
+  n8n_webhook_url = "http://${var.mac_mini_ip}:5678/webhook/ha-events"
+
   # Trust the Mac Mini as a reverse proxy (Cloudflare Tunnel routes through it)
   # Scoped to the local /24 subnet rather than broad RFC1918 ranges
   trusted_proxies = ["192.168.0.0/24"]
@@ -68,6 +71,7 @@ module "music_assistant" {
   ssh_user             = var.raspberry_pi_user
   ssh_port             = var.raspberry_pi_port
   ssh_private_key_path = "~/.ssh/id_ed25519.rpi5"
+  log_level            = "INFO"
 }
 
 module "homebridge" {
@@ -162,7 +166,7 @@ module "pi-hole" {
   ssh_user         = var.raspberry_pi_user
   ssh_port         = var.raspberry_pi_port
   exporter_version = var.pihole_exporter_version
-  pihole_password = var.pihole_password
+  pihole_password  = var.pihole_password
 }
 
 # K3s Cluster configuration (when enabled)
@@ -230,9 +234,11 @@ module "prometheus_stack" {
 
   # External monitoring targets — use IPs, not .local hostnames (K3s CoreDNS can't resolve mDNS).
   # Mac Mini metrics come via Grafana Alloy push (remote_write) rather than pull-based scraping.
+  mac_mini_ip           = var.mac_mini_ip
   external_ip           = var.raspberry_pi_ip
   blackbox_http_targets = var.blackbox_http_targets
   blackbox_icmp_targets = var.blackbox_icmp_targets
+  blackbox_mcp_targets  = var.blackbox_mcp_targets
 
   # Home Assistant Prometheus scraping — set token to enable the HA scrape job
   homeassistant_token = var.homeassistant_token
@@ -267,7 +273,7 @@ module "monitoring_integrations" {
   mac_mini_ip              = var.mac_mini_ip
   mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
   pihole_port              = var.pihole_web_port
-  pihole_password         = var.pihole_password
+  pihole_password          = var.pihole_password
   ntopng_port              = var.ntopng_web_port
 }
 

@@ -1,3 +1,14 @@
+# ─── Decision: KEEP homebridge (Theme C, Component 2 · 2026-07-27) ───────────
+# Scope: a single-purpose bridge — one plugin (homebridge-wol) exposing one
+# Wake-on-LAN "NetworkDevice" accessory to Apple HomeKit / Siri. That's all it does.
+#
+# Why not fold it into Home Assistant: HA's native HomeKit bridge (`homekit:`) is
+# NOT enabled, and enabling it just to absorb one WoL accessory adds a re-pairing
+# surface and more moving parts for zero functional gain. This is one tiny,
+# reliable container (Up 11+ days) doing one thing HA does not currently do.
+#
+# Revisit if: HA's HomeKit bridge gets adopted for other reasons (then migrate the
+# WoL accessory and retire this), or the WoL need disappears.
 terraform {
   required_providers {
     docker = {
