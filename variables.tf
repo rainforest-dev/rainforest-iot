@@ -554,7 +554,9 @@ variable "blackbox_mcp_targets" {
   type        = list(string)
   default = [
     "https://docker-mcp.rainforest.tools",
-    "https://obsidian.rainforest.tools",
+    # obsidian.rainforest.tools retired 2026-07-29 — the standalone Obsidian MCP
+    # server was folded into the Docker MCP gateway, so probing it only produced a
+    # permanently-failing alert.
     "https://calibre-mcp.rainforest.tools",
   ]
 }
