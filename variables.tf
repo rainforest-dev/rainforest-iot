@@ -478,7 +478,7 @@ variable "pihole_exporter_version" {
 }
 
 variable "pi_ssh_private_key" {
-  description = "SSH private key content for Pi-hole gravity CronJob (store in terraform.tfvars only)"
+  description = "SSH private key content for the Alloy config provisioner (store in terraform.tfvars only)"
   type        = string
   sensitive   = true
   default     = ""
@@ -536,7 +536,6 @@ variable "blackbox_http_targets" {
     "https://rss.rainforest.tools",
     # Infrastructure & Storage
     "https://minio.rainforest.tools",
-    "https://pgadmin.rainforest.tools",
     # NOTE: docker-mcp is intentionally absent — its OAuth Worker serves no root
     # handler, so "/" always 404s. It is probed by the blackbox-mcp job instead,
     # which hits /.well-known/oauth-authorization-server and returns 200.
