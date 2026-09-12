@@ -36,7 +36,7 @@ ansible-playbook site.yml
 
 # This runs:
 # 1. System preparation & package updates
-# 2. Security hardening (SSH, firewall, fail2ban)
+# 2. Security hardening (SSH, firewall)
 # 3. K3s installation with Pi 5 optimizations
 ```
 
@@ -72,7 +72,7 @@ ansible-playbook playbooks/validate-setup.yml --check
 ### 🔒 system-hardening.yml  
 - SSH security configuration
 - Firewall (UFW) setup
-- Fail2Ban intrusion prevention
+- Removes fail2ban (intrusion prevention is CrowdSec, deployed by Terraform)
 - Automatic security updates
 - System monitoring scripts
 
@@ -136,7 +136,7 @@ Edit `inventory.yml` to customize:
 
 - ✅ SSH hardening (key-only, no root)
 - ✅ Firewall with minimal open ports
-- ✅ Intrusion detection (Fail2Ban)
+- ✅ Intrusion detection (CrowdSec, Terraform layer)
 - ✅ Automatic security updates
 - ✅ System monitoring and alerting
 - ✅ Log rotation and cleanup

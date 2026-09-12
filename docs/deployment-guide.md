@@ -21,7 +21,7 @@ The deployment uses a clean 3-layer architecture with automatic dependency manag
 
 ### What Gets Deployed
 - **K3s Kubernetes cluster** with proper ARM64 configuration
-- **System hardening** with UFW firewall and fail2ban
+- **System hardening** with UFW firewall and CrowdSec intrusion prevention
 - **Kubeconfig management** with automatic local fetch for Terraform
 - **Namespace and storage setup** for monitoring workloads
 

@@ -7,7 +7,7 @@ A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture wi
 **🏗️ Layer 1 (Ansible)** - Infrastructure
 
 - **K3s Kubernetes cluster** with ARM64 optimization
-- **System hardening** with UFW firewall and fail2ban
+- **System hardening** with UFW firewall and CrowdSec intrusion prevention
 - **Kubeconfig management** with automatic local fetch
 
 **🐳 Layer 2 (Terraform)** - Workloads
