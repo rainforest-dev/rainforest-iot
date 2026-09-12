@@ -106,9 +106,9 @@
         purge: yes
       tags: [intrusion-prevention]
 
-    - name: Remove the fail2ban jail override
+    - name: Remove the fail2ban config directory
       file:
-        path: /etc/fail2ban/jail.local
+        path: /etc/fail2ban
         state: absent
       tags: [intrusion-prevention]
 
