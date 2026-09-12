@@ -485,9 +485,9 @@ variable "pi_ssh_private_key" {
 }
 
 variable "crowdsec_version" {
-  description = "CrowdSec Agent Docker image version"
+  description = "CrowdSec Agent Docker image tag (a -debian variant: journald acquisition needs journalctl)"
   type        = string
-  default     = "v1.6.3"
+  default     = "v1.8.1-debian"
 }
 
 variable "crowdsec_bouncer_version" {
