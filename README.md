@@ -7,12 +7,13 @@ A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture wi
 **🏗️ Layer 1 (Ansible)** - Infrastructure
 
 - **K3s Kubernetes cluster** with ARM64 optimization
-- **System hardening** with UFW firewall and CrowdSec intrusion prevention
+- **System hardening** with UFW firewall and SSH lockdown
 - **Kubeconfig management** with automatic local fetch
 
 **🐳 Layer 2 (Terraform)** - Workloads
 
 - **Docker services**: HomeAssistant, Homebridge, Pi-hole, Homepage
+- **CrowdSec intrusion prevention** reading journald, with a firewall bouncer
 - **Kubernetes monitoring**: Prometheus, Grafana, Loki with dependency management
 - **Remote Helm deployment** with automatic CRD handling
 

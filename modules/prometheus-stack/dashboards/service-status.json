@@ -1125,15 +1125,6 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "avg_over_time(probe_success{instance=\"https://pgadmin.rainforest.tools\"}[7d]) * 100",
-          "legendFormat": "pgAdmin",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "avg_over_time(probe_success{instance=\"https://bambii.rainforest.tools\"}[7d]) * 100",
           "legendFormat": "Bambii",
           "instant": true
@@ -1445,79 +1436,6 @@
           },
           "expr": "probe_success{instance=\"https://comfyui.rainforest.tools\"}",
           "legendFormat": "ComfyUI",
-          "instant": true
-        }
-      ]
-    },
-    {
-      "id": 31,
-      "type": "stat",
-      "title": "pgAdmin",
-      "gridPos": {
-        "x": 8,
-        "y": 9,
-        "w": 4,
-        "h": 4
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "graphMode": "none",
-        "colorMode": "background",
-        "textMode": "auto",
-        "orientation": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "Down",
-                  "color": "red"
-                },
-                "1": {
-                  "text": "Up",
-                  "color": "green"
-                }
-              }
-            }
-          ]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "probe_success{instance=\"https://pgadmin.rainforest.tools\"}",
-          "legendFormat": "pgAdmin",
           "instant": true
         }
       ]

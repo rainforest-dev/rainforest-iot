@@ -902,7 +902,7 @@ gh pr create --base main --title "fix: restore SSH intrusion detection via journ
 ## Summary
 - CrowdSec reads `ssh.service` and kernel (UFW) logs from journald on the `-debian` image; tailnet ranges are whitelisted; LAPI binds to loopback.
 - fail2ban is removed (it crashed on every boot watching a non-existent `/var/log/auth.log`), along with the empty directory Docker left at that path.
-- node-exporter gains the systemd collector; new alerts `SystemdUnitFailed` and `CrowdSecAcquisitionStalled`.
+- node-exporter gains the systemd collector; new alerts `SystemdUnitFailed` and `CrowdSecAcquisitionStalled` are defined and evaluating in Prometheus — notification delivery (an Alertmanager receiver) is still to be wired.
 - The redundant, always-failing `pihole-gravity-update` CronJob and the stale pgAdmin probe are removed.
 - The kubeconfig fetch tasks are tagged `kubeconfig` and use the Pi's LAN address.
 
@@ -914,9 +914,19 @@ Raspberry Pi OS bookworm ships journald only. Both fail2ban and the CrowdSec mod
 - `cscli explain`: tailnet source whitelisted, public source parsed.
 - `iptables-bouncer` still pulling from LAPI on `127.0.0.1:6081`.
 - `SystemdUnitFailed` fired for fail2ban, then cleared after removal.
-- No `KubeJobFailed` / `BlackboxProbeFailed` alerts remain.
 
-All applies were targeted, because PR #18 is applied live but not merged.
+## Pending
+- Task 5's post-apply probe is still owed: confirm no `KubeJobFailed` / `BlackboxProbeFailed` alerts remain once
+  ```bash
+  terraform apply -lock-timeout=120s -refresh=false \
+    -target=module.k3s_cluster[0].kubernetes_cron_job_v1.pihole_gravity_update \
+    -target=module.k3s_cluster[0].kubernetes_secret.pi_ssh_key \
+    -target=module.prometheus_stack[0].kubernetes_secret.prometheus_additional_scrape_configs
+  ```
+  has actually run. Until then, the CronJob, its empty secret, and the pgAdmin scrape target are all still live in state.
+- Fix 1's IPv6 whitelist (`module.crowdsec`) and Fix 4's dashboard panel removal (`module.prometheus_stack`) also need a `terraform apply` of those modules to reach the cluster.
+
+All applies were targeted, because PR #18 is applied live but not merged. While PR #18 remains unmerged, an **untargeted** apply would both roll back the homepage and silently perform the pending cleanup above — targeted applies only.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
@@ -932,4 +942,5 @@ EOF
 - Bring the Tailscale install under Ansible (only `tailscale-remove.yml` exists).
 - Cap the journal size (`SystemMaxUse`); it is 3.7 GB on the SD card.
 - Fix the AirPlay UFW rules, which allow `192.168.176.0/24` instead of the LAN, and codify the manually added rules.
+- Alertmanager has no receiver configured (stock `receiver: "null"`): `modules/prometheus-stack/main.tf` never sets `alertmanager.config`, so `SystemdUnitFailed` and `CrowdSecAcquisitionStalled` currently notify nobody — a failed unit is visible only to someone who opens the Prometheus UI. Wiring a receiver (the homelab already runs n8n, which can take a webhook) is required to close the loop.
 - rainforest-homelab: update the macOS container-LAN section in `CLAUDE.md` (fixed on build `26A428`).

@@ -21,7 +21,7 @@ The deployment uses a clean 3-layer architecture with automatic dependency manag
 
 ### What Gets Deployed
 - **K3s Kubernetes cluster** with proper ARM64 configuration
-- **System hardening** with UFW firewall and CrowdSec intrusion prevention
+- **System hardening** with UFW firewall and SSH lockdown
 - **Kubeconfig management** with automatic local fetch for Terraform
 - **Namespace and storage setup** for monitoring workloads
 
@@ -69,6 +69,7 @@ kubectl get pods -A --kubeconfig ~/.kube/config-raspberrypi-5
 - **Pi-hole**: Network-wide DNS ad blocking with Tailscale support
 - **Homepage**: Service dashboard with integrated monitoring
 - **OpenSpeedTest**: Network speed testing
+- **CrowdSec**: SSH/UFW intrusion detection reading journald, with an iptables firewall bouncer
 
 **Kubernetes Monitoring Stack:**
 - **Prometheus Stack**: Metrics collection with CRD installation
