@@ -197,7 +197,8 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0755'
-        
+      tags: [kubeconfig]
+
     - name: Copy kubeconfig for user access
       copy:
         src: /etc/rancher/k3s/k3s.yaml
@@ -206,13 +207,17 @@
         group: "{{ ansible_user }}"
         mode: '0600'
         remote_src: yes
-        
+      diff: false
+      tags: [kubeconfig]
+
     - name: Update kubeconfig server address
       replace:
         path: "/home/{{ ansible_user }}/.kube/config"
         regexp: 'server: https://[^:]+:6443'
-        replace: "server: https://{{ inventory_hostname }}.local:6443"
-        
+        replace: "server: https://{{ ansible_default_ipv4.address }}:6443"
+      diff: false
+      tags: [kubeconfig]
+
     - name: Ensure local .kube directory exists
       file:
         path: "~/.kube"
@@ -220,21 +225,25 @@
         mode: '0700'
       delegate_to: localhost
       become: no
-      
+      tags: [kubeconfig]
+
     - name: Backup existing local kubeconfig if it exists
       copy:
-        src: "~/.kube/config"
-        dest: "~/.kube/config.backup-{{ ansible_date_time.epoch }}"
+        src: "~/.kube/config-{{ inventory_hostname }}"
+        dest: "~/.kube/config-{{ inventory_hostname }}.backup-{{ ansible_date_time.epoch }}"
         mode: '0600'
       delegate_to: localhost
       become: no
-      ignore_errors: yes  # In case ~/.kube/config doesn't exist
-      
+      ignore_errors: yes  # In case ~/.kube/config-{{ inventory_hostname }} doesn't exist
+      diff: false
+      tags: [kubeconfig]
+
     - name: Fetch kubeconfig to local machine for Terraform
       fetch:
         src: "/home/{{ ansible_user }}/.kube/config"
         dest: "~/.kube/config-{{ inventory_hostname }}"
         flat: yes
+      tags: [kubeconfig]
 
       
   handlers:

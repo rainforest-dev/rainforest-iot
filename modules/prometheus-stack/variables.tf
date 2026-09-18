@@ -232,7 +232,6 @@ variable "blackbox_http_targets" {
     # Infrastructure
     "https://whisper.rainforest.tools",
     "https://minio.rainforest.tools",
-    "https://pgadmin.rainforest.tools",
   ]
 }
 

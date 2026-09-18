@@ -41,22 +41,43 @@ resource "docker_container" "crowdsec" {
   ports {
     internal = 8080
     external = 6081
+    ip       = "127.0.0.1"
     protocol = "tcp"
   }
 
   env = [
     "TZ=${var.timezone}",
-    "COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx",
+    "COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/iptables crowdsecurity/nginx",
     "CUSTOM_HOSTNAME=${var.project_name}-crowdsec",
   ]
 
-  dynamic "volumes" {
-    for_each = var.log_paths
-    content {
-      host_path      = volumes.value
-      container_path = volumes.value
-      read_only      = true
-    }
+  upload {
+    file    = "/etc/crowdsec/acquis.yaml"
+    content = file("${path.module}/acquis.yaml")
+  }
+
+  upload {
+    file = "/etc/crowdsec/parsers/s02-enrich/homelab-whitelists.yaml"
+    content = yamlencode({
+      name        = "homelab/whitelists"
+      description = "Homelab trusted networks"
+      whitelist = {
+        reason = "homelab trusted network"
+        cidr   = var.whitelist_cidrs
+      }
+    })
+  }
+
+  volumes {
+    host_path      = "/var/log/journal"
+    container_path = "/var/log/journal"
+    read_only      = true
+  }
+
+  volumes {
+    host_path      = "/etc/machine-id"
+    container_path = "/etc/machine-id"
+    read_only      = true
   }
 
   volumes {

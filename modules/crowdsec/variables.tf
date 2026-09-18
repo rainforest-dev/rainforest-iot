@@ -4,9 +4,9 @@ variable "project_name" {
 }
 
 variable "crowdsec_version" {
-  description = "CrowdSec Agent image version"
+  description = "CrowdSec Agent image tag (a -debian variant: journald acquisition needs journalctl)"
   type        = string
-  default     = "v1.6.3"
+  default     = "v1.8.1-debian"
 }
 
 variable "bouncer_version" {
@@ -60,16 +60,7 @@ variable "log_opts" {
 }
 
 variable "whitelist_cidrs" {
-  description = "CIDRs to never block (LAN, loopback)"
+  description = "CIDRs never banned by local detections, on top of the built-in crowdsecurity/whitelists (RFC1918 IPv4 and ::1 only — despite claiming IPv6 coverage, it does not whitelist link-local or ULA IPv6)"
   type        = list(string)
-  default     = ["192.168.0.0/24", "127.0.0.1/32"]
-}
-
-variable "log_paths" {
-  description = "Host log paths to monitor for intrusion signals"
-  type        = list(string)
-  default = [
-    "/var/log/auth.log",
-    "/var/log/syslog",
-  ]
+  default     = ["100.64.0.0/10", "fd7a:115c:a1e0::/48", "fe80::/10", "fc00::/7"]
 }

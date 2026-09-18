@@ -519,6 +519,26 @@ resource "helm_release" "prometheus_stack" {
         }
       }
 
+      # extraArgs replaces the subchart's default list, so its two filesystem
+      # excludes are repeated verbatim.
+      "prometheus-node-exporter" = {
+        extraArgs = [
+          "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/containerd/.+|var/lib/docker/.+|var/lib/kubelet/.+)($|/)",
+          "--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|erofs)$",
+          "--collector.systemd",
+          "--collector.systemd.unit-include=.+\\.service",
+        ]
+        extraHostVolumeMounts = [
+          {
+            name      = "dbus"
+            hostPath  = "/var/run/dbus/system_bus_socket"
+            mountPath = "/var/run/dbus/system_bus_socket"
+            type      = "Socket"
+            readOnly  = true
+          }
+        ]
+      }
+
       # Kube State Metrics configuration
       kubeStateMetrics = {
         enabled = var.kube_state_metrics_enabled
@@ -673,6 +693,30 @@ resource "helm_release" "prometheus_stack" {
                   annotations = {
                     summary     = "Homelab service is down"
                     description = "Homelab service {{ $labels.job }} is not responding"
+                  }
+                },
+                {
+                  alert = "SystemdUnitFailed"
+                  expr  = "node_systemd_unit_state{state=\"failed\"} == 1"
+                  for   = "15m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "systemd unit {{ $labels.name }} failed"
+                    description = "{{ $labels.name }} on {{ $labels.instance }} has been in the failed state for 15 minutes"
+                  }
+                },
+                {
+                  alert = "CrowdSecAcquisitionStalled"
+                  expr  = "sum(rate(cs_journalctlsource_hits_total[30m])) == 0 or absent(cs_journalctlsource_hits_total)"
+                  for   = "30m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "CrowdSec is reading no logs"
+                    description = "No journald lines reached CrowdSec for 30 minutes; local intrusion detection is blind"
                   }
                 }
               ]
