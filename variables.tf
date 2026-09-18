@@ -591,3 +591,10 @@ variable "alloy_pi_version" {
   type        = string
   default     = "v1.8.2"
 }
+
+variable "ha_alert_webhook_id" {
+  description = "Home Assistant webhook id Alertmanager posts critical alerts to (set in terraform.tfvars only)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

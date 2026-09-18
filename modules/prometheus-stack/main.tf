@@ -461,6 +461,49 @@ resource "helm_release" "prometheus_stack" {
       alertmanager = {
         enabled = var.alertmanager_enabled
 
+        # Routing. Alertmanager runs on the Pi, so the phone path (Home Assistant,
+        # also on the Pi) keeps working when the Mac is down. Everything not routed
+        # here still reaches the Obsidian daily note through the n8n poller.
+        config = var.ha_alert_webhook_id == "" ? null : {
+          global = {
+            resolve_timeout = "5m"
+          }
+          route = {
+            receiver        = "null"
+            group_by        = ["alertname", "instance"]
+            group_wait      = "30s"
+            group_interval  = "5m"
+            repeat_interval = "6h"
+            routes = [
+              {
+                # Always firing by design: never page.
+                receiver = "null"
+                matchers = ["alertname=~\"Watchdog|InfoInhibitor\""]
+              },
+              {
+                receiver = "ha-push"
+                matchers = ["severity=\"critical\""]
+              },
+              {
+                # Warning severity, but each means something is broken and silent.
+                receiver = "ha-push"
+                matchers = ["alertname=~\"SystemdUnitFailed|CrowdSecAcquisitionStalled\""]
+              },
+            ]
+          }
+          receivers = [
+            { name = "null" },
+            {
+              name = "ha-push"
+              webhook_configs = [{
+                url           = "http://${local._resolved_ip}:8123/api/webhook/${var.ha_alert_webhook_id}"
+                send_resolved = true
+                max_alerts    = 5
+              }]
+            },
+          ]
+        }
+
         alertmanagerSpec = {
           # Add pod labels for Homepage integration
           podMetadata = {
