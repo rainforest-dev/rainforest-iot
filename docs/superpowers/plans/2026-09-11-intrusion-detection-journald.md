@@ -942,5 +942,5 @@ EOF
 - Bring the Tailscale install under Ansible (only `tailscale-remove.yml` exists).
 - Cap the journal size (`SystemMaxUse`); it is 3.7 GB on the SD card.
 - Fix the AirPlay UFW rules, which allow `192.168.176.0/24` instead of the LAN, and codify the manually added rules.
-- Alertmanager has no receiver configured (stock `receiver: "null"`): `modules/prometheus-stack/main.tf` never sets `alertmanager.config`, so `SystemdUnitFailed` and `CrowdSecAcquisitionStalled` currently notify nobody — a failed unit is visible only to someone who opens the Prometheus UI. Wiring a receiver (the homelab already runs n8n, which can take a webhook) is required to close the loop.
+- Alertmanager has no receiver configured (stock `receiver: "null"`), so nothing is *pushed* when an alert fires. Alerts are not invisible, though: the n8n workflow "Homelab incident log" polls Prometheus `ALERTS` every 5 minutes and appends new ones to the Obsidian daily note (verified 2026-09-18, executions succeeding). Wiring an Alertmanager receiver would add push delivery and de-duplication; the pull path covers the basic case today.
 - rainforest-homelab: update the macOS container-LAN section in `CLAUDE.md` (fixed on build `26A428`).
