@@ -1,7 +1,20 @@
 ---
+# DESTRUCTIVE. This is the inverse of tailscale.yml, kept for the day the tailnet
+# is retired — it is not a repair tool. The Pi is a tagged member today, and
+# system-hardening.yml plus docker-user-firewall.yml both trust the tailscale0
+# interface, so removing Tailscale silently narrows how the Pi can be reached.
+# Run it only deliberately:
+#   ansible-playbook playbooks/tailscale-remove.yml -e confirm_tailscale_removal=yes
 - name: Remove Tailscale from Pi 5 and restore local DNS
   hosts: raspberry_pi
   become: yes
+  pre_tasks:
+    - name: Refuse to run without an explicit confirmation
+      assert:
+        that: confirm_tailscale_removal | default('') == 'yes'
+        fail_msg: >-
+          This playbook removes the Pi from the tailnet and rewrites its DNS.
+          Re-run with -e confirm_tailscale_removal=yes if that is what you want.
   vars:
     backup_date: "{{ ansible_date_time.epoch }}"
     
