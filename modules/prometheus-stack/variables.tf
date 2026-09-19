@@ -246,3 +246,10 @@ variable "blackbox_mcp_targets" {
   type        = list(string)
   default     = []
 }
+
+variable "ha_alert_webhook_id" {
+  description = "Home Assistant webhook id for Alertmanager pushes; empty leaves the stock null receiver in place"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

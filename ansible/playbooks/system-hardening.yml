@@ -6,6 +6,9 @@
   vars:
     allowed_ssh_users: ["rainforest"]
     ufw_enabled: true
+    # Derived from facts so no LAN address is committed to the repo.
+    lan_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
+    k3s_pod_cidr: 10.42.0.0/16
     
   tasks:
     - name: Update all packages
@@ -52,46 +55,52 @@
         - { direction: 'outgoing', policy: 'allow' }
       when: ufw_enabled
       
-    - name: Allow SSH
+    # Scoped to the LAN, the tailnet and the k3s pod network. Nothing is open to
+    # Anywhere: there are no router port forwards, so every legitimate source is
+    # one of these three. Deleting a rule here does not remove it from a host that
+    # already has it — `ufw delete` that one by hand.
+    - name: Allow LAN access to host services
       ufw:
         rule: allow
-        port: '22'
-        proto: tcp
-      when: ufw_enabled
-      
-    - name: Allow HTTP services
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
+        src: "{{ lan_cidr }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        comment: LAN
       loop:
-        - '80'      # Homepage
-        - '8080'    # Pi-hole
-        - '8123'    # HomeAssistant
-        - '8581'    # Homebridge
-        - '21064'   # HomeKit Bridge (Home Assistant)
-        - '3000'    # OpenSpeedTest
-        - '3001'    # OpenSpeedTest HTTPS
-        - '6443'    # K3s API
+        - { port: '22' }        # SSH
+        - { port: '80' }        # Homepage
+        - { port: '8080' }      # Pi-hole
+        - { port: '8123' }      # Home Assistant
+        - { port: '3000' }      # OpenSpeedTest
+        - { port: '3001' }      # OpenSpeedTest HTTPS
+        - { port: '6443' }      # K3s API
+        - { port: '8581' }      # Homebridge
+        - { port: '21064' }     # HomeKit Bridge
+        - { port: '53' }
+        - { port: '53', proto: 'udp' }
+        - { port: '30000:32767' }  # K8s NodePorts
       when: ufw_enabled
-      
-    - name: Allow DNS (Pi-hole)
+      tags: [ufw]
+
+    - name: Allow the tailnet interface
       ufw:
         rule: allow
-        port: '53'
-        proto: "{{ item }}"
-      loop:
-        - tcp
-        - udp
+        direction: in
+        interface: tailscale0
+        comment: tailnet
       when: ufw_enabled
-      
-    - name: Allow K8s NodePort range
+      tags: [ufw]
+
+    # Prometheus scrapes host ports from inside the cluster, so the source is a
+    # pod address rather than a LAN one.
+    - name: Allow the k3s pod network to reach the host
       ufw:
         rule: allow
-        port: "30000:32767"
-        proto: tcp
+        src: "{{ k3s_pod_cidr }}"
+        comment: k3s pod network
       when: ufw_enabled
-      
+      tags: [ufw]
+
     - name: Enable UFW
       ufw:
         state: enabled
@@ -180,6 +189,40 @@
         minute: "*/15"
         job: "/usr/local/bin/homelab-monitor.sh"
         
+    # Journal size — the Pi keeps its journal on the SD card, and CrowdSec now
+    # reads from it, so it is worth bounding rather than letting it grow.
+    - name: Ensure the journald drop-in directory exists
+      file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        mode: '0755'
+      tags: [journald]
+
+    - name: Cap the systemd journal size
+      copy:
+        content: |
+          [Journal]
+          SystemMaxUse=1G
+          SystemKeepFree=2G
+          MaxRetentionSec=1month
+        dest: /etc/systemd/journald.conf.d/00-homelab.conf
+        mode: '0644'
+      register: journald_conf
+      tags: [journald]
+
+    - name: Restart journald when the cap changes
+      systemd:
+        name: systemd-journald
+        state: restarted
+      when: journald_conf.changed
+      tags: [journald]
+
+    - name: Reclaim journal space beyond the cap
+      command: journalctl --vacuum-size=1G
+      register: journal_vacuum
+      changed_when: "'Deleted archived journal' in journal_vacuum.stderr"
+      tags: [journald]
+
     # Log rotation
     - name: Configure log rotation for homelab
       copy:
