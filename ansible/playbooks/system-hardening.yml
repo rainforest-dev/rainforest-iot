@@ -180,6 +180,40 @@
         minute: "*/15"
         job: "/usr/local/bin/homelab-monitor.sh"
         
+    # Journal size — the Pi keeps its journal on the SD card, and CrowdSec now
+    # reads from it, so it is worth bounding rather than letting it grow.
+    - name: Ensure the journald drop-in directory exists
+      file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        mode: '0755'
+      tags: [journald]
+
+    - name: Cap the systemd journal size
+      copy:
+        content: |
+          [Journal]
+          SystemMaxUse=1G
+          SystemKeepFree=2G
+          MaxRetentionSec=1month
+        dest: /etc/systemd/journald.conf.d/00-homelab.conf
+        mode: '0644'
+      register: journald_conf
+      tags: [journald]
+
+    - name: Restart journald when the cap changes
+      systemd:
+        name: systemd-journald
+        state: restarted
+      when: journald_conf.changed
+      tags: [journald]
+
+    - name: Reclaim journal space beyond the cap
+      command: journalctl --vacuum-size=1G
+      register: journal_vacuum
+      changed_when: "'Deleted archived journal' in journal_vacuum.stderr"
+      tags: [journald]
+
     # Log rotation
     - name: Configure log rotation for homelab
       copy:
