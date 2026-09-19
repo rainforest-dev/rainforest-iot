@@ -79,6 +79,12 @@
         - { port: '53' }
         - { port: '53', proto: 'udp' }
         - { port: '30000:32767' }  # K8s NodePorts
+        - { port: '8095' }      # Music Assistant web UI and API
+        - { port: '8097' }      # Music Assistant stream server — Chromecast and
+                                # AirPlay players fetch audio from here, so a
+                                # blocked 8097 breaks playback rather than the UI
+        - { port: '5353', proto: 'udp' }  # mDNS: Chromecast, AirPlay and HomeKit
+                                          # discovery all depend on it
       when: ufw_enabled
       tags: [ufw]
 
@@ -98,6 +104,25 @@
         rule: allow
         src: "{{ k3s_pod_cidr }}"
         comment: k3s pod network
+      when: ufw_enabled
+      tags: [ufw]
+
+    # Pod-to-pod traffic crosses the cni0 bridge, which puts it in FORWARD, and
+    # UFW's routed default is deny — so `ufw allow from <pod cidr>` above does
+    # not cover it, being an INPUT rule. This was silently dropping thousands of
+    # intra-cluster packets a day, blackbox-exporter's DNS queries to CoreDNS
+    # among them. kube-proxy's own FORWARD rules cover NodePort traffic, which
+    # is why the cluster looked healthy from outside while this was happening.
+    - name: Allow forwarding for the k3s pod network
+      ufw:
+        rule: allow
+        route: yes
+        src: "{{ item.src | default(omit) }}"
+        dest: "{{ item.dest | default(omit) }}"
+        comment: k3s pod network (routed)
+      loop:
+        - { src: "{{ k3s_pod_cidr }}" }
+        - { dest: "{{ k3s_pod_cidr }}" }
       when: ufw_enabled
       tags: [ufw]
 
