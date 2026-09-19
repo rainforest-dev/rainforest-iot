@@ -184,7 +184,9 @@ locals {
       static_configs = [{
         targets = [
           "${var.mac_mini_ip}:9798",
-          "${local._resolved_ip}:9799",
+          # The NodePort, not the Service port: 9799 only exists inside the
+          # cluster, so scraping the host on it silently never connected.
+          "${local._resolved_ip}:30099",
         ]
         labels = { service = "speedtest" }
       }]
