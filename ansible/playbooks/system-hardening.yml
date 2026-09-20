@@ -85,6 +85,19 @@
                                 # blocked 8097 breaks playback rather than the UI
         - { port: '5353', proto: 'udp' }  # mDNS: Chromecast, AirPlay and HomeKit
                                           # discovery all depend on it
+        # Music Assistant's airplay_receiver plugin, so an iPhone or Mac can
+        # stream TO the Pi. It runs shairport-sync 4.3.7, an AirPlay 1 build
+        # (no "-AirPlay2" in its version string), so there is no PTP peer and
+        # no need for UDP 319/320.
+        #
+        # The RTSP port cannot be pinned to a single value: the provider sets it
+        # to `7000 + (hash(instance_id) % 1000)`, and Python randomises str hash
+        # per process, so it lands somewhere new in 7000-7999 on every restart.
+        # The range is the port set the code can actually produce — not a guess.
+        - { port: '7000:7999' }           # AirPlay receiver RTSP control
+        # shairport-sync's own defaults, since the generated config sets neither:
+        # udp_port_base 6001, udp_port_range 10.
+        - { port: '6001:6010', proto: 'udp' }  # AirPlay receiver audio/control/timing
       when: ufw_enabled
       tags: [ufw]
 
