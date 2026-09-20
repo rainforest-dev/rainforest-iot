@@ -88,6 +88,36 @@
       when: ufw_enabled
       tags: [ufw]
 
+    # Two rules added by hand at some point opened 1024-65535 tcp+udp to
+    # 192.168.176.0/24 — a subnet this network has never used, so AirPlay to the
+    # Pi never actually worked. Removed rather than re-pointed: nothing has been
+    # relying on it, and re-pointing would open 129k ports to the whole LAN.
+    # Music Assistant streaming OUT to speakers is unaffected; that is 8097.
+    - name: Remove the stale AirPlay rules
+      ufw:
+        rule: allow
+        delete: yes
+        src: 192.168.176.0/24
+        port: '1024:65535'
+        proto: "{{ item }}"
+      loop: [tcp, udp]
+      when: ufw_enabled
+      tags: [ufw]
+
+    # Three narrower rules for 10.42.0.0/24 predate the /16 rule above and are
+    # strictly subsumed by it — same sources, a subset of the ports. They were
+    # never in this playbook.
+    - name: Remove the superseded per-port pod rules
+      ufw:
+        rule: allow
+        delete: yes
+        src: 10.42.0.0/24
+        port: "{{ item }}"
+        proto: tcp
+      loop: ['10250', '9617', '9100']
+      when: ufw_enabled
+      tags: [ufw]
+
     - name: Allow the tailnet interface
       ufw:
         rule: allow
