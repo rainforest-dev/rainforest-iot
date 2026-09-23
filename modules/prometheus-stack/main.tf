@@ -184,7 +184,9 @@ locals {
       static_configs = [{
         targets = [
           "${var.mac_mini_ip}:9798",
-          "${local._resolved_ip}:9799",
+          # The NodePort, not the Service port: 9799 only exists inside the
+          # cluster, so scraping the host on it silently never connected.
+          "${local._resolved_ip}:30099",
         ]
         labels = { service = "speedtest" }
       }]
@@ -460,6 +462,49 @@ resource "helm_release" "prometheus_stack" {
       # AlertManager configuration
       alertmanager = {
         enabled = var.alertmanager_enabled
+
+        # Routing. Alertmanager runs on the Pi, so the phone path (Home Assistant,
+        # also on the Pi) keeps working when the Mac is down. Everything not routed
+        # here still reaches the Obsidian daily note through the n8n poller.
+        config = var.ha_alert_webhook_id == "" ? null : {
+          global = {
+            resolve_timeout = "5m"
+          }
+          route = {
+            receiver        = "null"
+            group_by        = ["alertname", "instance"]
+            group_wait      = "30s"
+            group_interval  = "5m"
+            repeat_interval = "6h"
+            routes = [
+              {
+                # Always firing by design: never page.
+                receiver = "null"
+                matchers = ["alertname=~\"Watchdog|InfoInhibitor\""]
+              },
+              {
+                receiver = "ha-push"
+                matchers = ["severity=\"critical\""]
+              },
+              {
+                # Warning severity, but each means something is broken and silent.
+                receiver = "ha-push"
+                matchers = ["alertname=~\"SystemdUnitFailed|CrowdSecAcquisitionStalled\""]
+              },
+            ]
+          }
+          receivers = [
+            { name = "null" },
+            {
+              name = "ha-push"
+              webhook_configs = [{
+                url           = "http://${local._resolved_ip}:8123/api/webhook/${var.ha_alert_webhook_id}"
+                send_resolved = true
+                max_alerts    = 5
+              }]
+            },
+          ]
+        }
 
         alertmanagerSpec = {
           # Add pod labels for Homepage integration

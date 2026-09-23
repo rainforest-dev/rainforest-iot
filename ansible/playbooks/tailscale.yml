@@ -1,0 +1,98 @@
+---
+# Codifies the tailnet membership that was set up by hand. It installs and
+# enables tailscaled, then converges the preferences of an already-authenticated
+# node. It deliberately does NOT hold an auth key: joining the tailnet is a
+# one-time act that needs a credential, and the credential does not belong here.
+#
+# First join on a fresh host, run by hand:
+#   sudo tailscale up --advertise-tags=tag:homelab
+# A tagged node never expires, which is what a headless server needs.
+#
+# The inverse is tailscale-remove.yml. Do not run that one casually — the Pi is
+# on the tailnet today and the firewall rules trust the tailscale0 interface.
+- name: Ensure Tailscale membership
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    tailscale_hostname: "{{ inventory_hostname }}"
+    # Mirrors the live node: no subnet routes, no exit node, no Tailscale SSH.
+    # The Pi is reachable on the LAN and over plain SSH already, so the tailnet
+    # is a path in from outside the house, not a replacement for either.
+    tailscale_accept_dns: true
+    tailscale_advertise_routes: []
+    tailscale_ssh: false
+    # Raspberry Pi OS 64-bit reports ansible_distribution "Debian", and
+    # Tailscale's debian/ path is what the host is already pointed at. Using
+    # raspbian/ here would rewrite a working source and break apt.
+    tailscale_apt_distro: "{{ ansible_distribution | lower }}"
+
+  tasks:
+    - name: Add the Tailscale signing key
+      get_url:
+        url: "https://pkgs.tailscale.com/stable/{{ tailscale_apt_distro }}/{{ ansible_distribution_release }}.noarmor.gpg"
+        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        mode: '0644'
+        force: no
+      tags: [tailscale]
+
+    - name: Add the Tailscale apt repository
+      copy:
+        dest: /etc/apt/sources.list.d/tailscale.list
+        mode: '0644'
+        content: |
+          # Tailscale packages for {{ tailscale_apt_distro }} {{ ansible_distribution_release }}
+          deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/{{ tailscale_apt_distro }} {{ ansible_distribution_release }} main
+      register: tailscale_repo
+      tags: [tailscale]
+
+    - name: Install Tailscale
+      apt:
+        name: tailscale
+        state: present
+        update_cache: "{{ tailscale_repo.changed }}"
+      tags: [tailscale]
+
+    - name: Enable tailscaled
+      systemd:
+        name: tailscaled
+        enabled: yes
+        state: started
+      tags: [tailscale]
+
+    - name: Read the current backend state
+      command: tailscale status --json
+      register: tailscale_status
+      changed_when: false
+      failed_when: false
+      check_mode: no
+      tags: [tailscale]
+
+    - name: Report a node that has not joined the tailnet
+      debug:
+        msg: >-
+          Not authenticated (state
+          {{ (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('unknown') }}).
+          Run `sudo tailscale up --advertise-tags=tag:homelab` on {{ inventory_hostname }};
+          this playbook will not do it for you, because it would need an auth key.
+      when: >-
+        tailscale_status.rc != 0
+        or (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('') != 'Running'
+      tags: [tailscale]
+
+    # `tailscale set` converges individual preferences. `tailscale up` is the
+    # wrong verb here: it treats unspecified flags as "restore the default" and
+    # would quietly undo prefs this playbook does not name.
+    - name: Converge the preferences
+      command: >-
+        tailscale set
+        --hostname={{ tailscale_hostname }}
+        --accept-dns={{ tailscale_accept_dns | ternary('true', 'false') }}
+        --accept-routes=false
+        --ssh={{ tailscale_ssh | ternary('true', 'false') }}
+        --advertise-routes={{ tailscale_advertise_routes | join(',') }}
+      register: tailscale_set
+      changed_when: tailscale_set.stdout | length > 0
+      when: >-
+        tailscale_status.rc == 0
+        and (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('') == 'Running'
+      tags: [tailscale]

@@ -51,9 +51,9 @@ module "homeassistant" {
 
   # Trust the Mac Mini as a reverse proxy (Cloudflare Tunnel routes through it)
   # Scoped to the local /24 subnet rather than broad RFC1918 ranges
-  trusted_proxies = ["192.168.0.0/24"]
-  ssh_user        = var.raspberry_pi_user
-  ssh_port        = var.raspberry_pi_port
+  trusted_proxies  = ["192.168.0.0/24"]
+  alert_webhook_id = var.ha_alert_webhook_id
+
 }
 
 module "music_assistant" {
@@ -239,6 +239,7 @@ module "prometheus_stack" {
 
   # Home Assistant Prometheus scraping — set token to enable the HA scrape job
   homeassistant_token = var.homeassistant_token
+  ha_alert_webhook_id = var.ha_alert_webhook_id
 }
 
 # Wait for Prometheus CRDs to be available
@@ -365,11 +366,6 @@ module "crowdsec" {
 
   project_name     = "homelab"
   crowdsec_version = var.crowdsec_version
-  bouncer_api_key  = var.crowdsec_bouncer_api_key
-  enable_bouncer   = var.crowdsec_bouncer_api_key != ""
-  hostname         = var.raspberry_pi_ip
-  ssh_user         = var.raspberry_pi_user
-  ssh_port         = var.raspberry_pi_port
   timezone         = var.timezone
   log_opts         = local.common_log_opts
 }

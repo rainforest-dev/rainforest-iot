@@ -490,19 +490,6 @@ variable "crowdsec_version" {
   default     = "v1.8.1-debian"
 }
 
-variable "crowdsec_bouncer_version" {
-  description = "CrowdSec Firewall Bouncer image version"
-  type        = string
-  default     = "v0.0.29"
-}
-
-variable "crowdsec_bouncer_api_key" {
-  description = "CrowdSec LAPI key for firewall bouncer (set in terraform.tfvars after first run)"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "ntopng_image_version" {
   description = "Ntopng Docker image version"
   type        = string
@@ -590,4 +577,11 @@ variable "alloy_pi_version" {
   description = "Grafana Alloy version for Pi deployment"
   type        = string
   default     = "v1.8.2"
+}
+
+variable "ha_alert_webhook_id" {
+  description = "Home Assistant webhook id Alertmanager posts critical alerts to (set in terraform.tfvars only)"
+  type        = string
+  sensitive   = true
+  default     = ""
 }

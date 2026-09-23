@@ -6,6 +6,9 @@
   vars:
     allowed_ssh_users: ["rainforest"]
     ufw_enabled: true
+    # Derived from facts so no LAN address is committed to the repo.
+    lan_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
+    k3s_pod_cidr: 10.42.0.0/16
     
   tasks:
     - name: Update all packages
@@ -52,46 +55,120 @@
         - { direction: 'outgoing', policy: 'allow' }
       when: ufw_enabled
       
-    - name: Allow SSH
+    # Scoped to the LAN, the tailnet and the k3s pod network. Nothing is open to
+    # Anywhere: there are no router port forwards, so every legitimate source is
+    # one of these three. Deleting a rule here does not remove it from a host that
+    # already has it — `ufw delete` that one by hand.
+    - name: Allow LAN access to host services
       ufw:
         rule: allow
-        port: '22'
-        proto: tcp
+        src: "{{ lan_cidr }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        comment: LAN
+      loop:
+        - { port: '22' }        # SSH
+        - { port: '80' }        # Homepage
+        - { port: '8080' }      # Pi-hole
+        - { port: '8123' }      # Home Assistant
+        - { port: '3000' }      # OpenSpeedTest
+        - { port: '3001' }      # OpenSpeedTest HTTPS
+        - { port: '6443' }      # K3s API
+        - { port: '8581' }      # Homebridge
+        - { port: '21064' }     # HomeKit Bridge
+        - { port: '53' }
+        - { port: '53', proto: 'udp' }
+        - { port: '30000:32767' }  # K8s NodePorts
+        - { port: '8095' }      # Music Assistant web UI and API
+        - { port: '8097' }      # Music Assistant stream server — Chromecast and
+                                # AirPlay players fetch audio from here, so a
+                                # blocked 8097 breaks playback rather than the UI
+        - { port: '5353', proto: 'udp' }  # mDNS: Chromecast, AirPlay and HomeKit
+                                          # discovery all depend on it
+        # Music Assistant's airplay_receiver plugin, so an iPhone or Mac can
+        # stream TO the Pi. It runs shairport-sync 4.3.7, an AirPlay 1 build
+        # (no "-AirPlay2" in its version string), so there is no PTP peer and
+        # no need for UDP 319/320.
+        #
+        # The RTSP port cannot be pinned to a single value: the provider sets it
+        # to `7000 + (hash(instance_id) % 1000)`, and Python randomises str hash
+        # per process, so it lands somewhere new in 7000-7999 on every restart.
+        # The range is the port set the code can actually produce — not a guess.
+        - { port: '7000:7999' }           # AirPlay receiver RTSP control
+        # shairport-sync's own defaults, since the generated config sets neither:
+        # udp_port_base 6001, udp_port_range 10.
+        - { port: '6001:6010', proto: 'udp' }  # AirPlay receiver audio/control/timing
       when: ufw_enabled
-      
-    - name: Allow HTTP services
+      tags: [ufw]
+
+    # Two rules added by hand at some point opened 1024-65535 tcp+udp to
+    # 192.168.176.0/24 — a subnet this network has never used, so AirPlay to the
+    # Pi never actually worked. Removed rather than re-pointed: nothing has been
+    # relying on it, and re-pointing would open 129k ports to the whole LAN.
+    # Music Assistant streaming OUT to speakers is unaffected; that is 8097.
+    - name: Remove the stale AirPlay rules
       ufw:
         rule: allow
+        delete: yes
+        src: 192.168.176.0/24
+        port: '1024:65535'
+        proto: "{{ item }}"
+      loop: [tcp, udp]
+      when: ufw_enabled
+      tags: [ufw]
+
+    # Three narrower rules for 10.42.0.0/24 predate the /16 rule above and are
+    # strictly subsumed by it — same sources, a subset of the ports. They were
+    # never in this playbook.
+    - name: Remove the superseded per-port pod rules
+      ufw:
+        rule: allow
+        delete: yes
+        src: 10.42.0.0/24
         port: "{{ item }}"
         proto: tcp
-      loop:
-        - '80'      # Homepage
-        - '8080'    # Pi-hole
-        - '8123'    # HomeAssistant
-        - '8581'    # Homebridge
-        - '21064'   # HomeKit Bridge (Home Assistant)
-        - '3000'    # OpenSpeedTest
-        - '3001'    # OpenSpeedTest HTTPS
-        - '6443'    # K3s API
+      loop: ['10250', '9617', '9100']
       when: ufw_enabled
-      
-    - name: Allow DNS (Pi-hole)
+      tags: [ufw]
+
+    - name: Allow the tailnet interface
       ufw:
         rule: allow
-        port: '53'
-        proto: "{{ item }}"
-      loop:
-        - tcp
-        - udp
+        direction: in
+        interface: tailscale0
+        comment: tailnet
       when: ufw_enabled
-      
-    - name: Allow K8s NodePort range
+      tags: [ufw]
+
+    # Prometheus scrapes host ports from inside the cluster, so the source is a
+    # pod address rather than a LAN one.
+    - name: Allow the k3s pod network to reach the host
       ufw:
         rule: allow
-        port: "30000:32767"
-        proto: tcp
+        src: "{{ k3s_pod_cidr }}"
+        comment: k3s pod network
       when: ufw_enabled
-      
+      tags: [ufw]
+
+    # Pod-to-pod traffic crosses the cni0 bridge, which puts it in FORWARD, and
+    # UFW's routed default is deny — so `ufw allow from <pod cidr>` above does
+    # not cover it, being an INPUT rule. This was silently dropping thousands of
+    # intra-cluster packets a day, blackbox-exporter's DNS queries to CoreDNS
+    # among them. kube-proxy's own FORWARD rules cover NodePort traffic, which
+    # is why the cluster looked healthy from outside while this was happening.
+    - name: Allow forwarding for the k3s pod network
+      ufw:
+        rule: allow
+        route: yes
+        src: "{{ item.src | default(omit) }}"
+        dest: "{{ item.dest | default(omit) }}"
+        comment: k3s pod network (routed)
+      loop:
+        - { src: "{{ k3s_pod_cidr }}" }
+        - { dest: "{{ k3s_pod_cidr }}" }
+      when: ufw_enabled
+      tags: [ufw]
+
     - name: Enable UFW
       ufw:
         state: enabled
@@ -180,6 +257,40 @@
         minute: "*/15"
         job: "/usr/local/bin/homelab-monitor.sh"
         
+    # Journal size — the Pi keeps its journal on the SD card, and CrowdSec now
+    # reads from it, so it is worth bounding rather than letting it grow.
+    - name: Ensure the journald drop-in directory exists
+      file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        mode: '0755'
+      tags: [journald]
+
+    - name: Cap the systemd journal size
+      copy:
+        content: |
+          [Journal]
+          SystemMaxUse=1G
+          SystemKeepFree=2G
+          MaxRetentionSec=1month
+        dest: /etc/systemd/journald.conf.d/00-homelab.conf
+        mode: '0644'
+      register: journald_conf
+      tags: [journald]
+
+    - name: Restart journald when the cap changes
+      systemd:
+        name: systemd-journald
+        state: restarted
+      when: journald_conf.changed
+      tags: [journald]
+
+    - name: Reclaim journal space beyond the cap
+      command: journalctl --vacuum-size=1G
+      register: journal_vacuum
+      changed_when: "'Deleted archived journal' in journal_vacuum.stderr"
+      tags: [journald]
+
     # Log rotation
     - name: Configure log rotation for homelab
       copy:
