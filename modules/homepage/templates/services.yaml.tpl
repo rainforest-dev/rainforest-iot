@@ -15,6 +15,16 @@
         icon: mdi-microphone-message
         server: macmini-docker
         container: homelab-whisper
+    - ComfyUI:
+        href: https://comfyui.rainforest.tools/
+        description: "Node-Based Image Generation Workflows"
+        icon: comfyui.png
+        # Runs natively on the mini via uv, not in Docker — no container to poll
+    - Antigravity:
+        href: https://agy.rainforest.tools/
+        description: "Multi-Model AI CLI (Gemini / Claude / GPT-OSS)"
+        icon: mdi-robot
+        # Runs natively on the mini — no container to poll
 
 - "Mac Mini M4 (Storage & Files)":
     - MinIO Console:
@@ -33,21 +43,50 @@
         icon: calibre-web.png
         server: macmini-docker
         container: homelab-calibre-web
-
-- "Mac Mini M4 (Database & Admin)":
-    - pgAdmin:
-        href: https://pgadmin.rainforest.tools/
-        description: "PostgreSQL Database Admin"
-        icon: pgadmin.png
-        # K8s-managed: container name changes on every pod restart, omitted to avoid stale "not found"
+    - Calibre:
+        href: https://calibre.rainforest.tools/
+        description: "Calibre Content Server (library backend)"
+        icon: calibre.png
+        server: macmini-docker
+        container: homelab-personal-calibre
 
 - "Mac Mini M4 (Development Tools)":
     - Docker MCP Gateway:
         href: https://docker-mcp.rainforest.tools/
         description: "Claude Code Integration"
         icon: docker.png
+        # launchd service on the mini (`docker mcp gateway run`, PORT=3101), not Docker —
+        # the old homelab-docker-mcp-gateway container is gone and polling it showed
+        # a permanent "not found".
+    - Teleport:
+        href: https://tp.rainforest.tools/
+        description: "Secure SSH & Kubernetes Access"
+        icon: teleport.png
+        # K8s-managed: container name changes on every pod restart, omitted to avoid stale "not found"
+    - Loop Observatory:
+        href: https://loop.rainforest.tools/
+        description: "Autonomous Task Loop Dashboard"
+        icon: mdi-autorenew
+        # launchd service on the mini (PORT=3099), not Docker — no container to poll
+
+- "Mac Mini M4 (Personal Dashboards)":
+    - Finance Audit:
+        href: https://finance.rainforest.tools/
+        description: "Credit Card Reconciliation & Rewards Audit"
+        icon: mdi-credit-card-check-outline
         server: macmini-docker
-        container: homelab-docker-mcp-gateway
+        container: homelab-finance-audit
+    - RSS Manager:
+        href: https://rss.rainforest.tools/
+        description: "Feed Subscription Manager"
+        icon: mdi-rss
+        server: macmini-docker
+        container: homelab-rss-manager
+    - Bambii Focus:
+        href: https://bambii.rainforest.tools/
+        description: "Pomodoro Focus Timer"
+        icon: mdi-timer-outline
+        # Runs natively on the mini — no container to poll
 
 - "Raspberry Pi 5 (IoT Platform)":
     - HomeAssistant:
@@ -83,7 +122,10 @@
 
 - "Monitoring & Observability (K3s on Pi 5)":
     - Grafana:
-        href: http://${raspberry_pi_hostname}:${grafana_port}
+        # href is the public Zero Trust route so the link works off the LAN;
+        # the widget below must stay on the LAN IP — that call is made by the
+        # homepage container itself and would fail against the Access-gated host.
+        href: https://gfn.rainforest.tools/
         description: "Dashboards & Visualization"
         icon: grafana.png
         namespace: monitoring
