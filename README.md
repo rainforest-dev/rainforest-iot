@@ -1,32 +1,39 @@
 # Rainforest IoT Platform
 
-A production-grade IoT platform for Raspberry Pi 5 using 3-layer architecture with Ansible, Terraform, and Kubernetes.
+Home automation and monitoring on a single Raspberry Pi 5. Ansible builds the machine, Terraform
+puts the workloads on it.
 
 ## Architecture
 
-**🏗️ Layer 1 (Ansible)** - Infrastructure
+```mermaid
+flowchart TD
+  subgraph L1["Layer 1 — Ansible, builds the machine"]
+    H[UFW firewall and SSH lockdown]
+    K[K3s cluster, ARM64]
+    KC[kubeconfig fetched back to the laptop]
+  end
+  subgraph L2["Layer 2 — Terraform, places the workloads"]
+    D[Docker: Home Assistant, Homebridge, Pi-hole, Homepage]
+    CS[CrowdSec in Docker, plus a native firewall bouncer over SSH]
+    MON[Helm: Prometheus, Grafana, Loki]
+  end
+  H --> K --> KC
+  KC --> D
+  KC --> CS
+  KC --> MON
+```
 
-- **K3s Kubernetes cluster** with ARM64 optimization
-- **System hardening** with UFW firewall and SSH lockdown
-- **Kubeconfig management** with automatic local fetch
+Ansible prepares the host: UFW rules, SSH configuration, the K3s install, and fetching the
+kubeconfig back so the laptop can reach the cluster. Terraform places what runs on top, mostly as
+Docker containers and Helm releases. Two pieces cross onto the host anyway: CrowdSec's firewall
+bouncer has to edit iptables, so Terraform installs it natively over SSH, and Grafana Alloy's
+config file is written to the host the same way.
 
-**🐳 Layer 2 (Terraform)** - Workloads
+Keeping that split mostly clean is what makes a single `terraform apply` safe. Terraform installs CRDs
+before the charts that need them, so there is no manual sequencing, and rebuilding the host does
+not mean rebuilding the workloads by hand.
 
-- **Docker services**: HomeAssistant, Homebridge, Pi-hole, Homepage
-- **CrowdSec intrusion prevention** reading journald, with a firewall bouncer
-- **Kubernetes monitoring**: Prometheus, Grafana, Loki with dependency management
-- **Remote Helm deployment** with automatic CRD handling
-
-**🚀 Layer 3 (Future)** - Applications
-
-- Custom application deployments and integrations
-
-### Key Benefits
-
-- ✅ **Automatic dependency management** - CRDs installed before usage
-- ✅ **Clean layer separation** - Infrastructure vs workloads
-- ✅ **Single deployment command** - No manual sequencing required
-- ✅ **Production monitoring** - Full observability stack included
+A third layer for custom applications is sketched but not built.
 
 ## Prerequisites
 
@@ -83,7 +90,7 @@ ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge
 | **Pi-hole**       | DNS-based ad blocker                   | 8080      | ✅ Active |
 | **OpenSpeedTest** | Network speed testing                  | 3000/3001 | ✅ Active |
 
-## Security Features
+## Security
 
 - ✅ No privileged containers
 - ✅ Resource limits on all containers
@@ -94,7 +101,7 @@ ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge
 
 ## Configuration
 
-### HomeAssistant Setup
+### Home Assistant
 
 1. Access HomeAssistant at `http://your-pi-hostname:8123`
 2. Complete initial setup
@@ -103,7 +110,7 @@ ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge
    - Add HACS integration and authenticate with GitHub
    - See [docs/homeassistant-hacs-setup.md](docs/homeassistant-hacs-setup.md) for details
 
-### Homebridge Setup
+### Homebridge
 
 1. Access Homebridge at `http://your-pi-hostname:8581`
 2. Complete the setup wizard (auto-generates PIN and QR codes)
@@ -120,7 +127,7 @@ ansible-playbook -i ansible/inventory-wol.yml ansible/playbooks/setup-homebridge
 - [Homebridge Infrastructure & Configuration](docs/homebridge-setup.md)
 - [Wake-on-LAN Setup Guide](docs/homebridge-wol-manual-setup.md) - **Automated + Manual methods**
 
-### USB Device Support
+### USB devices
 
 For Zigbee/Z-Wave dongles, set in `terraform.tfvars`:
 
@@ -131,14 +138,14 @@ enable_hacs = true  # Enable HACS installation (default)
 
 ## Maintenance
 
-### View Logs
+### Viewing logs
 
 ```bash
 docker logs homeassistant
 docker logs pihole
 ```
 
-### Update Containers
+### Updating containers
 
 Updates are managed via Terraform. To update a container:
 
@@ -147,7 +154,7 @@ docker pull ghcr.io/home-assistant/home-assistant:stable
 terraform apply -replace=module.homeassistant.docker_container.homeassistant
 ```
 
-### Backup Configuration
+### Backing up configuration
 
 ```bash
 docker run --rm -v homeassistant_configuration:/source -v $(pwd):/backup alpine tar czf /backup/homeassistant-backup.tar.gz -C /source .
@@ -155,7 +162,7 @@ docker run --rm -v homeassistant_configuration:/source -v $(pwd):/backup alpine 
 
 ## Troubleshooting
 
-### Container Issues
+### Container problems
 
 ```bash
 # Check container status
@@ -171,7 +178,7 @@ terraform plan && terraform apply
 terraform apply -replace=module.<service>.docker_container.<container>
 ```
 
-### Terraform Issues
+### Terraform problems
 
 ```bash
 # Check what Terraform wants to change
@@ -184,18 +191,18 @@ terraform apply -target=module.homepage
 terraform refresh
 ```
 
-### Network Issues
+### Network problems
 
 - Ensure SSH access is working
 - Check Docker context: `docker context ls`
 - Verify Pi-hole DNS on port 8080 (not 80)
 - Homepage host validation resolved automatically
 
-## Configuration Variables
+## Configuration variables
 
 Key options in `terraform.tfvars`:
 
-### Connection Settings
+### Connection settings
 
 ```hcl
 raspberry_pi_hostname = "raspberrypi-5"  # Your Pi's hostname or IP
@@ -203,7 +210,7 @@ raspberry_pi_user = "rainforest"         # SSH username
 raspberry_pi_port = 22                   # SSH port
 ```
 
-### Hardware Options
+### Hardware options
 
 ```hcl
 enable_usb_devices = true     # Enable for Zigbee/Z-Wave dongles
@@ -211,7 +218,7 @@ homeassistant_memory = 1024   # Memory limit in MB
 homebridge_memory = 512       # Homebridge memory limit in MB
 ```
 
-### Network Ports
+### Network ports
 
 ```hcl
 homepage_port = 80           # Dashboard port
