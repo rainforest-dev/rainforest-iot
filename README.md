@@ -1,7 +1,7 @@
 # Rainforest IoT Platform
 
 Home automation and monitoring on a single Raspberry Pi 5. Ansible builds the machine, Terraform
-puts the workloads on it, and the two never touch each other's territory.
+puts the workloads on it.
 
 ## Architecture
 
@@ -14,7 +14,7 @@ flowchart TD
   end
   subgraph L2["Layer 2 — Terraform, places the workloads"]
     D[Docker: Home Assistant, Homebridge, Pi-hole, Homepage]
-    CS[CrowdSec reading journald, with a firewall bouncer]
+    CS[CrowdSec in Docker, plus a native firewall bouncer over SSH]
     MON[Helm: Prometheus, Grafana, Loki]
   end
   H --> K --> KC
@@ -23,11 +23,13 @@ flowchart TD
   KC --> MON
 ```
 
-Ansible owns the host: firewall rules, SSH configuration, the K3s install, and fetching the
-kubeconfig back so the laptop can reach the cluster. Terraform owns everything that runs on top,
-whether it lands as a Docker container or a Helm release.
+Ansible prepares the host: UFW rules, SSH configuration, the K3s install, and fetching the
+kubeconfig back so the laptop can reach the cluster. Terraform places what runs on top, mostly as
+Docker containers and Helm releases. Two pieces cross onto the host anyway: CrowdSec's firewall
+bouncer has to edit iptables, so Terraform installs it natively over SSH, and Grafana Alloy's
+config file is written to the host the same way.
 
-Keeping the split strict is what makes a single `terraform apply` safe. Terraform installs CRDs
+Keeping that split mostly clean is what makes a single `terraform apply` safe. Terraform installs CRDs
 before the charts that need them, so there is no manual sequencing, and rebuilding the host does
 not mean rebuilding the workloads by hand.
 
