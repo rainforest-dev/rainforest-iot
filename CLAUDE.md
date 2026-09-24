@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a production-grade IoT platform for Raspberry Pi 5 using a 3-layer architecture:
+This is a home automation and monitoring platform on a single Raspberry Pi 5, built in two layers:
 - **Layer 1 (Ansible)**: Infrastructure setup - K3s Kubernetes cluster, system hardening, kubeconfig management  
 - **Layer 2 (Terraform)**: Workloads - Docker services + Kubernetes monitoring with automatic dependency management
-- **Layer 3 (Future)**: Application management and custom integrations
+
+A third layer for custom applications is sketched but not built.
 
 The platform deploys IoT services (HomeAssistant, Pi-hole, Homepage, OpenSpeedTest) plus production monitoring (Prometheus, Grafana, Loki, AlertManager) with proper CRD dependency handling.
 
@@ -76,13 +77,12 @@ docker run --rm -v homeassistant_configuration:/source -v $(pwd):/backup alpine 
 
 ## Architecture
 
-### 3-Layer Architecture Benefits
+### Two-Layer Architecture Benefits
 - ✅ **Automatic dependency management**: CRDs installed before usage (Prometheus → Loki ServiceMonitors)
-- ✅ **Clean layer separation**: Infrastructure vs workloads vs applications
+- ✅ **Clean layer separation**: Infrastructure vs workloads
 - ✅ **Single deployment command**: No manual sequencing required
 - ✅ **Production monitoring**: Full observability stack included
 - ✅ **Remote Helm deployment**: No need to install Helm on Pi
-- ✅ **Scalable architecture**: Easy to add Layer 3 applications
 
 ### Key Components
 **Layer 1 (Ansible)**:

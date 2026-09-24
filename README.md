@@ -8,7 +8,8 @@ puts the workloads on it.
 ```mermaid
 flowchart TD
   subgraph L1["Layer 1 — Ansible, builds the machine"]
-    H[UFW firewall and SSH lockdown]
+    H[UFW base rules and SSH lockdown]
+    DE[Docker engine]
     K[K3s cluster, ARM64]
     KC[kubeconfig fetched back to the laptop]
   end
@@ -18,20 +19,41 @@ flowchart TD
     MON[Helm: Prometheus, Grafana, Loki]
   end
   H --> K --> KC
-  KC --> D
-  KC --> CS
+  DE -->|over SSH| D
+  DE -->|over SSH| CS
   KC --> MON
+  KC -->|Homepage widgets| D
 ```
 
-Ansible prepares the host: UFW rules, SSH configuration, the K3s install, and fetching the
-kubeconfig back so the laptop can reach the cluster. Terraform places what runs on top, mostly as
-Docker containers and Helm releases. Two pieces cross onto the host anyway: CrowdSec's firewall
-bouncer has to edit iptables, so Terraform installs it natively over SSH, and Grafana Alloy's
-config file is written to the host the same way.
+Ansible prepares the host: the Docker engine, the base UFW rules, SSH configuration, the K3s
+install, and fetching the kubeconfig back so the laptop can reach the cluster. Terraform places
+what runs on top, mostly as Docker containers and Helm releases. The Docker provider reaches the
+engine over SSH, so the containers need only the engine from Layer 1. The kubeconfig is for the
+Kubernetes and Helm resources, plus Homepage, which reads a copy for its Kubernetes widgets.
+Terraform reads both the Pi's kubeconfig and the Mac mini's kubeconfig for those widgets whenever
+it plans, so `terraform plan` fails if either file is missing, even with the widgets turned off.
+Layer 1 only fetches the Pi's.
 
-Keeping that split mostly clean is what makes a single `terraform apply` safe. Terraform installs CRDs
-before the charts that need them, so there is no manual sequencing, and rebuilding the host does
-not mean rebuilding the workloads by hand.
+Some Terraform resources still act on the host itself over SSH. CrowdSec's firewall bouncer has to
+edit iptables, so Terraform installs it natively. Grafana Alloy's config file is written to the
+host. The Pi-hole module installs its Prometheus exporter on the host as a systemd service, and
+adds UFW rules letting the cluster's pod network reach the exporter ports. With
+`enable_teleport_node` set, the Teleport config goes to `/etc/teleport`. UFW is therefore shared:
+if you reset it and re-run Ansible, the Pi-hole rules stay gone until you run
+`terraform apply -replace=module.pi-hole.null_resource.monitoring_firewall_rules`.
+
+The Prometheus chart brings the CRDs. The Loki chart and the monitoring integrations follow it
+after a fixed 60-second `time_sleep`, which exists only when `loki_enabled` is true. The Loki
+ServiceMonitors that would use those CRDs are switched off in code, because a
+`kubernetes_manifest` needs its CRD to exist when Terraform plans. CLAUDE.md's fallback for a CRD
+conflict is `terraform destroy && terraform apply`, and that destroy also deletes the Docker
+volumes, Home Assistant's configuration among them.
+
+Rebuilding the host means running Ansible's `site.yml`, then `terraform apply`, then some work by
+hand. The SSH steps above re-run only when their inputs change, so against an existing state each
+one needs `terraform apply -replace=...`. The CrowdSec bouncer's API key has to be registered with
+the new CrowdSec container after the first run. The Docker volumes come back empty unless you
+restore them from a backup.
 
 A third layer for custom applications is sketched but not built.
 

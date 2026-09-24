@@ -4,11 +4,12 @@ This document provides context for the Gemini Code Assistant to understand the `
 
 ## Project Overview
 
-This project is a production-grade IoT platform for Raspberry Pi 5, built on a 3-layer architecture using Ansible, Terraform, and Kubernetes.
+This project runs home automation and monitoring on a single Raspberry Pi 5, built in two layers using Ansible, Terraform, and Kubernetes.
 
 *   **Layer 1 (Ansible):** Sets up the infrastructure, including a K3s Kubernetes cluster optimized for ARM64, system hardening with UFW and SSH lockdown, and kubeconfig management.
 *   **Layer 2 (Terraform):** Deploys workloads, including Docker services like HomeAssistant, Pi-hole, and Homepage, as well as a Kubernetes monitoring stack with Prometheus, Grafana, and Loki.
-*   **Layer 3 (Future):** Intended for custom application deployments and integrations.
+
+A third layer for custom applications is sketched but not built.
 
 ## Building and Running
 
