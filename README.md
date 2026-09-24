@@ -22,7 +22,7 @@ flowchart TD
   DE -->|over SSH| D
   DE -->|over SSH| CS
   KC --> MON
-  KC -.->|Homepage widgets| D
+  KC -->|Homepage widgets| D
 ```
 
 Ansible prepares the host: the Docker engine, the base UFW rules, SSH configuration, the K3s
@@ -30,6 +30,9 @@ install, and fetching the kubeconfig back so the laptop can reach the cluster. T
 what runs on top, mostly as Docker containers and Helm releases. The Docker provider reaches the
 engine over SSH, so the containers need only the engine from Layer 1. The kubeconfig is for the
 Kubernetes and Helm resources, plus Homepage, which reads a copy for its Kubernetes widgets.
+Terraform reads both the Pi's kubeconfig and the Mac mini's kubeconfig for those widgets whenever
+it plans, so `terraform plan` fails if either file is missing, even with the widgets turned off.
+Layer 1 only fetches the Pi's.
 
 Some Terraform resources still act on the host itself over SSH. CrowdSec's firewall bouncer has to
 edit iptables, so Terraform installs it natively. Grafana Alloy's config file is written to the
