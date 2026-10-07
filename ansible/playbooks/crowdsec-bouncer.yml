@@ -1,0 +1,92 @@
+---
+# CrowdSec firewall bouncer — installation and registration.
+#
+# Replaces the Terraform null_resource that piped a packagecloud script into
+# `sudo bash`. The API key is never stored in git or terraform.tfvars: this
+# playbook asks the local CrowdSec container for one and writes it straight
+# into the bouncer config, so the secret only ever exists on the Pi.
+- name: CrowdSec firewall bouncer
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    bouncer_name: homelab-firewall-bouncer
+    bouncer_config: /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+    crowdsec_container: homelab-crowdsec
+    lapi_url: http://127.0.0.1:6081/
+
+  tasks:
+    # The packagecloud repo may already exist from the retired curl|bash install,
+    # under its own keyring path. Adding a second entry for the same source makes
+    # apt refuse to read any list at all, so only set it up when it is missing.
+    - name: Look for an existing CrowdSec apt source
+      find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*crowdsec*"
+      register: crowdsec_repo
+      tags: [bouncer]
+
+    - name: Install the CrowdSec repository signing key
+      get_url:
+        url: https://packagecloud.io/crowdsec/crowdsec/gpgkey
+        dest: /usr/share/keyrings/crowdsec.asc
+        mode: '0644'
+      when: crowdsec_repo.matched == 0
+      tags: [bouncer]
+
+    - name: Add the CrowdSec apt repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/crowdsec.asc] https://packagecloud.io/crowdsec/crowdsec/debian/ {{ ansible_distribution_release }} main"
+        filename: crowdsec
+        state: present
+      when: crowdsec_repo.matched == 0
+      tags: [bouncer]
+
+    - name: Install the iptables bouncer
+      apt:
+        name: crowdsec-firewall-bouncer-iptables
+        state: present
+        update_cache: yes
+      tags: [bouncer]
+
+    - name: Check whether this bouncer name is already registered
+      command: docker exec {{ crowdsec_container }} cscli bouncers list -o json
+      register: bouncer_list
+      changed_when: false
+      tags: [bouncer]
+
+    - name: Register the bouncer and capture its key
+      command: docker exec {{ crowdsec_container }} cscli bouncers add {{ bouncer_name }} -o raw
+      register: bouncer_key
+      when: bouncer_name not in bouncer_list.stdout
+      tags: [bouncer]
+
+    - name: Point the bouncer at the local API
+      lineinfile:
+        path: "{{ bouncer_config }}"
+        regexp: '^api_url:'
+        line: "api_url: {{ lapi_url }}"
+      notify: restart bouncer
+      tags: [bouncer]
+
+    - name: Write the freshly issued API key
+      lineinfile:
+        path: "{{ bouncer_config }}"
+        regexp: '^api_key:'
+        line: "api_key: {{ bouncer_key.stdout | trim }}"
+      when: bouncer_key is changed
+      no_log: true
+      notify: restart bouncer
+      tags: [bouncer]
+
+    - name: Enable the bouncer
+      systemd:
+        name: crowdsec-firewall-bouncer
+        enabled: yes
+        state: started
+      tags: [bouncer]
+
+  handlers:
+    - name: restart bouncer
+      systemd:
+        name: crowdsec-firewall-bouncer
+        state: restarted

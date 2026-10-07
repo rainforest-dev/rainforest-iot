@@ -338,3 +338,69 @@ resource "null_resource" "ha_n8n_bridge_config" {
 
   depends_on = [null_resource.ha_vacuum_template_sensor]
 }
+
+# ─── Alertmanager push (critical alerts -> phones) ──────────────────────────
+# Alertmanager runs on this same Pi, so this path survives the Mac being down.
+# local_only keeps the webhook on the LAN; notify.notify reaches every
+# registered companion app without hardcoding a device name.
+locals {
+  ha_alert_automation = var.alert_webhook_id == "" ? "" : join("\n", [
+    "",
+    "- id: alertmanager_push",
+    "  alias: \"Alertmanager - push firing alerts\"",
+    "  trigger:",
+    "    - platform: webhook",
+    "      webhook_id: \"${var.alert_webhook_id}\"",
+    "      allowed_methods:",
+    "        - POST",
+    "      local_only: true",
+    "  action:",
+    "    - service: notify.notify",
+    "      data:",
+    "        title: >-",
+    "          {{ trigger.json.status | upper }}: {{ trigger.json.alerts[0].labels.alertname }}",
+    "        message: >-",
+    "          {{ trigger.json.alerts | length }} alert(s) on",
+    "          {{ trigger.json.alerts[0].labels.instance | default('homelab') }} —",
+    "          {{ trigger.json.alerts[0].annotations.summary | default('no summary') }}",
+    "  mode: queued",
+    "  max: 10",
+    "",
+  ])
+}
+
+resource "null_resource" "ha_alertmanager_push" {
+  count = var.alert_webhook_id == "" ? 0 : 1
+
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    automation   = local.ha_alert_automation
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
+
+      if $${SSH} "docker exec homeassistant grep -q alertmanager_push /config/automations.yaml" 2>/dev/null; then
+        echo "Alertmanager push automation already present, skipping"
+        exit 0
+      fi
+
+      echo "${base64encode(local.ha_alert_automation)}" | base64 -d \
+        | $${SSH} "docker exec -i homeassistant sh -c 'cp -n /config/automations.yaml /config/automations.yaml.ambak; cat >> /config/automations.yaml'"
+
+      if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
+        echo "HA config check FAILED — rolling back the Alertmanager automation, NOT restarting"
+        $${SSH} "docker exec homeassistant sh -c 'test -f /config/automations.yaml.ambak && mv /config/automations.yaml.ambak /config/automations.yaml'"
+        exit 1
+      fi
+
+      $${SSH} "docker exec homeassistant sh -c 'rm -f /config/automations.yaml.ambak'"
+      $${SSH} "docker restart homeassistant"
+      echo "Alertmanager push automation written & validated, HA restarted"
+    BASH
+  }
+
+  depends_on = [null_resource.ha_n8n_bridge_config]
+}

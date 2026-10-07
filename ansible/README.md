@@ -121,7 +121,6 @@ raspberry_pi:
 mac_mini:
   hosts:
     mac-mini-m4:
-      docker_host: "dockerproxy.orb.local:2375"
 ```
 
 ## **Custom Variables**

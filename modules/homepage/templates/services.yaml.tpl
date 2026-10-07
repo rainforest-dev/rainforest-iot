@@ -13,8 +13,7 @@
         href: https://whisper.rainforest.tools/
         description: "Speech-to-Text API Service"
         icon: mdi-microphone-message
-        server: macmini-docker
-        container: homelab-whisper
+        siteMonitor: https://whisper.rainforest.tools/
 
 - "Mac Mini M4 (Storage & Files)":
     - MinIO Console:
@@ -28,26 +27,17 @@
         icon: minio.png
         # K8s-managed: container name changes on every pod restart, omitted to avoid stale "not found"
     - Calibre Web:
-        href: https://calibre-web.rainforest.tools/
+        href: https://calibre.rainforest.tools/
         description: "Ebook Library & Reader"
         icon: calibre-web.png
-        server: macmini-docker
-        container: homelab-calibre-web
-
-- "Mac Mini M4 (Database & Admin)":
-    - pgAdmin:
-        href: https://pgadmin.rainforest.tools/
-        description: "PostgreSQL Database Admin"
-        icon: pgadmin.png
-        # K8s-managed: container name changes on every pod restart, omitted to avoid stale "not found"
+        siteMonitor: https://calibre.rainforest.tools/
 
 - "Mac Mini M4 (Development Tools)":
     - Docker MCP Gateway:
         href: https://docker-mcp.rainforest.tools/
         description: "Claude Code Integration"
         icon: docker.png
-        server: macmini-docker
-        container: homelab-docker-mcp-gateway
+        siteMonitor: https://docker-mcp.rainforest.tools/.well-known/oauth-protected-resource/mcp
 
 - "Raspberry Pi 5 (IoT Platform)":
     - HomeAssistant:

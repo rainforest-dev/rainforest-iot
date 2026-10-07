@@ -52,6 +52,13 @@ resource "kubernetes_storage_class" "local_path" {
   volume_binding_mode    = "WaitForFirstConsumer"
   allow_volume_expansion = true
 
+  # k3s's addon manager owns this object too and re-adds its objectset.rio.cattle.io
+  # annotations plus defaultVolumeType after every apply. Terraform stripping them
+  # was pure churn, and defaultVolumeType is functional.
+  lifecycle {
+    ignore_changes = [metadata[0].annotations, metadata[0].labels]
+  }
+
   parameters = {
     "path" = "/opt/local-path-provisioner"
   }

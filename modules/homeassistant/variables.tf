@@ -65,3 +65,10 @@ variable "log_opts" {
     "max-file" = "5"
   }
 }
+
+variable "alert_webhook_id" {
+  description = "Webhook id the Alertmanager push automation listens on; empty disables the automation"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

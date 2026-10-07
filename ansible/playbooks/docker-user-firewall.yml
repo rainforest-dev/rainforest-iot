@@ -1,0 +1,70 @@
+---
+# Docker publishes ports by writing its own iptables rules, which bypass UFW
+# entirely: the Pi answers on :6060 from the LAN even though UFW has no rule for
+# it. DOCKER-USER is the hook Docker leaves for exactly this, and these rules
+# confine container-published ports to the LAN, the tailnet and the k3s pods.
+#
+# A systemd oneshot rather than iptables-persistent: the latter would also
+# snapshot UFW's rules and the two fight at boot.
+- name: Restrict Docker-published ports
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    lan_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
+    k3s_pod_cidr: 10.42.0.0/16
+
+  tasks:
+    - name: Install the DOCKER-USER rule script
+      copy:
+        dest: /usr/local/sbin/homelab-docker-user.sh
+        mode: '0755'
+        content: |
+          #!/bin/sh
+          # Confine Docker-published ports. Idempotent: drops its own rules first.
+          set -e
+          while iptables -D DOCKER-USER -m comment --comment "homelab-managed" 2>/dev/null; do :; done
+          iptables -F DOCKER-USER 2>/dev/null || true
+          iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -s {{ lan_cidr }} -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -s {{ k3s_pod_cidr }} -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -s 172.16.0.0/12 -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -i tailscale0 -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -i lo -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -j DROP -m comment --comment "homelab-managed"
+      notify: reapply docker-user rules
+      tags: [docker-user]
+
+    - name: Install the unit that applies them after Docker starts
+      copy:
+        dest: /etc/systemd/system/homelab-docker-user.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Confine Docker-published ports to the LAN, tailnet and k3s pods
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/usr/local/sbin/homelab-docker-user.sh
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: reapply docker-user rules
+      tags: [docker-user]
+
+    - name: Enable it at boot
+      systemd:
+        name: homelab-docker-user
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      tags: [docker-user]
+
+  handlers:
+    - name: reapply docker-user rules
+      systemd:
+        name: homelab-docker-user
+        state: restarted
+        daemon_reload: yes
