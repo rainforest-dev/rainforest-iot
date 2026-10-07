@@ -47,6 +47,10 @@ three run without credentials. In `rainforest-homelab`, `validate` hashes
 `modules/comfyui/server/requirements.txt`, which lives in the ComfyUI submodule, so the
 submodule has to be checked out first. `plan` and `apply` need the home network and stay local.
 
+`init` rewrites `.terraform.lock.hcl` with `linux_amd64` hashes. Restore it before
+committing from a session; lock-file changes belong to a deliberate
+`terraform providers lock` run on the Mac.
+
 A session with both repositories runs neither repository's SessionStart hook, so ask for
 these checks in the prompt.
 
