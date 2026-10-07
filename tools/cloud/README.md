@@ -58,3 +58,5 @@ these checks in the prompt.
 
 | Date | Repo | Session | `fmt -check` | `validate` |
 | ---- | ---- | ------- | ------------ | ---------- |
+| 2026-10-07 | homelab | `session_01Fnegzx1X4QTPU1aLfAx2m7` | pass after `style(terraform): apply terraform fmt` | pass |
+| 2026-10-07 | iot | `session_01Fnegzx1X4QTPU1aLfAx2m7` | pass | pass |
