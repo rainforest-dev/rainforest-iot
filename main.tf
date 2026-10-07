@@ -132,7 +132,6 @@ module "homepage" {
   loki_port                          = var.loki_port
 
   # Kubeconfig paths for dual cluster support
-  mac_mini_kubeconfig_path     = var.mac_mini_kubeconfig_path
   raspberry_pi_kubeconfig_path = var.k8s_config_path
 }
 

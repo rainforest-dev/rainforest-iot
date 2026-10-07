@@ -105,25 +105,10 @@ resource "local_file" "kubeconfig_pi5_content" {
   depends_on = [null_resource.create_build_dir]
 }
 
-# Copy Mac Mini kubeconfig content and rewrite with IP
-resource "local_file" "kubeconfig_mac_content" {
-  content = replace(
-    replace(
-      file(var.mac_mini_kubeconfig_path),
-      "https://127.0.0.1:6443",
-      "https://${var.mac_mini_ip}:6443"
-    ),
-    "https://127.0.0.1:26443",
-    "https://${var.mac_mini_ip}:26443"
-  )
-  filename   = "${local.build_dir}/kubeconfig-mac.yaml"
-  depends_on = [null_resource.create_build_dir]
-}
-
 # Helper container to create both kubeconfig files with IP instead of mDNS hostname
 resource "docker_container" "kubeconfig_updater" {
   image    = "alpine:latest"
-  name     = "homepage-kubeconfig-updater-${substr(md5(join("", [local_file.kubeconfig_pi5_content.content, local_file.kubeconfig_mac_content.content])), 0, 8)}"
+  name     = "homepage-kubeconfig-updater-${substr(md5(local_file.kubeconfig_pi5_content.content), 0, 8)}"
   must_run = false
 
   # These one-shot containers get their lifecycle managed through the content-hash in
@@ -140,11 +125,9 @@ resource "docker_container" "kubeconfig_updater" {
     "sh", "-c",
     <<-EOF
     echo '${base64encode(local_file.kubeconfig_pi5_content.content)}' | base64 -d > /target/kubeconfig-pi5.yaml &&
-    echo '${base64encode(local_file.kubeconfig_mac_content.content)}' | base64 -d > /target/kubeconfig-mac.yaml &&
     chmod 644 /target/*.yaml &&
     echo "Kubeconfig files updated with IP addresses:" &&
-    echo "Pi5 cluster:" && grep server /target/kubeconfig-pi5.yaml &&
-    echo "Mac Mini cluster:" && grep server /target/kubeconfig-mac.yaml
+    echo "Pi5 cluster:" && grep server /target/kubeconfig-pi5.yaml
     EOF
   ]
 
@@ -154,8 +137,7 @@ resource "docker_container" "kubeconfig_updater" {
   }
 
   depends_on = [
-    local_file.kubeconfig_pi5_content,
-    local_file.kubeconfig_mac_content
+    local_file.kubeconfig_pi5_content
   ]
 }
 
