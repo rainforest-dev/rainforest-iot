@@ -36,13 +36,16 @@ code goes to `/var/log/cloud-setup.log`.
 ## What a session can check
 
 ```bash
+git submodule update --init --depth 1
 terraform fmt -check -recursive
 terraform init -backend=false -input=false
 terraform validate
 ```
 
 Neither root module declares a backend, and `validate` does not configure providers, so all
-three run without credentials. `plan` and `apply` need the home network and stay local.
+three run without credentials. In `rainforest-homelab`, `validate` hashes
+`modules/comfyui/server/requirements.txt`, which lives in the ComfyUI submodule, so the
+submodule has to be checked out first. `plan` and `apply` need the home network and stay local.
 
 A session with both repositories runs neither repository's SessionStart hook, so ask for
 these checks in the prompt.
