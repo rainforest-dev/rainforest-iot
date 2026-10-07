@@ -47,9 +47,10 @@ three run without credentials. In `rainforest-homelab`, `validate` hashes
 `modules/comfyui/server/requirements.txt`, which lives in the ComfyUI submodule, so the
 submodule has to be checked out first. `plan` and `apply` need the home network and stay local.
 
-`init` rewrites `.terraform.lock.hcl` with `linux_amd64` hashes. Restore it before
-committing from a session; lock-file changes belong to a deliberate
-`terraform providers lock` run on the Mac.
+The committed `.terraform.lock.hcl` carries `darwin_arm64` and `linux_amd64` hashes, so `init`
+leaves it alone. If it changes anyway, a provider constraint moved: regenerate it on the Mac
+with `terraform providers lock -platform=darwin_arm64 -platform=linux_amd64` rather than
+committing the cloud's copy.
 
 A session with both repositories runs neither repository's SessionStart hook, so ask for
 these checks in the prompt.
