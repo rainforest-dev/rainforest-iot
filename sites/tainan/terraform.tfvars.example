@@ -1,0 +1,9 @@
+nas_ssh_user   = "rainforest"
+snmp_community = "<same string in DSM SNMP and the Nebula site settings>"
+
+# Either a View Only local admin on the UCG Ultra (least privilege)...
+unifi_user = "unpoller"
+unifi_pass = "<password>"
+
+# ...or a UniFi Network API key (Settings -> Control Plane -> Integrations).
+# unifi_api_key = "<key>"

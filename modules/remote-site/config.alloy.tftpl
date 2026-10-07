@@ -1,0 +1,84 @@
+prometheus.remote_write "pi" {
+  external_labels = {
+    site = "${site}",
+  }
+  endpoint {
+    url = env("PROMETHEUS_REMOTE_WRITE_URL")
+  }
+}
+
+prometheus.exporter.blackbox "isp" {
+  config = "{ modules: { icmp: { prober: icmp, timeout: 5s, icmp: { preferred_ip_protocol: ip4 } } } }"
+%{ for name, address in isp_ping_targets ~}
+  target {
+    name    = "${name}"
+    address = "${address}"
+    module  = "icmp"
+  }
+%{ endfor ~}
+}
+
+prometheus.scrape "isp" {
+  job_name        = "isp_icmp"
+  targets         = prometheus.exporter.blackbox.isp.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
+%{ if length(lan_ping_targets) > 0 ~}
+
+prometheus.exporter.blackbox "lan" {
+  config = "{ modules: { icmp: { prober: icmp, timeout: 5s, icmp: { preferred_ip_protocol: ip4 } } } }"
+%{ for name, address in lan_ping_targets ~}
+  target {
+    name    = "${name}"
+    address = "${address}"
+    module  = "icmp"
+  }
+%{ endfor ~}
+}
+
+prometheus.scrape "lan" {
+  job_name        = "lan_icmp"
+  targets         = prometheus.exporter.blackbox.lan.targets
+  scrape_interval = "60s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
+%{ endif ~}
+%{ if length(snmp_targets) > 0 ~}
+
+prometheus.exporter.snmp "site" {
+  config_merge_strategy = "merge"
+  config                = "auths:\n  site_v2:\n    community: \"" + env("SNMP_COMMUNITY") + "\"\n    version: 2\n"
+%{ for name, t in snmp_targets ~}
+
+  target "${name}" {
+    address = "${t.address}"
+    module  = "${t.module}"
+    auth    = "site_v2"
+  }
+%{ endfor ~}
+}
+
+prometheus.scrape "snmp" {
+  job_name        = "snmp"
+  targets         = prometheus.exporter.snmp.site.targets
+  scrape_interval = "60s"
+  scrape_timeout  = "30s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
+%{ endif ~}
+
+prometheus.scrape "unpoller" {
+  job_name        = "unpoller"
+  targets         = [{ "__address__" = "unpoller:9130" }]
+  scrape_interval = "60s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
+
+prometheus.scrape "speedtest" {
+  job_name        = "speedtest"
+  targets         = [{ "__address__" = "speedtest:9798" }]
+  scrape_interval = "60m"
+  scrape_timeout  = "90s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
