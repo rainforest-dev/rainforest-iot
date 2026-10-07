@@ -31,11 +31,6 @@ variable "mac_mini_ip" {
   default     = ""
 }
 
-variable "mac_mini_docker_endpoint" {
-  description = "Mac Mini Docker endpoint for monitoring"
-  type        = string
-  default     = ""
-}
 
 variable "raspberry_pi_hostname" {
   description = "Raspberry Pi hostname"

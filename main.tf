@@ -268,11 +268,10 @@ module "monitoring_integrations" {
   enable_custom_alerts       = true
 
   # External monitoring targets
-  mac_mini_ip              = var.mac_mini_ip
-  mac_mini_docker_endpoint = var.mac_mini_docker_endpoint
-  pihole_port              = var.pihole_web_port
-  pihole_password          = var.pihole_password
-  ntopng_port              = var.ntopng_web_port
+  mac_mini_ip     = var.mac_mini_ip
+  pihole_port     = var.pihole_web_port
+  pihole_password = var.pihole_password
+  ntopng_port     = var.ntopng_web_port
 }
 
 # Loki logging stack (after Prometheus CRDs exist)

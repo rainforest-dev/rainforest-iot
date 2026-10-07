@@ -334,11 +334,6 @@ variable "mac_mini_ip" {
   default     = "100.86.67.66"
 }
 
-variable "mac_mini_docker_endpoint" {
-  description = "Mac mini Docker endpoint for monitoring"
-  type        = string
-  default     = "dockerproxy.orb.local:2375"
-}
 
 variable "pihole_password" {
   description = "Pi-hole web password for metrics exporter (Pi-hole v6+)"
