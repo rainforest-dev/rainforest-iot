@@ -9,6 +9,7 @@
     # Derived from facts so no LAN address is committed to the repo.
     lan_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
     k3s_pod_cidr: 10.42.0.0/16
+    docker_bridge_cidr: 172.17.0.0/16
     
   tasks:
     - name: Update all packages
@@ -147,6 +148,19 @@
         rule: allow
         src: "{{ k3s_pod_cidr }}"
         comment: k3s pod network
+      when: ufw_enabled
+      tags: [ufw]
+
+    # Homepage runs as a plain Docker container, so its Kubernetes discovery
+    # reaches the k3s API from the bridge network, not the LAN. Without this its
+    # /api/services hangs and the dashboard falls back to the sample groups.
+    - name: Allow the Docker bridge to reach the k3s API
+      ufw:
+        rule: allow
+        src: "{{ docker_bridge_cidr }}"
+        port: '6443'
+        proto: tcp
+        comment: Docker bridge to k3s API
       when: ufw_enabled
       tags: [ufw]
 

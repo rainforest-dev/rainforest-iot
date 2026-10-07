@@ -110,12 +110,6 @@ variable "memory_limit" {
   default     = 256
 }
 
-variable "mac_mini_kubeconfig_path" {
-  description = "Path to Mac Mini kubeconfig file"
-  type        = string
-  default     = "~/.kube/config"
-}
-
 variable "raspberry_pi_kubeconfig_path" {
   description = "Path to Raspberry Pi kubeconfig file"
   type        = string
