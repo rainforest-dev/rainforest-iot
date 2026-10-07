@@ -19,10 +19,7 @@ all:
         mac-mini-m4:
           ansible_host: 100.86.67.66  # Tailscale IP
           ansible_user: rainforest
-          
-          # Mac-specific variables
-          docker_host: "dockerproxy.orb.local:2375"
-          
+
     # Future expansion
     github_runners:
       hosts:

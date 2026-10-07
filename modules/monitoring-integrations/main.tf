@@ -65,17 +65,6 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
 
   data = {
     "additional-scrape-configs.yaml" = yamlencode([
-      # Mac Mini Docker monitoring
-      {
-        job_name = "mac-mini-docker"
-        static_configs = [
-          {
-            targets = [var.mac_mini_docker_endpoint]
-          }
-        ]
-        metrics_path    = "/metrics"
-        scrape_interval = "30s"
-      },
       # Mac Mini node monitoring (if node_exporter available)
       {
         job_name = "mac-mini-node"
