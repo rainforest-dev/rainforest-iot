@@ -117,6 +117,21 @@ jobs:
             --allowedTools
             "Agent,Task,Read,Glob,Grep,Write(/tmp/**),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file /tmp/claude-review-summary.md),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),mcp__github_inline_comment__create_inline_comment"
 
+      - name: Show what the review did
+        if: always() && steps.claude-review.outputs.execution_file != ''
+        env:
+          EXEC_FILE: ${{ steps.claude-review.outputs.execution_file }}
+        # Tool names, tool errors and the final message only, never tool inputs
+        # or successful output, so a run that posts nothing can still be
+        # diagnosed from the log.
+        run: |
+          jq -r '
+            [.[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use") | .name] as $tools
+            | "tools used: \($tools | join(", "))",
+              (.[] | select(.type == "user") | .message.content[]? | select(.type == "tool_result" and .is_error == true) | "tool error: \(.content | tostring | .[0:200])"),
+              (.[] | select(.type == "result") | "result: \(.result // "")", "denials: \(.permission_denials // [] | map(.tool_name) | join(", "))")
+          ' "$EXEC_FILE" || true
+
       - name: Fallback summary
         if: always() && steps.claude-review.outcome != 'success'
         run: |
