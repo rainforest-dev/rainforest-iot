@@ -62,6 +62,11 @@ jobs:
       - name: Run the reviewers
         id: claude-review
         uses: anthropics/claude-code-action@v1
+        env:
+          # Subagents otherwise start in the background, the orchestrator ends
+          # its turn to wait for them, and a headless run exits right there
+          # with nothing posted.
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
@@ -83,9 +88,12 @@ jobs:
             2. Run `gh pr view PR --json title,body,headRefName,files` and
                `git diff --stat BASE...HEAD`. Decide which reviewers the changed
                paths call for. `review-correctness` always runs.
-            3. Start every chosen reviewer in parallel with the Agent tool,
-               using the subagent of the same name. If that subagent type is
-               not registered because this PR adds it, start a general-purpose
+            3. Start every chosen reviewer with the Agent tool, all in one
+               message so they run in parallel, with `run_in_background: false`,
+               using the subagent of the same name. Wait for every reviewer to
+               return before step 4: this run ends when your turn does, so
+               never end it while a reviewer is still running. If that subagent
+               type is not registered because this PR adds it, start a general-purpose
                agent with the instructions from
                `.claude-pr/.claude/agents/<name>.md` instead, and say so in the
                summary. Give each one: the PR
