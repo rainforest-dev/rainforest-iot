@@ -47,5 +47,7 @@ configs/homeassistant
 configs/teleport/data
 data
 .DS_Store
-.claude/
+# Local Claude Code state stays out; the shared review agents are tracked.
+.claude/*
+!.claude/agents/
 .worktrees/
