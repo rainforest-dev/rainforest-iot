@@ -1,7 +1,7 @@
 name: Claude Code
 
 # Responds when a comment mentions @claude. Companion to
-# claude-code-review.yml, which runs unprompted on every PR.
+# claude-review.yml, which runs the review subagents on every push once a PR is ready.
 on:
   issue_comment:
     types: [created]
