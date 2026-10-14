@@ -432,9 +432,9 @@ variable "monitoring_resource_limits" {
 
     # Grafana settings
     grafana_cpu_request    = "100m"
-    grafana_cpu_limit      = "200m"
-    grafana_memory_request = "128Mi"
-    grafana_memory_limit   = "256Mi"
+    grafana_cpu_limit      = "1000m"
+    grafana_memory_request = "256Mi"
+    grafana_memory_limit   = "512Mi"
     grafana_storage_size   = "2Gi"
 
     # AlertManager settings
