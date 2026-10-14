@@ -18,16 +18,24 @@
       "type": "row"
     },
     {
+      "id": 2,
+      "type": "stat",
+      "title": "Executions (24h)",
       "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "unit": "short",
           "thresholds": {
+            "mode": "absolute",
             "steps": [
               {
                 "color": "green",
@@ -35,51 +43,50 @@
               }
             ]
           },
-          "noValue": "0"
+          "decimals": 0
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 1
-      },
-      "id": 2,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
         "reduceOptions": {
           "calcs": [
-            "sum"
+            "lastNotNull"
           ]
-        }
+        },
+        "colorMode": "value",
+        "graphMode": "none"
       },
-      "title": "n8n Executions (24h)",
-      "type": "stat",
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"Execution\" | json [24h]))",
-          "legendFormat": "executions",
+          "expr": "round(sum(increase(n8n_workflow_started_total{job=\"n8n\"}[24h])))",
+          "legendFormat": "",
           "refId": "A"
         }
       ]
     },
     {
+      "id": 3,
+      "type": "stat",
+      "title": "Failures (24h)",
       "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "unit": "short",
           "thresholds": {
+            "mode": "absolute",
             "steps": [
               {
                 "color": "green",
@@ -91,72 +98,369 @@
               }
             ]
           },
-          "noValue": "0"
+          "decimals": 0
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "id": 3,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
         "reduceOptions": {
           "calcs": [
-            "sum"
+            "lastNotNull"
           ]
-        }
+        },
+        "colorMode": "value",
+        "graphMode": "none"
       },
-      "title": "n8n Errors (24h)",
-      "type": "stat",
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "expr": "sum(count_over_time({namespace=\"homelab\"} |= \"ERROR\" [24h]))",
-          "legendFormat": "errors",
+          "expr": "round((sum(increase(n8n_workflow_failed_total{job=\"n8n\"}[24h])) or vector(0)) + (sum(increase(n8n_workflow_crashed_total{job=\"n8n\"}[24h])) or vector(0)))",
+          "legendFormat": "",
           "refId": "A"
         }
       ]
     },
     {
+      "id": 4,
+      "type": "stat",
+      "title": "Active workflows",
       "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
-      },
-      "fieldConfig": {
-        "defaults": {}
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
+        "h": 4,
+        "w": 4,
+        "x": 8,
         "y": 1
       },
-      "id": 4,
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "showTime": true,
-        "sortOrder": "Descending"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
       },
-      "title": "n8n Recent Logs",
-      "type": "logs",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "expr": "{namespace=\"homelab\", pod=~\"n8n.*\"}",
-          "refId": "A",
-          "queryType": "range"
+          "expr": "n8n_active_workflow_count{job=\"n8n\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "type": "stat",
+      "title": "n8n up",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "up{job=\"n8n\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "type": "stat",
+      "title": "Memory (RSS)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "n8n_process_resident_memory_bytes{job=\"n8n\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "type": "stat",
+      "title": "Heap used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "n8n_nodejs_heap_size_used_bytes{job=\"n8n\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "type": "timeseries",
+      "title": "Executions per hour by workflow",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (workflow_name) (increase(n8n_workflow_started_total{job=\"n8n\"}[1h]))",
+          "legendFormat": "{{workflow_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "type": "timeseries",
+      "title": "Failures per hour by workflow",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (workflow_name) (increase(n8n_workflow_failed_total{job=\"n8n\"}[1h]))",
+          "legendFormat": "{{workflow_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "type": "timeseries",
+      "title": "p95 execution time by workflow",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, workflow_name) (rate(n8n_workflow_execution_duration_seconds_bucket{job=\"n8n\"}[1h])))",
+          "legendFormat": "{{workflow_name}}",
+          "refId": "A"
         }
       ]
     },
@@ -166,7 +470,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 21
       },
       "id": 5,
       "title": "Whisper STT",
@@ -198,7 +502,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 8
+        "y": 22
       },
       "id": 6,
       "options": {
@@ -235,7 +539,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 8
+        "y": 22
       },
       "id": 7,
       "options": {
@@ -264,7 +568,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 28
       },
       "id": 8,
       "title": "Open WebUI & Flowise",
@@ -282,7 +586,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 29
       },
       "id": 9,
       "options": {
@@ -317,7 +621,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 29
       },
       "id": 10,
       "options": {
