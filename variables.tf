@@ -290,6 +290,12 @@ variable "loki_enabled" {
   default     = true
 }
 
+variable "tempo_enabled" {
+  description = "Enable Tempo for OTLP traces (n8n via Alloy on the Mac)"
+  type        = bool
+  default     = true
+}
+
 variable "promtail_enabled" {
   description = "Enable Promtail log collection"
   type        = bool

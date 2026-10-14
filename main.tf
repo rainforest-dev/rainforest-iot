@@ -310,6 +310,19 @@ module "loki_stack" {
   alertmanager_url             = ""
 }
 
+module "tempo" {
+  count  = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.tempo_enabled ? 1 : 0
+  source = "./modules/tempo"
+
+  providers = {
+    kubernetes = kubernetes.k3s
+    helm       = helm.k3s
+  }
+
+  namespace     = var.k8s_monitoring_namespace
+  storage_class = var.k8s_storage_class
+}
+
 # Teleport node agent — joins the Mac Mini Teleport cluster.
 #
 # Access strategy per service:
