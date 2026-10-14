@@ -311,8 +311,9 @@ module "loki_stack" {
 }
 
 module "tempo" {
-  count  = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.tempo_enabled ? 1 : 0
-  source = "./modules/tempo"
+  count      = var.enable_k8s_cluster && var.k8s_enable_monitoring && var.tempo_enabled ? 1 : 0
+  source     = "./modules/tempo"
+  depends_on = [module.k3s_cluster]
 
   providers = {
     kubernetes = kubernetes.k3s

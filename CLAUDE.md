@@ -149,6 +149,7 @@ Edit `terraform.tfvars` for all deployments:
 | Grafana | 30080 | Dashboards and visualization |
 | AlertManager | 30093 | Alert management and routing |
 | Loki | 30100 | Log aggregation (internal) |
+| Tempo (OTLP/HTTP) | 30418 | Trace ingest from Alloy on the Mac (LAN, unauthenticated) |
 
 ## Development Workflow
 
