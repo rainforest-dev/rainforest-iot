@@ -42,7 +42,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -61,7 +62,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(n8n_workflow_started_total{job=\"n8n\"}[24h]))",
+          "expr": "round(sum(increase(n8n_workflow_started_total{job=\"n8n\"}[24h])))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -96,7 +97,8 @@
                 "value": 1
               }
             ]
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -115,7 +117,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(sum(increase(n8n_workflow_failed_total{job=\"n8n\"}[24h])) or vector(0)) + (sum(increase(n8n_workflow_crashed_total{job=\"n8n\"}[24h])) or vector(0))",
+          "expr": "round((sum(increase(n8n_workflow_failed_total{job=\"n8n\"}[24h])) or vector(0)) + (sum(increase(n8n_workflow_crashed_total{job=\"n8n\"}[24h])) or vector(0)))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -345,7 +347,8 @@
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -390,7 +393,8 @@
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
