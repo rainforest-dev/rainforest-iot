@@ -27,6 +27,17 @@ resource "docker_container" "teleport_node" {
     "TZ=${var.timezone}",
   ]
 
+  # Resolve the proxy hostname to the Mac directly instead of through Cloudflare,
+  # whose San Jose edge adds ~300 ms to every hop. The hostname is unchanged, so
+  # the proxy's Let's Encrypt cert still matches.
+  dynamic "host" {
+    for_each = var.proxy_direct_ip != "" ? [1] : []
+    content {
+      host = split(":", var.teleport_proxy_address)[0]
+      ip   = var.proxy_direct_ip
+    }
+  }
+
   # Persist node identity so it doesn't re-register on every restart
   volumes {
     volume_name    = docker_volume.teleport_data.name

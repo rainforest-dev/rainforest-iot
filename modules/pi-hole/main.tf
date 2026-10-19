@@ -49,11 +49,14 @@ resource "docker_container" "pihole" {
   }
 
   # Environment variables
-  env = [
+  env = concat([
     "TZ=${var.timezone}",
     "WEBPASSWORD_FILE=/run/secrets/pihole_password",
     "DNSMASQ_LISTENING=all"
-  ]
+    ], length(var.local_dns_hosts) > 0 ? [
+    # Pi-hole v6 takes array settings from env as ";"-separated entries
+    "FTLCONF_dns_hosts=${join(";", [for name, ip in var.local_dns_hosts : "${ip} ${name}"])}",
+  ] : [])
 
   # Health check
   healthcheck {

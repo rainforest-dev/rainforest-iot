@@ -355,6 +355,12 @@ variable "teleport_proxy_address" {
   default     = ""
 }
 
+variable "teleport_proxy_direct_ip" {
+  description = "Mac tailnet IP serving the Teleport proxy directly (e.g. 100.86.67.66). Needs teleport_direct_access in rainforest-homelab first; empty keeps the Cloudflare path"
+  type        = string
+  default     = ""
+}
+
 variable "teleport_auth_token" {
   description = "Join token from the Teleport auth server (generate with: tctl tokens add --type=node,app)"
   type        = string
