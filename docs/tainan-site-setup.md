@@ -66,9 +66,9 @@ On DSM, **Task Scheduler → Create → Scheduled Task → User-defined script**
 
 ```bash
 set -e
-cd /tmp
+mkdir -p /volume1/@teleport-join && cd /volume1/@teleport-join
 curl -fsSL https://cdn.teleport.dev/teleport-v15.5.4-linux-amd64-bin.tar.gz | tar xz
-/tmp/teleport/teleport join openssh \
+./teleport/teleport join openssh \
   --proxy-server=tp.rainforest.tools:443 \
   --join-method=token --token=<TOKEN> \
   --address=100.84.80.123:22 \
@@ -76,7 +76,8 @@ curl -fsSL https://cdn.teleport.dev/teleport-v15.5.4-linux-amd64-bin.tar.gz | ta
   --openssh-config=/etc/ssh/sshd_config
 ```
 
-Then turn SSH off and on again in DSM so sshd reloads the Teleport CA. Confirm the node with
+DSM mounts `/tmp` noexec, hence the volume directory. Leave out `set -x`: it would write the token to the
+task log. Then turn SSH off and on again in DSM so sshd reloads the Teleport CA. Confirm the node with
 `tctl nodes ls`.
 
 **DSM upgrades can rewrite `/etc/ssh/sshd_config`** and drop the `TrustedUserCAKeys` and
