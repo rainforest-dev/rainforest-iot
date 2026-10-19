@@ -252,3 +252,5 @@ openspeedtest_ports = {
 ```
 
 See `variables.tf` for all customizable options.
+
+This repository is used for agy loop executor tests (2026-10-19).
