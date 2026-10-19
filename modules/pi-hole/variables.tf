@@ -66,7 +66,7 @@ variable "pihole_password" {
   default     = ""
 }
 variable "local_dns_hosts" {
-  description = "Local DNS records Pi-hole answers itself, as hostname => IP"
+  description = "Local DNS records Pi-hole answers itself, as hostname => IP; each also covers all its subdomains"
   type        = map(string)
   default     = {}
 }

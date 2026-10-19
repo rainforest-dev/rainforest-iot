@@ -54,8 +54,10 @@ resource "docker_container" "pihole" {
     "WEBPASSWORD_FILE=/run/secrets/pihole_password",
     "DNSMASQ_LISTENING=all"
     ], length(var.local_dns_hosts) > 0 ? [
-    # Pi-hole v6 takes array settings from env as ";"-separated entries
-    "FTLCONF_dns_hosts=${join(";", [for name, ip in var.local_dns_hosts : "${ip} ${name}"])}",
+    # dnsmasq address= also answers every subdomain, which Teleport app access
+    # needs (pihole.tp.<domain>); dns.hosts cannot do wildcards. Pi-hole v6 takes
+    # array settings from env as ";"-separated entries.
+    "FTLCONF_misc_dnsmasq_lines=${join(";", [for name, ip in var.local_dns_hosts : "address=/${name}/${ip}"])}",
   ] : [])
 
   # Health check
