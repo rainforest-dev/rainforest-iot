@@ -16,8 +16,9 @@ variable "remote_write_url" {
 }
 
 variable "unifi_url" {
-  type    = string
-  default = "https://192.168.0.1"
+  description = "UCG Ultra, through its gateway address on the NAS's Work VLAN"
+  type        = string
+  default     = "https://192.168.10.1"
 }
 
 variable "unifi_api_key" {
@@ -39,9 +40,32 @@ variable "unifi_pass" {
   sensitive = true
 }
 
-variable "snmp_community" {
-  description = "SNMP v2c community set in DSM and in the Nebula site settings"
+variable "snmp_v3_username" {
+  description = "SNMPv3 user set in DSM (authPriv, SHA + AES)"
   type        = string
+  default     = "alloy"
+}
+
+variable "snmp_v3_auth_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "snmp_v3_priv_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "ap_snmp_auth" {
+  description = "v3 if the Nebula site SNMP is set to the same SNMPv3 user, otherwise v2"
+  type        = string
+  default     = "v2"
+}
+
+variable "ap_snmp_community" {
+  description = "SNMP v2c community set in the Nebula site settings, used when ap_snmp_auth is v2"
+  type        = string
+  default     = ""
   sensitive   = true
 }
 

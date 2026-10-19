@@ -48,13 +48,13 @@ prometheus.scrape "lan" {
 
 prometheus.exporter.snmp "site" {
   config_merge_strategy = "merge"
-  config                = "auths:\n  site_v2:\n    community: \"" + env("SNMP_COMMUNITY") + "\"\n    version: 2\n"
+  config                = "auths:\n  site_v3:\n    version: 3\n    security_level: authPriv\n    username: \"" + env("SNMP_V3_USERNAME") + "\"\n    auth_protocol: SHA\n    password: \"" + env("SNMP_V3_AUTH_PASSWORD") + "\"\n    priv_protocol: AES\n    priv_password: \"" + env("SNMP_V3_PRIV_PASSWORD") + "\"\n  site_v2:\n    version: 2\n    community: \"" + env("SNMP_COMMUNITY") + "\"\n"
 %{ for name, t in snmp_targets ~}
 
   target "${name}" {
     address = "${t.address}"
     module  = "${t.module}"
-    auth    = "site_v2"
+    auth    = "site_${t.auth}"
   }
 %{ endfor ~}
 }

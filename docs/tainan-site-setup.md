@@ -1,12 +1,21 @@
 # Tainan site monitoring — setup
 
 The Tainan home is a second site: a Synology DS725+ (`rainforest-nas`, tailnet `100.84.80.123`), a
-UniFi Cloud Gateway Ultra (`192.168.0.1`, HiNet 500/500), a USW Flex XG (`192.168.0.196`) and two
-Zyxel Nebula APs (NWA130BE `192.168.0.173`, NWA50AX PRO `192.168.0.54`).
+UniFi Cloud Gateway Ultra (HiNet 500/500), a USW Flex XG and two Zyxel Nebula APs (NWA130BE,
+NWA50AX PRO).
 
-The Pi cannot open connections into Tainan: the Tainan LAN is `192.168.0.0/24` like the Taipei LAN, so
-a subnet route would collide, and the tailnet ACL does not let the tagged Pi dial the NAS. The NAS
-therefore collects and pushes:
+The UCG Ultra has three networks:
+
+| Network | VLAN | Subnet | On it |
+|---|---|---|---|
+| Default | 1 | `192.168.0.0/24` | UCG `.1`, USW Flex XG `.196`, NWA130BE `.173`, NWA50AX PRO `.54` |
+| Work | 10 | `192.168.10.0/24` | NAS `.249` |
+| IoT | 107 | `192.168.107.0/24` | smart plugs, a Raspberry Pi 4 |
+
+The Pi cannot open connections into Tainan: the Default network is `192.168.0.0/24` like the Taipei LAN,
+so a subnet route would collide, and the tailnet ACL does not let the tagged Pi dial the NAS. The NAS
+therefore collects and pushes. Alloy on the NAS reaches the Default network through the UCG, so the
+UniFi firewall must allow Work → Default for ICMP and UDP 161.
 
 ```mermaid
 flowchart LR
@@ -35,8 +44,8 @@ never break `terraform plan` for the Pi. Alert rules live in the main root
 ## 1. DSM (Control Panel)
 
 - **Terminal & SNMP → Terminal**: enable SSH on port 22.
-- **Terminal & SNMP → SNMP**: enable SNMP v1/v2c with a new community string. Use the same string for
-  Nebula in step 5.
+- **Terminal & SNMP → SNMP**: untick SNMPv1/v2c. Tick SNMPv3 with user `alloy`, protocol SHA, privacy
+  on with AES, and the two passwords from `sites/tainan/terraform.tfvars`.
 - **Security → Firewall**: enable, and in the profile add, in this order:
   1. Allow TCP 22 from `100.86.67.66` (the Mac running the Teleport proxy).
   2. Deny TCP 22 from all.
@@ -80,7 +89,8 @@ Teleport logs in as `rainforest` (the only login in the `access` role). DSM lets
 Docker socket, so add a **Triggered Task → Boot-up**, user `root`:
 
 ```bash
-synogroup --get docker >/dev/null 2>&1 || synogroup --add docker rainforest
+synogroup --get docker >/dev/null 2>&1 || synogroup --add docker
+synogroup --get docker | grep -q '\[rainforest\]' || synogroup --memberadd docker rainforest
 chown root:docker /var/run/docker.sock
 ```
 
@@ -97,7 +107,9 @@ Pick one:
 
 ## 5. Nebula SNMP
 
-Nebula site `rainforest-network` → Site settings → Management access: tick **SNMP**. Only the NWA130BE
+Nebula site `rainforest-network` → Site settings → Management access: tick **SNMP** and set the SNMPv2
+community to `ap_snmp_community` from `terraform.tfvars`. If Nebula's SNMPv3 option takes the same
+`alloy` user with SHA and AES, use that instead and set `ap_snmp_auth = "v3"`. Only the NWA130BE
 answers; the NWA50AX PRO has no SNMP and is pinged instead.
 
 ## 6. Deploy

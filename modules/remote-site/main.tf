@@ -88,6 +88,9 @@ resource "docker_container" "alloy" {
 
   env = [
     "PROMETHEUS_REMOTE_WRITE_URL=${var.remote_write_url}",
+    "SNMP_V3_USERNAME=${var.snmp_v3.username}",
+    "SNMP_V3_AUTH_PASSWORD=${var.snmp_v3.auth_password}",
+    "SNMP_V3_PRIV_PASSWORD=${var.snmp_v3.priv_password}",
     "SNMP_COMMUNITY=${var.snmp_community}",
   ]
 

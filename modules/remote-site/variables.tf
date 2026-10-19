@@ -32,23 +32,45 @@ variable "unifi_pass" {
   sensitive = true
 }
 
+variable "snmp_v3" {
+  description = "SNMPv3 user (authPriv, SHA + AES) for targets with auth = \"v3\""
+  type = object({
+    username      = string
+    auth_password = string
+    priv_password = string
+  })
+  default = {
+    username      = ""
+    auth_password = ""
+    priv_password = ""
+  }
+  sensitive = true
+}
+
 variable "snmp_community" {
-  description = "SNMP v2c community shared by the site's SNMP targets"
+  description = "SNMP v2c community for targets with auth = \"v2\", for devices without SNMPv3"
   type        = string
+  default     = ""
   sensitive   = true
 }
 
 variable "snmp_targets" {
-  description = "SNMP targets: name => { address, module }; names become Alloy block labels, so no hyphens"
+  description = "SNMP targets: name => { address, module, auth (v3 or v2) }; names become Alloy block labels, so no hyphens"
   type = map(object({
     address = string
     module  = string
+    auth    = optional(string, "v3")
   }))
   default = {}
 
   validation {
     condition     = alltrue([for name in keys(var.snmp_targets) : can(regex("^[A-Za-z_][A-Za-z0-9_]*$", name))])
     error_message = "snmp_targets keys must be valid Alloy identifiers (letters, digits, underscores)."
+  }
+
+  validation {
+    condition     = alltrue([for t in values(var.snmp_targets) : contains(["v3", "v2"], t.auth)])
+    error_message = "snmp_targets auth must be \"v3\" or \"v2\"."
   }
 }
 
