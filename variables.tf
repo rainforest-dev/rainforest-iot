@@ -356,7 +356,13 @@ variable "teleport_proxy_address" {
 }
 
 variable "teleport_proxy_direct_ip" {
-  description = "Mac tailnet IP serving the Teleport proxy directly (e.g. 100.86.67.66). Needs teleport_direct_access in rainforest-homelab first; empty keeps the Cloudflare path"
+  description = "Mac tailnet IP serving the Teleport proxy directly (e.g. 100.86.67.66), published by Pi-hole for tailnet clients. Needs teleport_direct_access in rainforest-homelab first; empty keeps the Cloudflare path. The Pi's own agent uses teleport_node_proxy_ip instead"
+  type        = string
+  default     = ""
+}
+
+variable "teleport_node_proxy_ip" {
+  description = "Address the Pi's own Teleport agent dials for the proxy, e.g. the Mac's LAN IP. Kept separate from teleport_proxy_direct_ip because the tailnet ACL gives tag:homelab no outbound access, so the Pi cannot reach the Mac's tailnet IP. Check `curl -k https://<ip>/webapi/ping` from the Pi first: Pi SSH goes only through Teleport. Empty keeps the Cloudflare path; clearing it and re-applying restores it"
   type        = string
   default     = ""
 }

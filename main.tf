@@ -348,7 +348,7 @@ module "teleport_node" {
 
   project_name           = "homelab"
   teleport_proxy_address = var.teleport_proxy_address
-  proxy_direct_ip        = var.teleport_proxy_direct_ip
+  proxy_direct_ip        = var.teleport_node_proxy_ip
   auth_token             = var.teleport_auth_token
   node_name              = "raspberry-pi-5"
   enable_ssh             = true # Pi SSH tunnelled through Teleport — no direct port exposure
