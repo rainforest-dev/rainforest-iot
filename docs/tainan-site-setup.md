@@ -49,7 +49,8 @@ never break `terraform plan` for the Pi. Alert rules live in the main root
 - **Security → Firewall**: enable, and in the profile add, in this order:
   1. Allow TCP 22 from `100.86.67.66` (the Mac running the Teleport proxy).
   2. Deny TCP 22 from all.
-  3. Allow UDP 161 from `172.16.0.0/12` (the Alloy container on a Docker bridge).
+  3. Allow UDP 161 from the IP range `172.16.0.1`–`172.31.255.254` (the Alloy container on a Docker
+     bridge; DSM rejects a `/12` subnet mask).
   4. Deny UDP 161 from all.
 
   Leave "if no rules are matched" on **Allow**, so DSM, SMB and the nightly rsync keep working.
@@ -84,15 +85,21 @@ task log. Then turn SSH off and on again in DSM so sshd reloads the Teleport CA.
 `HostCertificate` lines the join added. If SSH through Teleport stops working after an update, run the
 task again with a fresh token.
 
-## 3. Let the Teleport login run docker
+## 3. Let the Teleport login run docker, and put Tailscale in TUN mode
 
 Teleport logs in as `rainforest` (the only login in the `access` role). DSM lets only root use the
-Docker socket, so add a **Triggered Task → Boot-up**, user `root`:
+Docker socket, and a non-interactive SSH session has no `/usr/local/bin` on its `PATH`, where DSM puts
+`docker`. The Synology Tailscale package also starts in userspace networking: containers then cannot
+reach the tailnet, so Alloy cannot remote_write to the Pi, and SSH over the tailnet arrives from
+`127.0.0.1`, which the firewall rule above cannot match. Add a **Triggered Task → Boot-up**, user
+`root`:
 
 ```bash
 synogroup --get docker >/dev/null 2>&1 || synogroup --add docker
 synogroup --get docker | grep -q '\[rainforest\]' || synogroup --memberadd docker rainforest
 chown root:docker /var/run/docker.sock
+ln -sf /var/packages/ContainerManager/target/usr/bin/docker /usr/bin/docker
+/var/packages/Tailscale/target/bin/tailscale configure-host && synosystemctl restart pkgctl-Tailscale.service
 ```
 
 Run it once by hand after creating it.
@@ -115,8 +122,20 @@ answers; the NWA50AX PRO has no SNMP and is pinged instead.
 
 ## 6. Deploy
 
+The cluster runs Teleport 15, so use a 15.x `tsh` (newer clients refuse the version). The CLI cannot use
+a browser passkey; add an authenticator app under Account Settings → Multi-factor Devices and log in
+with `--mfa-mode=otp`. Certificates last 12 hours.
+
+`tsh config` sets `Port 3022` for every node, the Teleport agent's port. The NAS is an agentless OpenSSH
+node on 22, so put a `Port 22` entry for it above the generated block:
+
+```
+Host rainforest-nas.tp.rainforest.tools
+    Port 22
+```
+
 ```bash
-tsh login --proxy=tp.rainforest.tools:443 --user=rainforest
+tsh login --proxy=tp.rainforest.tools:443 --user=rainforest --mfa-mode=otp
 tsh config --proxy=tp.rainforest.tools >> ~/.ssh/config
 ssh rainforest@rainforest-nas.tp.rainforest.tools docker ps   # must list containers
 
