@@ -80,3 +80,9 @@ variable "log_opts" {
     "max-file" = "3"
   }
 }
+
+variable "proxy_direct_ip" {
+  description = "Mac address the proxy hostname resolves to inside the agent container; empty uses public DNS (Cloudflare)"
+  type        = string
+  default     = ""
+}

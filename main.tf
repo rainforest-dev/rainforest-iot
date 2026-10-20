@@ -166,6 +166,12 @@ module "pi-hole" {
   ssh_port         = var.raspberry_pi_port
   exporter_version = var.pihole_exporter_version
   pihole_password  = var.pihole_password
+
+  # Tailnet clients that use Pi-hole reach Teleport on the Mac directly
+  # instead of via Cloudflare San Jose.
+  local_dns_hosts = var.teleport_proxy_direct_ip != "" && var.teleport_proxy_address != "" ? {
+    (split(":", var.teleport_proxy_address)[0]) = var.teleport_proxy_direct_ip
+  } : {}
 }
 
 # K3s Cluster configuration (when enabled)
@@ -342,6 +348,7 @@ module "teleport_node" {
 
   project_name           = "homelab"
   teleport_proxy_address = var.teleport_proxy_address
+  proxy_direct_ip        = var.teleport_node_proxy_ip
   auth_token             = var.teleport_auth_token
   node_name              = "raspberry-pi-5"
   enable_ssh             = true # Pi SSH tunnelled through Teleport — no direct port exposure
