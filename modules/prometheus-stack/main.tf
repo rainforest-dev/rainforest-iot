@@ -768,6 +768,88 @@ resource "helm_release" "prometheus_stack" {
             }
           ]
         }
+
+        remote-site-rules = {
+          groups = [
+            {
+              name = "remote-sites"
+              rules = [
+                {
+                  alert = "RemoteSiteSilent"
+                  expr  = "group by (site) (max_over_time(up{site=~\".+\"}[24h])) unless group by (site) (up{site=~\".+\"})"
+                  for   = "5m"
+                  labels = {
+                    severity = "critical"
+                  }
+                  annotations = {
+                    summary     = "No metrics from {{ $labels.site }}"
+                    description = "{{ $labels.site }} stopped pushing metrics: power, WAN or the NAS collector is down"
+                  }
+                },
+                {
+                  alert = "RemoteSiteISPPacketLoss"
+                  expr  = "1 - avg by (site) (avg_over_time(probe_success{job=\"isp_icmp\"}[10m])) > 0.05"
+                  for   = "10m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "ISP packet loss at {{ $labels.site }}"
+                    description = "More than 5% of pings beyond the WAN failed over 10 minutes at {{ $labels.site }}"
+                  }
+                },
+                {
+                  alert = "TainanISPBelowPlan"
+                  expr  = "max_over_time(speedtest_download_bits_per_second{site=\"tainan\"}[3h]) < 350e6 or max_over_time(speedtest_upload_bits_per_second{site=\"tainan\"}[3h]) < 350e6"
+                  for   = "10m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "Tainan HiNet line below 350 Mbps"
+                    description = "No speed test in the last 3 hours reached 350 Mbps on the 500/500 plan"
+                  }
+                },
+                {
+                  alert = "RemoteSiteRaidNotNormal"
+                  expr  = "raidStatus{site=~\".+\"} != 1"
+                  for   = "5m"
+                  labels = {
+                    severity = "critical"
+                  }
+                  annotations = {
+                    summary     = "RAID {{ $labels.raidName }} not normal at {{ $labels.site }}"
+                    description = "Synology raidStatus is {{ $value }} (1 = Normal)"
+                  }
+                },
+                {
+                  alert = "RemoteSiteDiskNotNormal"
+                  expr  = "diskStatus{site=~\".+\"} != 1"
+                  for   = "5m"
+                  labels = {
+                    severity = "critical"
+                  }
+                  annotations = {
+                    summary     = "Disk {{ $labels.diskID }} not normal at {{ $labels.site }}"
+                    description = "Synology diskStatus is {{ $value }} (1 = Normal)"
+                  }
+                },
+                {
+                  alert = "RemoteSiteDiskHot"
+                  expr  = "diskTemperature{site=~\".+\"} > 55"
+                  for   = "15m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "Disk {{ $labels.diskID }} at {{ $value }}°C at {{ $labels.site }}"
+                    description = "Synology disk temperature above 55°C for 15 minutes"
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
 
       # Disable components that are too heavy for Pi
