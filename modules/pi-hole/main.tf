@@ -56,8 +56,10 @@ resource "docker_container" "pihole" {
     ], length(var.local_dns_hosts) > 0 ? [
     # dnsmasq address= also answers every subdomain, which Teleport app access
     # needs (pihole.tp.<domain>); dns.hosts cannot do wildcards. Pi-hole v6 takes
-    # array settings from env as ";"-separated entries.
-    "FTLCONF_misc_dnsmasq_lines=${join(";", [for name, ip in var.local_dns_hosts : "address=/${name}/${ip}"])}",
+    # array settings from env as ";"-separated entries. address= only takes over
+    # A records; without local= the AAAA and HTTPS (type 65) queries still go
+    # upstream, and Safari follows Cloudflare's IPv6 and h3 hints past the A record.
+    "FTLCONF_misc_dnsmasq_lines=${join(";", flatten([for name, ip in var.local_dns_hosts : ["address=/${name}/${ip}", "local=/${name}/"]]))}",
   ] : [])
 
   # Health check
