@@ -62,6 +62,11 @@ resource "docker_container" "unpoller" {
   lifecycle {
     # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
     ignore_changes = [memory_swap]
+
+    precondition {
+      condition     = var.unifi_api_key != "" || (var.unifi_user != "" && var.unifi_pass != "")
+      error_message = "Set unifi_api_key, or both unifi_user and unifi_pass."
+    }
   }
 }
 
@@ -115,7 +120,7 @@ resource "docker_container" "alloy" {
   }
 
   capabilities {
-    add = ["NET_RAW"]
+    add = ["CAP_NET_RAW"]
   }
 
   host {
