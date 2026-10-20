@@ -776,7 +776,7 @@ resource "helm_release" "prometheus_stack" {
               rules = [
                 {
                   alert = "RemoteSiteSilent"
-                  expr  = "group by (site) (max_over_time(up{site=~\".+\"}[24h])) unless group by (site) (up{site=~\".+\"})"
+                  expr  = "group by (site) (max_over_time(up{site=~\".+\"}[7d])) unless group by (site) (up{site=~\".+\"})"
                   for   = "5m"
                   labels = {
                     severity = "critical"

@@ -1,4 +1,15 @@
-nas_ssh_user = "rainforest"
+nas_ssh_user     = "rainforest"
+nas_ssh_host     = "<nas>.<teleport-proxy>"
+remote_write_url = "http://<pi-tailnet-ip>:30090/api/v1/write"
+unifi_url        = "https://<work-vlan-gateway>"
+ap_snmp_address  = "<nwa130be-lan-ip>"
+
+lan_ping_targets = {
+  ucg-ultra      = "<ucg-lan-ip>"
+  usw-flex-xg    = "<switch-lan-ip>"
+  ap-nwa130be    = "<nwa130be-lan-ip>"
+  ap-nwa50ax-pro = "<nwa50ax-pro-lan-ip>"
+}
 
 # SNMPv3 user from DSM -> Terminal & SNMP -> SNMPv3 (SHA + AES).
 snmp_v3_username      = "alloy"

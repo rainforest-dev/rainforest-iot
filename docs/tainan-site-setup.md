@@ -1,6 +1,6 @@
 # Tainan site monitoring — setup
 
-The Tainan home is a second site: a Synology DS725+ (`rainforest-nas`, tailnet `100.84.80.123`), a
+The Tainan home is a second site: a Synology DS725+ (tailnet `<nas-tailnet-ip>`), a
 UniFi Cloud Gateway Ultra (HiNet 500/500), a USW Flex XG and two Zyxel Nebula APs (NWA130BE,
 NWA50AX PRO).
 
@@ -8,11 +8,11 @@ The UCG Ultra has three networks:
 
 | Network | VLAN | Subnet | On it |
 |---|---|---|---|
-| Default | 1 | `192.168.0.0/24` | UCG `.1`, USW Flex XG `.196`, NWA130BE `.173`, NWA50AX PRO `.54` |
-| Work | 10 | `192.168.10.0/24` | NAS `.249` |
-| IoT | 107 | `192.168.107.0/24` | smart plugs, a Raspberry Pi 4 |
+| Default | 1 | same /24 as the Taipei LAN | UCG, USW Flex XG, both APs |
+| Work | 10 | `<work-subnet>` | NAS |
+| IoT | 107 | `<iot-subnet>` | smart plugs, a Raspberry Pi 4 |
 
-The Pi cannot open connections into Tainan: the Default network is `192.168.0.0/24` like the Taipei LAN,
+The Pi cannot open connections into Tainan: the Default network uses the same /24 as the Taipei LAN,
 so a subnet route would collide, and the tailnet ACL does not let the tagged Pi dial the NAS. The NAS
 therefore collects and pushes. Alloy on the NAS reaches the Default network through the UCG, so the
 UniFi firewall must allow Work → Default for ICMP and UDP 161.
@@ -47,7 +47,7 @@ never break `terraform plan` for the Pi. Alert rules live in the main root
 - **Terminal & SNMP → SNMP**: untick SNMPv1/v2c. Tick SNMPv3 with user `alloy`, protocol SHA, privacy
   on with AES, and the two passwords from `sites/tainan/terraform.tfvars`.
 - **Security → Firewall**: enable, and in the profile add, in this order:
-  1. Allow TCP 22 from `100.86.67.66` (the Mac running the Teleport proxy).
+  1. Allow TCP 22 from `<proxy-host-tailnet-ip>` (the Mac running the Teleport proxy).
   2. Deny TCP 22 from all.
   3. Allow UDP 161 from the IP range `172.16.0.1`–`172.31.255.254` (the Alloy container on a Docker
      bridge; DSM rejects a `/12` subnet mask).
@@ -70,9 +70,9 @@ set -e
 mkdir -p /volume1/@teleport-join && cd /volume1/@teleport-join
 curl -fsSL https://cdn.teleport.dev/teleport-v15.5.4-linux-amd64-bin.tar.gz | tar xz
 ./teleport/teleport join openssh \
-  --proxy-server=tp.rainforest.tools:443 \
+  --proxy-server=<teleport-proxy>:443 \
   --join-method=token --token=<TOKEN> \
-  --address=100.84.80.123:22 \
+  --address=<nas-tailnet-ip>:22 \
   --labels=site=tainan,role=nas \
   --openssh-config=/etc/ssh/sshd_config
 ```
@@ -130,14 +130,14 @@ with `--mfa-mode=otp`. Certificates last 12 hours.
 node on 22, so put a `Port 22` entry for it above the generated block:
 
 ```
-Host rainforest-nas.tp.rainforest.tools
+Host <nas>.<teleport-proxy>
     Port 22
 ```
 
 ```bash
-tsh login --proxy=tp.rainforest.tools:443 --user=rainforest --mfa-mode=otp
-tsh config --proxy=tp.rainforest.tools >> ~/.ssh/config
-ssh rainforest@rainforest-nas.tp.rainforest.tools docker ps   # must list containers
+tsh login --proxy=<teleport-proxy>:443 --user=rainforest --mfa-mode=otp
+tsh config --proxy=<teleport-proxy> >> ~/.ssh/config
+ssh rainforest@<nas>.<teleport-proxy> docker ps   # must list containers
 
 cd sites/tainan
 cp terraform.tfvars.example terraform.tfvars   # fill it in
@@ -148,7 +148,7 @@ terraform apply
 
 ## 7. Verify
 
-On the Pi Prometheus (`http://100.81.160.108:30090`):
+On the Pi Prometheus (`http://<pi-tailnet-ip>:30090`):
 
 - `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`).
 - `raidStatus{site="tainan"}` and `diskTemperature{site="tainan"}` return the NAS volumes and disks.
