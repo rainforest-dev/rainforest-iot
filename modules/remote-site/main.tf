@@ -58,6 +58,11 @@ resource "docker_container" "unpoller" {
 
   memory   = 128
   log_opts = var.log_opts
+
+  lifecycle {
+    # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
+    ignore_changes = [memory_swap]
+  }
 }
 
 resource "docker_container" "speedtest" {
@@ -72,6 +77,11 @@ resource "docker_container" "speedtest" {
 
   memory   = 320
   log_opts = var.log_opts
+
+  lifecycle {
+    # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
+    ignore_changes = [memory_swap]
+  }
 }
 
 resource "docker_container" "alloy" {
@@ -130,4 +140,9 @@ resource "docker_container" "alloy" {
   log_opts = var.log_opts
 
   depends_on = [docker_container.unpoller, docker_container.speedtest]
+
+  lifecycle {
+    # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
+    ignore_changes = [memory_swap]
+  }
 }

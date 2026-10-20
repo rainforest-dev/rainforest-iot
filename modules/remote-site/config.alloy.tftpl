@@ -3,7 +3,7 @@ prometheus.remote_write "pi" {
     site = "${site}",
   }
   endpoint {
-    url = env("PROMETHEUS_REMOTE_WRITE_URL")
+    url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
   }
 }
 
@@ -18,9 +18,24 @@ prometheus.exporter.blackbox "isp" {
 %{ endfor ~}
 }
 
+discovery.relabel "isp" {
+  targets = prometheus.exporter.blackbox.isp.targets
+
+  rule {
+    source_labels = ["job"]
+    regex         = "integrations/[^/]+/(.*)"
+    target_label  = "target"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "isp_icmp"
+  }
+}
+
 prometheus.scrape "isp" {
   job_name        = "isp_icmp"
-  targets         = prometheus.exporter.blackbox.isp.targets
+  targets         = discovery.relabel.isp.output
   scrape_interval = "30s"
   forward_to      = [prometheus.remote_write.pi.receiver]
 }
@@ -37,9 +52,24 @@ prometheus.exporter.blackbox "lan" {
 %{ endfor ~}
 }
 
+discovery.relabel "lan" {
+  targets = prometheus.exporter.blackbox.lan.targets
+
+  rule {
+    source_labels = ["job"]
+    regex         = "integrations/[^/]+/(.*)"
+    target_label  = "target"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "lan_icmp"
+  }
+}
+
 prometheus.scrape "lan" {
   job_name        = "lan_icmp"
-  targets         = prometheus.exporter.blackbox.lan.targets
+  targets         = discovery.relabel.lan.output
   scrape_interval = "60s"
   forward_to      = [prometheus.remote_write.pi.receiver]
 }
@@ -48,7 +78,7 @@ prometheus.scrape "lan" {
 
 prometheus.exporter.snmp "site" {
   config_merge_strategy = "merge"
-  config                = "auths:\n  site_v3:\n    version: 3\n    security_level: authPriv\n    username: \"" + env("SNMP_V3_USERNAME") + "\"\n    auth_protocol: SHA\n    password: \"" + env("SNMP_V3_AUTH_PASSWORD") + "\"\n    priv_protocol: AES\n    priv_password: \"" + env("SNMP_V3_PRIV_PASSWORD") + "\"\n  site_v2:\n    version: 2\n    community: \"" + env("SNMP_COMMUNITY") + "\"\n"
+  config                = "auths:\n  site_v3:\n    version: 3\n    security_level: authPriv\n    username: \"" + sys.env("SNMP_V3_USERNAME") + "\"\n    auth_protocol: SHA\n    password: \"" + sys.env("SNMP_V3_AUTH_PASSWORD") + "\"\n    priv_protocol: AES\n    priv_password: \"" + sys.env("SNMP_V3_PRIV_PASSWORD") + "\"\n  site_v2:\n    version: 2\n    community: \"" + sys.env("SNMP_COMMUNITY") + "\"\n"
 %{ for name, t in snmp_targets ~}
 
   target "${name}" {
@@ -59,9 +89,24 @@ prometheus.exporter.snmp "site" {
 %{ endfor ~}
 }
 
+discovery.relabel "snmp" {
+  targets = prometheus.exporter.snmp.site.targets
+
+  rule {
+    source_labels = ["job"]
+    regex         = "integrations/[^/]+/(.*)"
+    target_label  = "target"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "snmp"
+  }
+}
+
 prometheus.scrape "snmp" {
   job_name        = "snmp"
-  targets         = prometheus.exporter.snmp.site.targets
+  targets         = discovery.relabel.snmp.output
   scrape_interval = "60s"
   scrape_timeout  = "30s"
   forward_to      = [prometheus.remote_write.pi.receiver]
