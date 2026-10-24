@@ -9,7 +9,7 @@ HA script → music_assistant integration → MA (localhost:8095) → AirPlay 2 
 ```
 
 HA's config lives in the `homeassistant_configuration` volume, edited from the HA UI, so it is
-not applied by Terraform. `configs/homeassistant/homepod/` holds the copies of what was added to
+not applied by Terraform. The YAML files next to this README are copies of what was added to
 `/config/scripts.yaml` and `/config/automations.yaml`; keep them in sync by hand.
 
 ## State that is not in any file here
