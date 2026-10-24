@@ -225,7 +225,7 @@ variable "blackbox_http_targets" {
     "https://open-webui.rainforest.tools",
     "https://n8n.rainforest.tools",
     # Media / books
-    "https://calibre-web.rainforest.tools",
+    "https://library.rainforest.tools",
     # IoT / home
     "https://homeassistant.rainforest.tools",
     "https://bambii.rainforest.tools",

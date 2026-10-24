@@ -26,11 +26,11 @@
         description: "S3 API Endpoint"
         icon: minio.png
         # K8s-managed: container name changes on every pod restart, omitted to avoid stale "not found"
-    - Calibre Web:
-        href: https://calibre.rainforest.tools/
-        description: "Ebook Library & Reader"
+    - Library:
+        href: https://library.rainforest.tools/
+        description: "Books, Notebooks & Reading Room"
         icon: calibre-web.png
-        siteMonitor: https://calibre.rainforest.tools/
+        siteMonitor: https://library.rainforest.tools/
 
 - "Mac Mini M4 (Development Tools)":
     - Docker MCP Gateway:

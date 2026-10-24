@@ -77,17 +77,6 @@ resource "kubernetes_config_map" "additional_scrape_configs" {
       },
       # Mac Mini homelab services monitoring
       {
-        job_name = "mac-mini-calibre-web"
-        static_configs = [
-          {
-            targets = ["${var.mac_mini_ip}:8083"]
-          }
-        ]
-        metrics_path    = "/metrics"
-        scrape_interval = "60s"
-        scheme          = "http"
-      },
-      {
         job_name = "mac-mini-whisper"
         static_configs = [
           {
