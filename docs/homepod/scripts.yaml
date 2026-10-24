@@ -1,0 +1,73 @@
+homepod_announce:
+  alias: "HomePod Announce"
+  description: "Speak a zh-TW message on the Bedroom HomePod through Music Assistant; MA restores the previous volume and resumes playback afterwards"
+  icon: mdi:bullhorn
+  mode: queued
+  fields:
+    message:
+      name: Message
+      required: true
+      example: "該出門了"
+      selector:
+        text:
+    volume:
+      name: Volume
+      default: 40
+      selector:
+        number:
+          min: 10
+          max: 100
+  sequence:
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_content_id: "media-source://tts/tts.google_translate_en_com?message={{ message | urlencode }}&language=zh-TW"
+        media_content_type: music
+        announce: true
+        extra:
+          use_pre_announce: true
+          announce_volume: "{{ volume | default(40) | int }}"
+
+bambii_music_on:
+  alias: "伴伴音樂"
+  description: "Play Bambii's Spotify playlist on the Bedroom HomePod through Music Assistant"
+  icon: mdi:dog
+  mode: single
+  fields:
+    playlist:
+      name: Spotify playlist URI
+      default: "spotify:playlist:37i9dQZF1DX4sWSpwq3LiO"
+      selector:
+        text:
+    volume:
+      name: Volume
+      default: 0.25
+      selector:
+        number:
+          min: 0.05
+          max: 1
+          step: 0.05
+  sequence:
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        volume_level: "{{ volume | default(0.25) | float }}"
+    - action: music_assistant.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_id: "{{ playlist | default('spotify:playlist:37i9dQZF1DX4sWSpwq3LiO') }}"
+        media_type: playlist
+        enqueue: replace
+
+bambii_music_off:
+  alias: "伴伴音樂停止"
+  description: "Stop Bambii's music on the Bedroom HomePod"
+  icon: mdi:dog-side-off
+  mode: single
+  sequence:
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.bedroom_2
