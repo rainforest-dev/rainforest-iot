@@ -324,12 +324,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "probe_success{instance=\"https://calibre-web.rainforest.tools\"}",
+          "expr": "probe_success{instance=\"https://library.rainforest.tools\"}",
           "instant": true,
           "legendFormat": ""
         }
       ],
-      "title": "Calibre Web",
+      "title": "Library",
       "type": "stat"
     },
     {
@@ -406,7 +406,7 @@
           "legendFormat": ""
         }
       ],
-      "title": "Personal Calibre",
+      "title": "Calibre (feeds/API)",
       "type": "stat"
     },
     {
@@ -899,8 +899,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "probe_duration_seconds{instance=\"https://calibre-web.rainforest.tools\"} * 1000",
-          "legendFormat": "Calibre Web"
+          "expr": "probe_duration_seconds{instance=\"https://library.rainforest.tools\"} * 1000",
+          "legendFormat": "Library"
         },
         {
           "datasource": {
@@ -908,7 +908,7 @@
             "uid": "prometheus"
           },
           "expr": "probe_duration_seconds{instance=\"https://calibre.rainforest.tools\"} * 1000",
-          "legendFormat": "Personal Calibre"
+          "legendFormat": "Calibre (feeds/API)"
         },
         {
           "datasource": {
@@ -1044,9 +1044,9 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "avg_over_time(probe_success{instance=\"https://calibre-web.rainforest.tools\"}[7d]) * 100",
+          "expr": "avg_over_time(probe_success{instance=\"https://library.rainforest.tools\"}[7d]) * 100",
           "instant": true,
-          "legendFormat": "Calibre Web"
+          "legendFormat": "Library"
         },
         {
           "datasource": {
@@ -1055,7 +1055,7 @@
           },
           "expr": "avg_over_time(probe_success{instance=\"https://calibre.rainforest.tools\"}[7d]) * 100",
           "instant": true,
-          "legendFormat": "Personal Calibre"
+          "legendFormat": "Calibre (feeds/API)"
         },
         {
           "datasource": {

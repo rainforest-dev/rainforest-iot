@@ -525,7 +525,9 @@ variable "blackbox_http_targets" {
     "https://whisper.rainforest.tools",
     "https://comfyui.rainforest.tools",
     # Media & Reading
-    "https://calibre-web.rainforest.tools",
+    # library.rainforest.tools replaced calibre-web (retired); calibre.* now redirects
+    # its pages into the library and only keeps serving feeds, APIs and MCP.
+    "https://library.rainforest.tools",
     "https://calibre.rainforest.tools",
     "https://rss.rainforest.tools",
     # Infrastructure & Storage
