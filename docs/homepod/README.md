@@ -34,7 +34,9 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 
 - `script.homepod_announce(message, volume=40)`: Google Translate TTS in `zh-TW`, played with
   MA's announce. MA sets the volume for the announcement, then restores the volume and whatever
-  was playing.
+  was playing. The script reads the volume first and sets it back 3 s after the announce
+  returns if MA left it elsewhere. MA 2.7.11, the rollback image, did not restore it; 2.10.8 does,
+  so normally the check finds nothing to fix.
 - `script.bambii_music_on(playlist, volume=0.25)` / `script.bambii_music_off`: play or stop a
   Spotify playlist through MA. `input_boolean.bambii_music` (exposed to Google Home as
   "Bambii Music") calls them. Its triggers need `from:` so restoring the switch after an HA

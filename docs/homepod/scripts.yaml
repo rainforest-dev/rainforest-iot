@@ -18,6 +18,8 @@ homepod_announce:
           min: 10
           max: 100
   sequence:
+    - variables:
+        prev_volume: "{{ state_attr('media_player.bedroom_2', 'volume_level') }}"
     - action: media_player.play_media
       target:
         entity_id: media_player.bedroom_2
@@ -28,6 +30,19 @@ homepod_announce:
         extra:
           use_pre_announce: true
           announce_volume: "{{ volume | default(40) | int }}"
+    - delay:
+        seconds: 3
+    - if:
+        - condition: template
+          value_template: >-
+            {{ prev_volume is number and
+               (state_attr('media_player.bedroom_2', 'volume_level') | float(-1) - prev_volume) | abs > 0.01 }}
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.bedroom_2
+          data:
+            volume_level: "{{ prev_volume }}"
 
 bambii_music_on:
   alias: "伴伴音樂"
