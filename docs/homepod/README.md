@@ -21,6 +21,9 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 | MA player `Bedroom` | streaming mode `auto` (AirPlay 2, PTP) | The HomePod mini plays only over AirPlay 2 with PTP; RAOP and `ap2_compat` never connect. PTP needs UDP 319/320 open from the LAN. |
 | MA plugin `Spotify Connect` | backend Spotify Soloist, player `Bedroom` | Shows the HomePod as `Bedroom \| Music Assistant` in Spotify apps on the LAN. go-librespot connects but this account gets no audio on it. |
 | MA provider `Spotify` | playback backend Spotify Soloist | Needed for `script.bambii_music_on`. librespot fails every track with `error audio key 0 1` on this account. Soloist needs a Premium API key from developer.spotify.com/dashboard/soloist and one pairing from a Spotify app on the LAN. |
+| HA image | `2026.10.4` (was 2026.3.3) | Waze needs pywaze ≥ 1.2.4; 2026.3.3 ships 1.1.1, which Waze answers with 403 since 2026-10. |
+| HA HomeKit bridge | `input_boolean.bambii_music` added to `include_entities` | Apple Home shows it as a switch; a Home scene or Siri turns it on, which runs `script.bambii_music_on`. |
+| HA Waze Travel Time | `Home → 台北車站`, origin `zone.home`, region `eu` | Placeholder entry; it exists so `waze_travel_time.get_travel_times` is registered. That action takes free-text destinations such as a calendar event's location. |
 | UFW on the Pi | LAN → tcp `32768:60999`, udp `319:320` | Spotify Connect and Soloist pairing bind their getInfo endpoint to a random ephemeral port; with it blocked, Spotify apps see the mDNS record and hide the device. In `ansible/playbooks/system-hardening.yml`. |
 
 ## Entities
@@ -44,3 +47,22 @@ docker exec music-assistant grep -E 'Announcement to player Bedroom' /data/music
 ```
 
 A working run logs `playing the announcement` and then `restore previous state`.
+
+## Upgrading or rolling back HA and MA
+
+Both run the `stable` tag through Terraform (`modules/homeassistant`, `modules/music-assistant`),
+so an upgrade is: `docker pull` the version tag on the Pi (30+ minutes on the SD card), tag the
+running image as `<version>-rollback`, back up the volume, retag `stable`, then
+`terraform apply -target=module.<name>`. The `null_resource` provisioners re-run against the new
+container and are idempotent.
+
+Backups taken on 2026-10-25, in `~/backups/` on the Pi:
+
+| Service | Image tag to roll back to | Volume backup |
+|---|---|---|
+| Music Assistant | `ghcr.io/music-assistant/server:2.7.11-rollback` | `music_assistant_data-20261025-2.7.11.tgz` |
+| Home Assistant | `ghcr.io/home-assistant/home-assistant:2026.3.3-rollback` | `homeassistant_configuration-20261025-2026.3.3.tgz` |
+
+Roll back: stop the container, restore the volume
+(`docker run --rm -v <volume>:/c -v ~/backups:/b alpine sh -c 'rm -rf /c/* /c/.[!.]* && tar xzf /b/<file> -C /c'`),
+`docker tag <rollback tag> <image>:stable`, then `terraform apply -target=module.<name>`.
