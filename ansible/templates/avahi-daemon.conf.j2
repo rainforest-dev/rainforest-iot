@@ -6,7 +6,7 @@ host-name={{ ansible_hostname }}
 domain-name=local
 browse-domains=local
 use-ipv4=yes
-use-ipv6=yes
+use-ipv6=no
 allow-interfaces=eth0,wlan0
 deny-interfaces=docker0,br-*,veth*
 check-response-ttl=no
@@ -34,7 +34,7 @@ publish-workstation=no
 publish-domain=yes
 publish-dns-servers=no
 publish-resolv-conf-dns-servers=no
-publish-aaaa-on-ipv4=yes
+publish-aaaa-on-ipv4=no
 publish-a-on-ipv6=no
 
 [reflector]
