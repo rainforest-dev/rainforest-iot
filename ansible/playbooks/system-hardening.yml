@@ -107,6 +107,8 @@
         # MA 2.10 streams AirPlay 2 with PTP timing; the HomePod mini accepts no
         # other mode, and plays silence when it cannot answer the PTP clock.
         - { port: '319:320', proto: 'udp' }  # PTP event/general (AirPlay 2)
+        - { port: '12889' }               # MA AriaCast receiver (Android audio cast)
+        - { port: '12888', proto: 'udp' } # AriaCast discovery
       when: ufw_enabled
       tags: [ufw]
 
