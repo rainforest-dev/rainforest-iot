@@ -88,8 +88,8 @@
                                           # discovery all depend on it
         # Music Assistant's airplay_receiver plugin, so an iPhone or Mac can
         # stream TO the Pi. It runs shairport-sync 4.3.7, an AirPlay 1 build
-        # (no "-AirPlay2" in its version string), so there is no PTP peer and
-        # no need for UDP 319/320.
+        # (no "-AirPlay2" in its version string), so the receiver has no PTP peer
+        # and needs no UDP 319/320. MA streaming OUT does; see the rule below.
         #
         # The RTSP port cannot be pinned to a single value: the provider sets it
         # to `7000 + (hash(instance_id) % 1000)`, and Python randomises str hash
@@ -99,6 +99,14 @@
         # shairport-sync's own defaults, since the generated config sets neither:
         # udp_port_base 6001, udp_port_range 10.
         - { port: '6001:6010', proto: 'udp' }  # AirPlay receiver audio/control/timing
+        # MA's Spotify Connect (go-librespot) and Soloist pairing devices bind their
+        # zeroconf HTTP endpoint to port 0, and MA exposes no setting to pin it, so
+        # it lands in the kernel's ephemeral range. Spotify apps see the mDNS record,
+        # fail to fetch getInfo, and hide the device.
+        - { port: '32768:60999' }         # Spotify Connect zeroconf endpoints
+        # MA 2.10 streams AirPlay 2 with PTP timing; the HomePod mini accepts no
+        # other mode, and plays silence when it cannot answer the PTP clock.
+        - { port: '319:320', proto: 'udp' }  # PTP event/general (AirPlay 2)
       when: ufw_enabled
       tags: [ufw]
 

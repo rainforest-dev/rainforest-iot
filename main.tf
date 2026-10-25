@@ -49,9 +49,6 @@ module "homeassistant" {
   # Built from mac_mini_ip rather than hard-coded, so no LAN address is committed.
   n8n_webhook_url = "http://${var.mac_mini_ip}:5678/webhook/ha-events"
 
-  # Trust the Mac Mini as a reverse proxy (Cloudflare Tunnel routes through it)
-  # Scoped to the local /24 subnet rather than broad RFC1918 ranges
-  trusted_proxies  = ["192.168.0.0/24"]
   alert_webhook_id = var.ha_alert_webhook_id
 
 }

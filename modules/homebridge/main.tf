@@ -32,6 +32,9 @@ resource "docker_container" "homebridge" {
   name         = "homebridge"
   restart      = "unless-stopped"
   network_mode = "host"
+  # The image runs its own avahi-daemon; with the Pi's hostname it claims
+  # raspberrypi-5.local and the host's avahi renames the Pi to raspberrypi-6.local.
+  hostname = "homebridge"
 
   # Resource limits for stability
   memory      = var.memory_limit

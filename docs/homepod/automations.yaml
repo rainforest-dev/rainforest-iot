@@ -1,0 +1,95 @@
+- id: bambii_music_start
+  alias: "Bambii Music — Start when switch turns on"
+  trigger:
+    - platform: state
+      entity_id: input_boolean.bambii_music
+      from: "off"
+      to: "on"
+  action:
+    - action: script.bambii_music_on
+  mode: single
+
+- id: bambii_music_stop
+  alias: "Bambii Music — Stop when switch turns off"
+  trigger:
+    - platform: state
+      entity_id: input_boolean.bambii_music
+      from: "on"
+      to: "off"
+  action:
+    - action: script.bambii_music_off
+  mode: single
+
+- id: homepod_reminder_template
+  alias: "HomePod 提醒（範本）"
+  description: "Template: copy this, change the time, weekdays and message, then enable it"
+  initial_state: false
+  trigger:
+    - platform: time
+      at: "21:30:00"
+  condition:
+    - condition: time
+      weekday: [mon, tue, wed, thu, fri]
+  action:
+    - action: script.homepod_announce
+      data:
+        message: "提醒一下，該準備睡覺了"
+        volume: 40
+  mode: single
+
+- id: bambii_music_daily
+  alias: "伴伴音樂每日排程"
+  description: "Optional: play Bambii's music every day at a fixed time, stop two hours later"
+  initial_state: false
+  trigger:
+    - platform: time
+      at: "10:00:00"
+      id: start
+    - platform: time
+      at: "12:00:00"
+      id: stop
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: start
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.bambii_music
+        - conditions:
+            - condition: trigger
+              id: stop
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.bambii_music
+  mode: single
+- id: leave_reminder
+  alias: "該出門提醒"
+  description: "Every 5 minutes outside quiet hours, announce on the HomePod when it is time to leave for the next calendar event with a location"
+  trigger:
+    - platform: time_pattern
+      minutes: "/5"
+  condition:
+    - condition: time
+      after: "07:00:00"
+      before: "23:00:00"
+  action:
+    - action: script.leave_reminder_check
+  mode: single
+
+- id: leave_reminder_calendar_refresh
+  alias: "該出門提醒：更新行事曆"
+  description: "Remote Calendar only refetches once a day; refresh every 15 minutes so same-day events are seen"
+  trigger:
+    - platform: time_pattern
+      minutes: "/15"
+  condition:
+    - condition: template
+      value_template: "{{ states.calendar | count > 0 }}"
+  action:
+    - action: homeassistant.update_entity
+      target:
+        entity_id: "{{ states.calendar | map(attribute='entity_id') | list }}"
+  mode: single

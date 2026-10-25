@@ -1,0 +1,163 @@
+homepod_announce:
+  alias: "HomePod Announce"
+  description: "Speak a zh-TW message on the Bedroom HomePod through Music Assistant; MA restores the previous volume and resumes playback afterwards"
+  icon: mdi:bullhorn
+  mode: queued
+  fields:
+    message:
+      name: Message
+      required: true
+      example: "該出門了"
+      selector:
+        text:
+    volume:
+      name: Volume
+      default: 40
+      selector:
+        number:
+          min: 10
+          max: 100
+  sequence:
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_content_id: "media-source://tts/tts.google_translate_en_com?message={{ message | urlencode }}&language=zh-tw"
+        media_content_type: music
+        announce: true
+        extra:
+          use_pre_announce: true
+          announce_volume: "{{ volume | default(40) | int }}"
+
+bambii_music_on:
+  alias: "伴伴音樂"
+  description: "Play Bambii's Spotify playlist on the Bedroom HomePod through Music Assistant"
+  icon: mdi:dog
+  mode: single
+  fields:
+    playlist:
+      name: Spotify playlist URI
+      default: "spotify:playlist:37i9dQZF1DX4sWSpwq3LiO"
+      selector:
+        text:
+    volume:
+      name: Volume
+      default: 0.25
+      selector:
+        number:
+          min: 0.05
+          max: 1
+          step: 0.05
+  sequence:
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        volume_level: "{{ volume | default(0.25) | float }}"
+    - action: music_assistant.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_id: "{{ playlist | default('spotify:playlist:37i9dQZF1DX4sWSpwq3LiO') }}"
+        media_type: playlist
+        enqueue: replace
+
+bambii_music_off:
+  alias: "伴伴音樂停止"
+  description: "Stop Bambii's music on the Bedroom HomePod"
+  icon: mdi:dog-side-off
+  mode: single
+  sequence:
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.bedroom_2
+leave_reminder_check:
+  alias: "該出門提醒檢查"
+  description: "Announce on the Bedroom HomePod when it is time to leave for a calendar event with a location (start − Waze drive time − buffer; 30 min assumed when Waze finds no route)"
+  icon: mdi:car-clock
+  mode: single
+  fields:
+    dry_run:
+      name: Dry run
+      description: Log the message instead of announcing it
+      default: false
+      selector:
+        boolean:
+    buffer_minutes:
+      name: Buffer (minutes)
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 60
+  sequence:
+    - variables:
+        calendars: "{{ states.calendar | map(attribute='entity_id') | list }}"
+        buffer: "{{ buffer_minutes | default(10) | int }}"
+    - condition: template
+      value_template: "{{ calendars | count > 0 }}"
+    - action: calendar.get_events
+      target:
+        entity_id: "{{ calendars }}"
+      data:
+        duration:
+          hours: 4
+      response_variable: agenda
+    - variables:
+        upcoming: >-
+          {% set ns = namespace(items=[]) %}
+          {% for cal in agenda.values() %}
+            {% for e in cal.events if e.location is defined and e.location
+                 and 'T' in e.start and as_datetime(e.start) > now() %}
+              {% set ns.items = ns.items + [e] %}
+            {% endfor %}
+          {% endfor %}
+          {{ ns.items }}
+    - repeat:
+        for_each: "{{ upcoming }}"
+        sequence:
+          - variables:
+              key: "{{ as_timestamp(repeat.item.start) | int }}-{{ repeat.item.summary | replace(',', '') | truncate(12, true, '') }}"
+          - condition: template
+            value_template: "{{ key not in states('input_text.leave_reminder_announced').split(',') }}"
+          - action: waze_travel_time.get_travel_times
+            continue_on_error: true
+            data:
+              origin: zone.home
+              destination: "{{ repeat.item.location }}"
+              region: eu
+            response_variable: route
+          - variables:
+              drive: >-
+                {{ (route.routes[0].duration | round(0) | int)
+                   if route is defined and route.routes is defined and route.routes | count > 0
+                   else none }}
+              leave_at: >-
+                {{ (as_timestamp(repeat.item.start) - ((drive if drive is not none else 30) + buffer) * 60) | int }}
+              message: >-
+                {% set t = as_datetime(repeat.item.start) | as_local %}
+                「{{ repeat.item.summary }}」{{ t.strftime('%H:%M') }}開始，
+                {%- if drive is not none %}開車約 {{ drive }} 分鐘，{% endif %}該準備出門了
+          - condition: template
+            value_template: "{{ now().timestamp() >= leave_at }}"
+          - if:
+              - condition: template
+                value_template: "{{ dry_run | default(false) }}"
+            then:
+              - action: system_log.write
+                data:
+                  level: warning
+                  logger: leave_reminder
+                  message: "DRY RUN: {{ message }}"
+            else:
+              - action: script.homepod_announce
+                data:
+                  message: "{{ message }}"
+                  volume: 40
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.leave_reminder_announced
+                data:
+                  value: >-
+                    {{ ((states('input_text.leave_reminder_announced').split(',')
+                        | reject('eq', '') | list)[-5:] + [key]) | join(',') }}

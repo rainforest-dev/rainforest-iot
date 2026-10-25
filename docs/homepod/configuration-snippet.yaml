@@ -1,0 +1,5 @@
+input_text:
+  leave_reminder_announced:
+    name: 該出門提醒已播
+    max: 255
+

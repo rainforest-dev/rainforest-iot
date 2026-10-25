@@ -21,6 +21,9 @@ resource "docker_container" "music_assistant" {
   name         = "music-assistant"
   restart      = "unless-stopped"
   network_mode = "host"
+  # MA publishes its AirPlay DACP record as `<hostname>.local`; with the Pi's hostname it
+  # claims raspberrypi-5.local and avahi renames the Pi to raspberrypi-6.local.
+  hostname = "music-assistant"
 
   # Resource limits for stability
   memory      = var.memory_limit
