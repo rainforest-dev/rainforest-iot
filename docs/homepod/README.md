@@ -24,6 +24,8 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 | HA image | `2026.10.4` (was 2026.3.3) | Waze needs pywaze ≥ 1.2.4; 2026.3.3 ships 1.1.1, which Waze answers with 403 since 2026-10. |
 | HA HomeKit bridge | `input_boolean.bambii_music` added to `include_entities` | Apple Home shows it as a switch; a Home scene or Siri turns it on, which runs `script.bambii_music_on`. |
 | HA Waze Travel Time | `Home → 台北車站`, origin `zone.home`, region `eu` | Placeholder entry; it exists so `waze_travel_time.get_travel_times` is registered. That action takes free-text destinations such as a calendar event's location. |
+| HA calendars | Remote Calendar (an iCal URL) | No Google Cloud project needed. Use the calendar's *secret* iCal address; the public one answers 404 unless the calendar is public. The URL is a read credential, so it lives only in the integration, never in git. |
+| HA `http` | trusted proxies `192.168.0.0/24` in Settings → System → Network | Imported from YAML by 2026.8+, then narrowed from the RFC1918 ranges. Requests reach HA from the Mac (cloudflared) at 192.168.0.126 and directly from k3s pods, which send no forwarded headers. |
 | UFW on the Pi | LAN → tcp `32768:60999`, udp `319:320` | Spotify Connect and Soloist pairing bind their getInfo endpoint to a random ephemeral port; with it blocked, Spotify apps see the mDNS record and hide the device. In `ansible/playbooks/system-hardening.yml`. |
 
 ## Entities
@@ -36,6 +38,16 @@ not applied by Terraform. The YAML files next to this README are copies of what 
   "Bambii Music") calls them. Its triggers need `from:` so restoring the switch after an HA
   restart does not start music.
 - `automation.homepod_ti_xing_fan_ben`: disabled reminder template.
+- `script.leave_reminder_check(dry_run, buffer_minutes=10)`: reads every `calendar.*` entity for
+  the next 2 hours, asks `waze_travel_time.get_travel_times` for the drive from `zone.home` to
+  each event's location, and announces 「「<event>」<HH:MM>開始，開車約 N 分鐘，該準備出門了」 once
+  start − drive − buffer has passed. Announced events are remembered in
+  `input_text.leave_reminder_announced` (last 9, key `<start epoch>-<summary length>`). All-day
+  events and events without a location are skipped. `dry_run: true` writes the message to the HA
+  log as `DRY RUN:` and records nothing.
+- `automation.gai_chu_men_ti_xing`: runs the check every 5 minutes, 07:00–23:00 only.
+- `automation.gai_chu_men_ti_xing_geng_xin_xing_shi_li`: Remote Calendar refetches only once a
+  day, so this updates every calendar entity every 15 minutes.
 - `automation.ban_ban_yin_le_mei_ri_pai_cheng`: disabled daily schedule for Bambii's music.
 
 ## Test

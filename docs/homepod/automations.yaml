@@ -65,3 +65,31 @@
               target:
                 entity_id: input_boolean.bambii_music
   mode: single
+- id: leave_reminder
+  alias: "該出門提醒"
+  description: "Every 5 minutes outside quiet hours, announce on the HomePod when it is time to leave for the next calendar event with a location"
+  trigger:
+    - platform: time_pattern
+      minutes: "/5"
+  condition:
+    - condition: time
+      after: "07:00:00"
+      before: "23:00:00"
+  action:
+    - action: script.leave_reminder_check
+  mode: single
+
+- id: leave_reminder_calendar_refresh
+  alias: "該出門提醒：更新行事曆"
+  description: "Remote Calendar only refetches once a day; refresh every 15 minutes so same-day events are seen"
+  trigger:
+    - platform: time_pattern
+      minutes: "/15"
+  condition:
+    - condition: template
+      value_template: "{{ states.calendar | count > 0 }}"
+  action:
+    - action: homeassistant.update_entity
+      target:
+        entity_id: "{{ states.calendar | map(attribute='entity_id') | list }}"
+  mode: single
