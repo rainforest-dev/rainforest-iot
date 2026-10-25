@@ -22,7 +22,7 @@ homepod_announce:
       target:
         entity_id: media_player.bedroom_2
       data:
-        media_content_id: "media-source://tts/tts.google_translate_en_com?message={{ message | urlencode }}&language=zh-TW"
+        media_content_id: "media-source://tts/tts.google_translate_en_com?message={{ message | urlencode }}&language=zh-tw"
         media_content_type: music
         announce: true
         extra:

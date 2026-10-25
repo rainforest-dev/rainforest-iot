@@ -17,9 +17,11 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 | Where | Setting | Why |
 |---|---|---|
 | HA `music_assistant` config entry | `url = http://localhost:8095` | It pointed at `https://music-assistant.rainforest.tools`; when the Mac's tunnel went down on 2026-10-17 HA lost MA and every MA player went `unavailable`. HA and MA both use host networking on the Pi, so loopback needs no tunnel. The integration has no reconfigure flow: stop HA, edit `.storage/core.config_entries`, start HA. |
-| MA player `Bedroom` | AirPlay protocol: Prefer AirPlay 2 | On automatic (RAOP) the HomePod accepts the connection and never starts playback; MA fails with `Playback failed to start` after 10 s. |
-| MA plugin `Spotify Connect` | player `Bedroom`, name `臥室 HomePod`, player switching off | Shows the HomePod as a Spotify Connect device to any phone on the LAN. |
-| MA provider `Spotify` | logged in | Needed for `script.bambii_music_on`. Re-login in MA → Settings → Providers → Spotify when it logs `Error loading provider ... 'refresh_token'`. |
+| MA image | `2.10.8` (was 2.7.11) | 2.7's librespot cannot fetch Spotify audio since 2026-08-10. Rollback: image `ghcr.io/music-assistant/server:2.7.11-rollback` and `~/backups/music_assistant_data-20261025-2.7.11.tgz` on the Pi. |
+| MA player `Bedroom` | streaming mode `auto` (AirPlay 2, PTP) | The HomePod mini plays only over AirPlay 2 with PTP; RAOP and `ap2_compat` never connect. PTP needs UDP 319/320 open from the LAN. |
+| MA plugin `Spotify Connect` | backend Spotify Soloist, player `Bedroom` | Shows the HomePod as `Bedroom \| Music Assistant` in Spotify apps on the LAN. go-librespot connects but this account gets no audio on it. |
+| MA provider `Spotify` | playback backend Spotify Soloist | Needed for `script.bambii_music_on`. librespot fails every track with `error audio key 0 1` on this account. Soloist needs a Premium API key from developer.spotify.com/dashboard/soloist and one pairing from a Spotify app on the LAN. |
+| UFW on the Pi | LAN → tcp `32768:60999`, udp `319:320` | Spotify Connect and Soloist pairing bind their getInfo endpoint to a random ephemeral port; with it blocked, Spotify apps see the mDNS record and hide the device. In `ansible/playbooks/system-hardening.yml`. |
 
 ## Entities
 
