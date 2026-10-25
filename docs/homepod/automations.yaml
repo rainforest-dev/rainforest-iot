@@ -93,3 +93,17 @@
       target:
         entity_id: "{{ states.calendar | map(attribute='entity_id') | list }}"
   mode: single
+
+- id: bedtime_reminder
+  alias: "睡前提醒 22:30"
+  description: "22:30 starts the no-blue-light half hour before 23:00; input_boolean.bedtime_reminder pauses it"
+  trigger:
+    - platform: time
+      at: "22:30:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.bedtime_reminder
+      state: "on"
+  action:
+    - action: script.bedtime_reminder
+  mode: single

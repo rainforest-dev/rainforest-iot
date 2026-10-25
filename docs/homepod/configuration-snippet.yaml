@@ -1,5 +1,9 @@
+input_boolean:
+  bedtime_reminder:
+    name: 睡前提醒
+    icon: mdi:book-open-page-variant
+
 input_text:
   leave_reminder_announced:
     name: 該出門提醒已播
     max: 255
-
