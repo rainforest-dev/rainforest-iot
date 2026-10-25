@@ -88,8 +88,8 @@
                                           # discovery all depend on it
         # Music Assistant's airplay_receiver plugin, so an iPhone or Mac can
         # stream TO the Pi. It runs shairport-sync 4.3.7, an AirPlay 1 build
-        # (no "-AirPlay2" in its version string), so there is no PTP peer and
-        # no need for UDP 319/320.
+        # (no "-AirPlay2" in its version string), so the receiver has no PTP peer
+        # and needs no UDP 319/320. MA streaming OUT does; see the rule below.
         #
         # The RTSP port cannot be pinned to a single value: the provider sets it
         # to `7000 + (hash(instance_id) % 1000)`, and Python randomises str hash

@@ -73,7 +73,7 @@ bambii_music_off:
         entity_id: media_player.bedroom_2
 leave_reminder_check:
   alias: "該出門提醒檢查"
-  description: "Announce on the Bedroom HomePod when it is time to leave for a calendar event with a location (start − Waze drive time − buffer)"
+  description: "Announce on the Bedroom HomePod when it is time to leave for a calendar event with a location (start − Waze drive time − buffer; 30 min assumed when Waze finds no route)"
   icon: mdi:car-clock
   mode: single
   fields:
@@ -101,7 +101,7 @@ leave_reminder_check:
         entity_id: "{{ calendars }}"
       data:
         duration:
-          hours: 2
+          hours: 4
       response_variable: agenda
     - variables:
         upcoming: >-
@@ -117,7 +117,7 @@ leave_reminder_check:
         for_each: "{{ upcoming }}"
         sequence:
           - variables:
-              key: "{{ as_timestamp(repeat.item.start) | int }}-{{ repeat.item.summary | length }}"
+              key: "{{ as_timestamp(repeat.item.start) | int }}-{{ repeat.item.summary | replace(',', '') | truncate(12, true, '') }}"
           - condition: template
             value_template: "{{ key not in states('input_text.leave_reminder_announced').split(',') }}"
           - action: waze_travel_time.get_travel_times
@@ -133,13 +133,13 @@ leave_reminder_check:
                    if route is defined and route.routes is defined and route.routes | count > 0
                    else none }}
               leave_at: >-
-                {{ (as_timestamp(repeat.item.start) - ((drive or 0) + buffer) * 60) | int }}
+                {{ (as_timestamp(repeat.item.start) - ((drive if drive is not none else 30) + buffer) * 60) | int }}
               message: >-
                 {% set t = as_datetime(repeat.item.start) | as_local %}
                 「{{ repeat.item.summary }}」{{ t.strftime('%H:%M') }}開始，
                 {%- if drive is not none %}開車約 {{ drive }} 分鐘，{% endif %}該準備出門了
           - condition: template
-            value_template: "{{ drive is not none and now().timestamp() >= leave_at }}"
+            value_template: "{{ now().timestamp() >= leave_at }}"
           - if:
               - condition: template
                 value_template: "{{ dry_run | default(false) }}"
@@ -160,4 +160,4 @@ leave_reminder_check:
                 data:
                   value: >-
                     {{ ((states('input_text.leave_reminder_announced').split(',')
-                        | reject('eq', '') | list)[-8:] + [key]) | join(',') }}
+                        | reject('eq', '') | list)[-5:] + [key]) | join(',') }}
