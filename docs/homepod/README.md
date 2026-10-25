@@ -59,7 +59,9 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 - `automation.shui_qian_ti_xing_22_30`: runs it at 22:30 while `input_boolean.bedtime_reminder`
   (睡前提醒) is on. Google Home sees the switch through the exposed `input_boolean` domain and
   Apple Home through the HomeKit bridge, so either can pause it. To change the time, edit both
-  the trigger and the message.
+  the trigger and the message. A newly created helper starts off, so turn it on once after
+  rebuilding from these files. It has no `initial:` on purpose, because that would undo a pause at every HA
+  restart.
 
 ## Test
 
