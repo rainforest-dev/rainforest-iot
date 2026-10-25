@@ -28,12 +28,6 @@ variable "timezone" {
   default     = "Asia/Taipei"
 }
 
-variable "trusted_proxies" {
-  description = "CIDR ranges trusted as reverse proxies (needed when HA is behind Cloudflare Tunnel)"
-  type        = list(string)
-  default     = []
-}
-
 variable "ssh_user" {
   description = "SSH user for provisioning HA config on the Pi"
   type        = string
