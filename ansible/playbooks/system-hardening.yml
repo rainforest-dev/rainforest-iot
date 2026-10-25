@@ -104,6 +104,9 @@
         # it lands in the kernel's ephemeral range. Spotify apps see the mDNS record,
         # fail to fetch getInfo, and hide the device.
         - { port: '32768:60999' }         # Spotify Connect zeroconf endpoints
+        # MA 2.10 streams AirPlay 2 with PTP timing; the HomePod mini accepts no
+        # other mode, and plays silence when it cannot answer the PTP clock.
+        - { port: '319:320', proto: 'udp' }  # PTP event/general (AirPlay 2)
       when: ufw_enabled
       tags: [ufw]
 
