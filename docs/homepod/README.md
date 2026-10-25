@@ -1,6 +1,6 @@
 # Bedroom HomePod: announcements and Bambii's music
 
-The Bedroom HomePod mini (`192.168.0.105`) is driven by Music Assistant (MA) on the Pi, and
+The Bedroom HomePod mini (`<HOMEPOD_IP>`) is driven by Music Assistant (MA) on the Pi, and
 Home Assistant (HA) talks to it through MA's `media_player.bedroom_2`. `media_player.bedroom`
 is the separate `apple_tv` integration entity and is the one Google Home exposes.
 
@@ -25,7 +25,7 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 | HA HomeKit bridge | `input_boolean.bambii_music` added to `include_entities` | Apple Home shows it as a switch; a Home scene or Siri turns it on, which runs `script.bambii_music_on`. |
 | HA Waze Travel Time | `Home → 台北車站`, origin `zone.home`, region `eu` | Placeholder entry; it exists so `waze_travel_time.get_travel_times` is registered. That action takes free-text destinations such as a calendar event's location. |
 | HA calendars | Remote Calendar (an iCal URL) | No Google Cloud project needed. Use the calendar's *secret* iCal address; the public one answers 404 unless the calendar is public. The URL is a read credential, so it lives only in the integration, never in git. |
-| HA `http` | trusted proxies `192.168.0.0/24` in Settings → System → Network | Imported from YAML by 2026.8+, then narrowed from the RFC1918 ranges. Requests reach HA from the Mac (cloudflared) at 192.168.0.126 and directly from k3s pods, which send no forwarded headers. The setting lives only in `.storage/http`: after restoring the volume from an older backup, re-enter it there or the tunnel answers 400. |
+| HA `http` | trusted proxies the LAN `/24` in Settings → System → Network | Imported from YAML by 2026.8+, then narrowed from the RFC1918 ranges. Requests reach HA from the Mac (cloudflared) and directly from k3s pods, which send no forwarded headers. The setting lives only in `.storage/http`: after restoring the volume from an older backup, re-enter it there or the tunnel answers 400. |
 | avahi on the Pi | `allow-interfaces=eth0,wlan0`, `use-ipv6=no`, `publish-aaaa-on-ipv4=no` | Applied by hand on 2026-10-25 and matching `ansible/templates/avahi-daemon.conf.j2`, which only `tailscale-remove.yml` renders. A rebuilt Pi needs it applied again, or iPhones resolve `raspberrypi-5.local` to an IPv6 address UFW does not allow. |
 | Container hostnames | `music-assistant`, `homebridge` | Both run with host networking; with the Pi's hostname they publish `raspberrypi-5.local` (MA's AirPlay DACP record, Homebridge's own avahi) and the Pi's avahi renames itself `raspberrypi-6.local`. |
 | UFW on the Pi | LAN → tcp `32768:60999`, udp `319:320` | Spotify Connect and Soloist pairing bind their getInfo endpoint to a random ephemeral port; with it blocked, Spotify apps see the mDNS record and hide the device. The range also exposes any other host-network process that binds an ephemeral port, to the LAN only. In `ansible/playbooks/system-hardening.yml`. |
@@ -57,7 +57,7 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 
 ```bash
 curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H 'Content-Type: application/json' \
-  -d '{"message":"測試","volume":25}' http://192.168.0.128:8123/api/services/script/homepod_announce
+  -d '{"message":"測試","volume":25}' http://<PI_IP>:8123/api/services/script/homepod_announce
 docker exec music-assistant grep -E 'Announcement to player Bedroom' /data/musicassistant.log | tail -3
 ```
 
