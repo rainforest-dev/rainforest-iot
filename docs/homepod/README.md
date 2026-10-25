@@ -1,4 +1,4 @@
-# Bedroom HomePod: announcements and Bambii's music
+# Bedroom HomePod: announcements, the bedtime reminder and Bambii's music
 
 The Bedroom HomePod mini (`<HOMEPOD_IP>`) is driven by Music Assistant (MA) on the Pi, and
 Home Assistant (HA) talks to it through MA's `media_player.bedroom_2`. `media_player.bedroom`
@@ -22,7 +22,7 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 | MA plugin `Spotify Connect` | backend Spotify Soloist, player `Bedroom` | Shows the HomePod as `Bedroom \| Music Assistant` in Spotify apps on the LAN. go-librespot connects but this account gets no audio on it. |
 | MA provider `Spotify` | playback backend Spotify Soloist | Needed for `script.bambii_music_on`. librespot fails every track with `error audio key 0 1` on this account. Soloist needs a Premium API key from developer.spotify.com/dashboard/soloist and one pairing from a Spotify app on the LAN. |
 | HA image | `2026.10.4` (was 2026.3.3) | Waze needs pywaze ≥ 1.2.4; 2026.3.3 ships 1.1.1, which Waze answers with 403 since 2026-10. |
-| HA HomeKit bridge | `input_boolean.bambii_music` added to `include_entities` | Apple Home shows it as a switch; a Home scene or Siri turns it on, which runs `script.bambii_music_on`. |
+| HA HomeKit bridge | `input_boolean.bambii_music` and `input_boolean.bedtime_reminder` in `include_entities` | Apple Home shows each as a switch. Bambii Music turning on runs `script.bambii_music_on`; 睡前提醒 off skips the 22:30 reminder. Changed through the bridge's options flow, which also dropped `switch.dehumidifier_power`: the entity no longer exists. |
 | HA Waze Travel Time | `Home → 台北車站`, origin `zone.home`, region `eu` | Placeholder entry; it exists so `waze_travel_time.get_travel_times` is registered. That action takes free-text destinations such as a calendar event's location. |
 | HA calendars | Remote Calendar (an iCal URL) | No Google Cloud project needed. Use the calendar's *secret* iCal address; the public one answers 404 unless the calendar is public. The URL is a read credential, so it lives only in the integration, never in git. |
 | HA `http` | trusted proxies the LAN `/24` in Settings → System → Network | Imported from YAML by 2026.8+, then narrowed from the RFC1918 ranges. Requests reach HA from the Mac (cloudflared) and directly from k3s pods, which send no forwarded headers. The setting lives only in `.storage/http`: after restoring the volume from an older backup, re-enter it there or the tunnel answers 400. |
@@ -52,6 +52,12 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 - `automation.gai_chu_men_ti_xing_geng_xin_xing_shi_li`: Remote Calendar refetches only once a
   day, so this updates every calendar entity every 15 minutes.
 - `automation.ban_ban_yin_le_mei_ri_pai_cheng`: disabled daily schedule for Bambii's music.
+- `script.bedtime_reminder(dry_run, volume=30)`: announces 「十點半了，進入無藍光時間。放下手機，一起念小說吧，十一點睡覺。」
+  through `script.homepod_announce`. `dry_run: true` writes it to the HA log as `DRY RUN:`.
+- `automation.shui_qian_ti_xing_22_30`: runs it at 22:30 while `input_boolean.bedtime_reminder`
+  (睡前提醒) is on. Google Home sees the switch through the exposed `input_boolean` domain and
+  Apple Home through the HomeKit bridge, so either can pause it. To change the time, edit both
+  the trigger and the message.
 
 ## Test
 

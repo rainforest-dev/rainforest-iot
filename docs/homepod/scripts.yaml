@@ -161,3 +161,40 @@ leave_reminder_check:
                   value: >-
                     {{ ((states('input_text.leave_reminder_announced').split(',')
                         | reject('eq', '') | list)[-5:] + [key]) | join(',') }}
+
+bedtime_reminder:
+  alias: "睡前提醒"
+  description: "Announce the start of the no-blue-light half hour on the Bedroom HomePod"
+  icon: mdi:book-open-page-variant
+  mode: single
+  fields:
+    dry_run:
+      name: Dry run
+      description: Log the message instead of announcing it
+      default: false
+      selector:
+        boolean:
+    volume:
+      name: Volume
+      default: 30
+      selector:
+        number:
+          min: 10
+          max: 100
+  sequence:
+    - variables:
+        message: "十點半了，進入無藍光時間。放下手機，一起念小說吧，十一點睡覺。"
+    - if:
+        - condition: template
+          value_template: "{{ dry_run | default(false) }}"
+      then:
+        - action: system_log.write
+          data:
+            level: warning
+            logger: bedtime_reminder
+            message: "DRY RUN: {{ message }} (volume {{ volume | default(30) | int }})"
+      else:
+        - action: script.homepod_announce
+          data:
+            message: "{{ message }}"
+            volume: "{{ volume | default(30) | int }}"
