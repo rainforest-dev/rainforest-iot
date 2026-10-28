@@ -354,3 +354,151 @@ resource "null_resource" "ha_alertmanager_push" {
 
   depends_on = [null_resource.ha_n8n_bridge_config]
 }
+
+# ─── iPhone monitoring sensors ───────────────────────────────────────────────
+# Companion-app sensors are mostly strings, so the Prometheus integration only
+# exports their change counters. These template sensors turn them into numbers
+# Grafana can chart next to the battery level:
+#
+#   iPhone Network Type   -1=no connection  0=Wi-Fi  1=4G/LTE  2=5G  3=other cellular
+#                         (iOS reports the radio on the SIM sensor's
+#                         "Current Radio Technology", so that is the fallback)
+#   iPhone Charging       1=charging or full  0=on battery
+#   iPhone Slow Reports   counts taps on the companion-app Action "手機好慢"
+#                         (ios.action_fired), one per "the phone feels slow now";
+#                         an iOS Shortcut fires the same event from the iPhone
+#                         or iPad with `device` and that device's network and
+#                         battery at the moment (wifi, radio, carrier,
+#                         signal_bars, battery, optional note), kept as
+#                         attributes of the latest report;
+#                         the HA start trigger publishes 0 so the first tap
+#                         has an earlier sample for changes()/increase()
+#
+# configuration.yaml already has a top-level `template:` key (Roborock sensor
+# above) and a second one would replace it, so a small Python script keeps these
+# items between marker comments at the top of that list and rewrites them when
+# they change. Backup + check_config + rollback as in the n8n bridge.
+locals {
+  ha_iphone_connection_entity = "sensor.${var.iphone_entity_prefix}_connection_type"
+  ha_iphone_sim_entity        = "sensor.${var.iphone_entity_prefix}_sim_1"
+  ha_iphone_battery_entity    = "sensor.${var.iphone_entity_prefix}_battery_state"
+
+  ha_iphone_network_sensor = join("\n", [
+    "  # iphone-monitoring:begin (managed by terraform, rainforest-iot modules/homeassistant)",
+    "  - sensor:",
+    "      - name: \"iPhone Network Type\"",
+    "        unique_id: iphone_network_type_numeric",
+    "        icon: mdi:signal-cellular-3",
+    "        availability: \"{{ has_value('${local.ha_iphone_connection_entity}') }}\"",
+    "        state: >",
+    "          {% set s = states('${local.ha_iphone_connection_entity}') %}",
+    "          {% set t = (state_attr('${local.ha_iphone_connection_entity}', 'Cellular Technology') or state_attr('${local.ha_iphone_sim_entity}', 'Current Radio Technology') or '') | upper %}",
+    "          {% if s == 'Wi-Fi' %}0",
+    "          {% elif s == 'Cellular' and ('5G' in t or 'NR' in t) %}2",
+    "          {% elif s == 'Cellular' and ('LTE' in t or '4G' in t) %}1",
+    "          {% elif s == 'Cellular' %}3",
+    "          {% else %}-1{% endif %}",
+    "      - name: \"iPhone Charging\"",
+    "        unique_id: iphone_charging_numeric",
+    "        icon: mdi:battery-charging",
+    "        availability: \"{{ has_value('${local.ha_iphone_battery_entity}') }}\"",
+    "        state: \"{{ 1 if states('${local.ha_iphone_battery_entity}') in ['Charging', 'Full'] else 0 }}\"",
+    "  - trigger:",
+    "      - platform: event",
+    "        event_type: ios.action_fired",
+    "        event_data:",
+    "          actionName: \"手機好慢\"",
+    "      - platform: homeassistant",
+    "        event: start",
+    "    sensor:",
+    "      - name: \"iPhone Slow Reports\"",
+    "        unique_id: iphone_slow_reports",
+    "        icon: mdi:snail",
+    "        state_class: total_increasing",
+    "        state: \"{{ (this.state | int(0)) + (1 if trigger.platform == 'event' else 0) }}\"",
+    "        attributes:",
+    "          device: \"{{ trigger.event.data.device | default('unknown') if trigger.platform == 'event' else this.attributes.get('device', '') }}\"",
+    "          note: \"{{ trigger.event.data.note | default('') if trigger.platform == 'event' else this.attributes.get('note', '') }}\"",
+    "          wifi: \"{{ trigger.event.data.wifi | default('') if trigger.platform == 'event' else this.attributes.get('wifi', '') }}\"",
+    "          radio: \"{{ trigger.event.data.radio | default('') if trigger.platform == 'event' else this.attributes.get('radio', '') }}\"",
+    "          carrier: \"{{ trigger.event.data.carrier | default('') if trigger.platform == 'event' else this.attributes.get('carrier', '') }}\"",
+    "          signal_bars: \"{{ trigger.event.data.signal_bars | default('') if trigger.platform == 'event' else this.attributes.get('signal_bars', '') }}\"",
+    "          battery: \"{{ trigger.event.data.battery | default('') if trigger.platform == 'event' else this.attributes.get('battery', '') }}\"",
+    "  # iphone-monitoring:end",
+  ])
+
+  # Runs inside the container (python3 reads it from stdin). Drops the managed
+  # region (and the pre-marker single-sensor copy from the first apply), then
+  # inserts the current block right under `template:`. Exits 10 when the region
+  # is already identical, non-zero without touching the file when there is no
+  # top-level `template:` key.
+  ha_iphone_network_insert = <<-PY
+    import os, sys
+    p = "/config/configuration.yaml"
+    lines = open(p).read().split("\n")
+    block = ${jsonencode(local.ha_iphone_network_sensor)}.split("\n")
+    begin, end = block[0], block[-1]
+    if begin in lines and end in lines:
+        s, e = lines.index(begin), lines.index(end) + 1
+        if lines[s:e] == block:
+            sys.exit(10)
+        del lines[s:e]
+    legacy = '      - name: "iPhone Network Type"'
+    if legacy in lines:
+        s = lines.index(legacy)
+        e = next((j for j in range(s + 1, len(lines))
+                  if lines[j].startswith("      - ") or (lines[j].strip() and not lines[j].startswith("        "))),
+                 len(lines))
+        del lines[s:e]
+    if "template:" not in lines:
+        sys.exit("no top-level 'template:' key in configuration.yaml")
+    t = lines.index("template:")
+    lines[t + 1:t + 1] = block
+    with open(p + ".tmp", "w") as f:
+        f.write("\n".join(lines))
+    os.replace(p + ".tmp", p)
+  PY
+}
+
+resource "null_resource" "ha_iphone_network_sensor" {
+  count = var.iphone_entity_prefix == "" ? 0 : 1
+
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    sensor       = local.ha_iphone_network_sensor
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
+
+      $${SSH} "docker exec homeassistant cp /config/configuration.yaml /config/configuration.yaml.iphonebak"
+      RC=0
+      echo "${base64encode(local.ha_iphone_network_insert)}" | base64 -d \
+        | $${SSH} "docker exec -i homeassistant python3 -" || RC=$?
+      if [ "$${RC}" = "10" ]; then
+        $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+        echo "iPhone monitoring sensors already up to date, skipping"
+        exit 0
+      elif [ "$${RC}" != "0" ]; then
+        echo "iPhone sensor writer failed (rc=$${RC}) — restoring configuration.yaml"
+        $${SSH} "docker exec homeassistant mv /config/configuration.yaml.iphonebak /config/configuration.yaml"
+        exit "$${RC}"
+      fi
+
+      if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
+        echo "HA config check FAILED — rolling back the iPhone sensors, NOT restarting"
+        $${SSH} "docker exec homeassistant mv /config/configuration.yaml.iphonebak /config/configuration.yaml"
+        exit 1
+      fi
+
+      $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+      $${SSH} "docker restart homeassistant"
+      echo "iPhone monitoring sensors written & validated, HA restarted"
+    BASH
+  }
+
+  # Serialized after the other config writers: they all edit and restart HA.
+  depends_on = [null_resource.ha_alertmanager_push]
+}

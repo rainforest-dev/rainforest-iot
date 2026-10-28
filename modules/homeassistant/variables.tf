@@ -66,3 +66,9 @@ variable "alert_webhook_id" {
   sensitive   = true
   default     = ""
 }
+
+variable "iphone_entity_prefix" {
+  description = "Companion app entity prefix of the phone to chart (e.g. rainforests_iphone for sensor.rainforests_iphone_connection_type). Empty skips the template sensors. The Grafana dashboard in modules/prometheus-stack (uid homelab-iphone) hardcodes rainforests_iphone, so update its JSON too when changing this."
+  type        = string
+  default     = ""
+}
