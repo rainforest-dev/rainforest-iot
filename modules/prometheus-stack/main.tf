@@ -147,6 +147,17 @@ resource "kubernetes_config_map" "grafana_dashboard_local_machines" {
   }
 }
 
+resource "kubernetes_config_map" "grafana_dashboard_iphone" {
+  metadata {
+    name      = "grafana-iphone-network-battery"
+    namespace = var.namespace
+    labels    = { grafana_dashboard = "1" }
+  }
+  data = {
+    "iphone-network-battery.json" = file("${path.module}/dashboards/iphone-network-battery.json")
+  }
+}
+
 
 # Build the list of additional scrape job configs.
 # All scrape targets use raw IPs — K3s CoreDNS cannot resolve .local mDNS hostnames.

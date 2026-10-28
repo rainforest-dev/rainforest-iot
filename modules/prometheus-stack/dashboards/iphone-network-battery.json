@@ -1,0 +1,317 @@
+{
+  "uid": "homelab-iphone",
+  "title": "iPhone 網路與電量",
+  "tags": [
+    "iphone",
+    "homeassistant"
+  ],
+  "editable": true,
+  "timezone": "Asia/Taipei",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "annotations": {
+    "list": [
+      {
+        "name": "手機好慢",
+        "enable": true,
+        "iconColor": "red",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "expr": "changes(homeassistant_sensor_state{entity=\"sensor.iphone_slow_reports\"}[2m]) > 0",
+        "step": "60s",
+        "titleFormat": "手機好慢",
+        "textFormat": "按下「手機好慢」"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "state-timeline",
+      "title": "連線類型",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"}",
+          "legendFormat": "連線"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "grey",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "-1": {
+                  "text": "無網路",
+                  "color": "dark-red"
+                },
+                "0": {
+                  "text": "Wi-Fi",
+                  "color": "blue"
+                },
+                "1": {
+                  "text": "4G/LTE",
+                  "color": "orange"
+                },
+                "2": {
+                  "text": "5G",
+                  "color": "green"
+                },
+                "3": {
+                  "text": "其他",
+                  "color": "purple"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "電量 %（黃色區塊＝充電中）",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 16,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homeassistant_sensor_battery_percent{entity=\"sensor.rainforests_iphone_battery_level\"}",
+          "legendFormat": "電量"
+        },
+        {
+          "refId": "B",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.iphone_charging\"} * 100",
+          "legendFormat": "充電中"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "lineInterpolation": "stepAfter"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "充電中"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "耗電速度（%/小時，沒充電時）",
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(-deriv(homeassistant_sensor_battery_percent{entity=\"sensor.rainforests_iphone_battery_level\"}[1h]) * 3600) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_charging\"} == 0)",
+          "legendFormat": "%/h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "「手機好慢」次數",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "round(increase(homeassistant_sensor_state{entity=\"sensor.iphone_slow_reports\"}[$__range]))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "bargauge",
+      "title": "連線類型時間佔比",
+      "gridPos": {
+        "x": 6,
+        "y": 13,
+        "w": 9,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time((homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == bool 0)[$__range:5m])",
+          "legendFormat": "Wi-Fi",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "avg_over_time((homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == bool 1)[$__range:5m])",
+          "legendFormat": "4G/LTE",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "expr": "avg_over_time((homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == bool 2)[$__range:5m])",
+          "legendFormat": "5G",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 6,
+      "type": "bargauge",
+      "title": "平均耗電（%/小時，沒充電時，依連線類型）",
+      "gridPos": {
+        "x": 15,
+        "y": 13,
+        "w": 9,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time(((-deriv(homeassistant_sensor_battery_percent{entity=\"sensor.rainforests_iphone_battery_level\"}[1h]) * 3600) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_charging\"} == 0) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == 0))[$__range:10m])",
+          "legendFormat": "Wi-Fi",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "avg_over_time(((-deriv(homeassistant_sensor_battery_percent{entity=\"sensor.rainforests_iphone_battery_level\"}[1h]) * 3600) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_charging\"} == 0) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == 1))[$__range:10m])",
+          "legendFormat": "4G/LTE",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "expr": "avg_over_time(((-deriv(homeassistant_sensor_battery_percent{entity=\"sensor.rainforests_iphone_battery_level\"}[1h]) * 3600) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_charging\"} == 0) and on(instance) (homeassistant_sensor_state{entity=\"sensor.iphone_network_type\"} == 2))[$__range:10m])",
+          "legendFormat": "5G",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    }
+  ]
+}
