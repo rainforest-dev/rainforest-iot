@@ -366,6 +366,9 @@ resource "null_resource" "ha_alertmanager_push" {
 #   iPhone Charging       1=charging or full  0=on battery
 #   iPhone Slow Reports   counts taps on the companion-app Action "手機好慢"
 #                         (ios.action_fired), one per "the phone feels slow now";
+#                         an iOS Shortcut fires the same event from the iPhone
+#                         or iPad with `device` and an optional `note`, kept as
+#                         attributes of the latest report;
 #                         the HA start trigger publishes 0 so the first tap
 #                         has an earlier sample for changes()/increase()
 #
@@ -411,6 +414,9 @@ locals {
     "        icon: mdi:snail",
     "        state_class: total_increasing",
     "        state: \"{{ (this.state | int(0)) + (1 if trigger.platform == 'event' else 0) }}\"",
+    "        attributes:",
+    "          device: \"{{ trigger.event.data.device | default('unknown') if trigger.platform == 'event' else this.attributes.get('device', '') }}\"",
+    "          note: \"{{ trigger.event.data.note | default('') if trigger.platform == 'event' else this.attributes.get('note', '') }}\"",
     "  # iphone-monitoring:end",
   ])
 
