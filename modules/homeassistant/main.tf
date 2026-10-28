@@ -365,7 +365,9 @@ resource "null_resource" "ha_alertmanager_push" {
 #                         "Current Radio Technology", so that is the fallback)
 #   iPhone Charging       1=charging or full  0=on battery
 #   iPhone Slow Reports   counts taps on the companion-app Action "手機好慢"
-#                         (ios.action_fired), one per "the phone feels slow now"
+#                         (ios.action_fired), one per "the phone feels slow now";
+#                         the HA start trigger publishes 0 so the first tap
+#                         has an earlier sample for changes()/increase()
 #
 # configuration.yaml already has a top-level `template:` key (Roborock sensor
 # above) and a second one would replace it, so a small Python script keeps these
@@ -401,12 +403,14 @@ locals {
     "        event_type: ios.action_fired",
     "        event_data:",
     "          actionName: \"手機好慢\"",
+    "      - platform: homeassistant",
+    "        event: start",
     "    sensor:",
     "      - name: \"iPhone Slow Reports\"",
     "        unique_id: iphone_slow_reports",
     "        icon: mdi:snail",
     "        state_class: total_increasing",
-    "        state: \"{{ (this.state | int(0)) + 1 }}\"",
+    "        state: \"{{ (this.state | int(0)) + (1 if trigger.platform == 'event' else 0) }}\"",
     "  # iphone-monitoring:end",
   ])
 
