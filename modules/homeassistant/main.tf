@@ -359,7 +359,8 @@ resource "null_resource" "ha_alertmanager_push" {
 # The companion app's Connection Type sensor is a string, so the Prometheus
 # integration only exports its change counter. This template sensor maps it to
 # a number so Grafana can show whether the phone was on Wi-Fi, 4G or 5G when it
-# felt slow.
+# felt slow. iOS reports the radio technology on the SIM sensor
+# ("Current Radio Technology"), so that is the fallback.
 #
 # State mapping:  -1=no connection  0=Wi-Fi  1=4G/LTE  2=5G  3=other cellular
 #
@@ -369,6 +370,7 @@ resource "null_resource" "ha_alertmanager_push" {
 # bridge.
 locals {
   ha_iphone_connection_entity = "sensor.${var.iphone_entity_prefix}_connection_type"
+  ha_iphone_sim_entity        = "sensor.${var.iphone_entity_prefix}_sim_1"
 
   ha_iphone_network_sensor = join("\n", [
     "      - name: \"iPhone Network Type\"",
@@ -377,7 +379,7 @@ locals {
     "        availability: \"{{ has_value('${local.ha_iphone_connection_entity}') }}\"",
     "        state: >",
     "          {% set s = states('${local.ha_iphone_connection_entity}') %}",
-    "          {% set t = (state_attr('${local.ha_iphone_connection_entity}', 'Cellular Technology') or '') | upper %}",
+    "          {% set t = (state_attr('${local.ha_iphone_connection_entity}', 'Cellular Technology') or state_attr('${local.ha_iphone_sim_entity}', 'Current Radio Technology') or '') | upper %}",
     "          {% if s == 'Wi-Fi' %}0",
     "          {% elif s == 'Cellular' and ('5G' in t or 'NR' in t) %}2",
     "          {% elif s == 'Cellular' and ('LTE' in t or '4G' in t) %}1",
