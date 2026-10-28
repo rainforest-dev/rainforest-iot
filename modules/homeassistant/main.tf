@@ -416,7 +416,7 @@ locals {
   # is already identical, non-zero without touching the file when there is no
   # top-level `template:` key.
   ha_iphone_network_insert = <<-PY
-    import sys
+    import os, sys
     p = "/config/configuration.yaml"
     lines = open(p).read().split("\n")
     block = ${jsonencode(local.ha_iphone_network_sensor)}.split("\n")
@@ -437,7 +437,9 @@ locals {
         sys.exit("no top-level 'template:' key in configuration.yaml")
     t = lines.index("template:")
     lines[t + 1:t + 1] = block
-    open(p, "w").write("\n".join(lines))
+    with open(p + ".tmp", "w") as f:
+        f.write("\n".join(lines))
+    os.replace(p + ".tmp", p)
   PY
 }
 
@@ -463,7 +465,8 @@ resource "null_resource" "ha_iphone_network_sensor" {
         echo "iPhone monitoring sensors already up to date, skipping"
         exit 0
       elif [ "$${RC}" != "0" ]; then
-        $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+        echo "iPhone sensor writer failed (rc=$${RC}) — restoring configuration.yaml"
+        $${SSH} "docker exec homeassistant mv /config/configuration.yaml.iphonebak /config/configuration.yaml"
         exit "$${RC}"
       fi
 
