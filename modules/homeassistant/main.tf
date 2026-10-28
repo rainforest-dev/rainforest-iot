@@ -354,3 +354,87 @@ resource "null_resource" "ha_alertmanager_push" {
 
   depends_on = [null_resource.ha_n8n_bridge_config]
 }
+
+# ─── iPhone network type as a number ────────────────────────────────────────
+# The companion app's Connection Type sensor is a string, so the Prometheus
+# integration only exports its change counter. This template sensor maps it to
+# a number so Grafana can show whether the phone was on Wi-Fi, 4G or 5G when it
+# felt slow.
+#
+# State mapping:  -1=no connection  0=Wi-Fi  1=4G/LTE  2=5G  3=other cellular
+#
+# configuration.yaml already has a top-level `template:` key (Roborock sensor
+# above) and a second one would replace it, so a small Python script inserts the
+# item into that existing list. Backup + check_config + rollback as in the n8n
+# bridge.
+locals {
+  ha_iphone_connection_entity = "sensor.${var.iphone_entity_prefix}_connection_type"
+
+  ha_iphone_network_sensor = join("\n", [
+    "      - name: \"iPhone Network Type\"",
+    "        unique_id: iphone_network_type_numeric",
+    "        icon: mdi:signal-cellular-3",
+    "        availability: \"{{ has_value('${local.ha_iphone_connection_entity}') }}\"",
+    "        state: >",
+    "          {% set s = states('${local.ha_iphone_connection_entity}') %}",
+    "          {% set t = (state_attr('${local.ha_iphone_connection_entity}', 'Cellular Technology') or '') | upper %}",
+    "          {% if s == 'Wi-Fi' %}0",
+    "          {% elif s == 'Cellular' and ('5G' in t or 'NR' in t) %}2",
+    "          {% elif s == 'Cellular' and ('LTE' in t or '4G' in t) %}1",
+    "          {% elif s == 'Cellular' %}3",
+    "          {% else %}-1{% endif %}",
+  ])
+
+  # Runs inside the container (python3 reads it from stdin). Exits non-zero and
+  # leaves the file untouched when the `template:` / `  - sensor:` list is missing.
+  ha_iphone_network_insert = <<-PY
+    import sys
+    p = "/config/configuration.yaml"
+    lines = open(p).read().split("\n")
+    block = ${jsonencode(local.ha_iphone_network_sensor)}.split("\n")
+    try:
+        t = lines.index("template:")
+        i = next(j for j in range(t + 1, len(lines)) if lines[j].rstrip() == "  - sensor:")
+    except (ValueError, StopIteration):
+        sys.exit("no 'template:' -> '  - sensor:' list in configuration.yaml")
+    lines[i + 1:i + 1] = block
+    open(p, "w").write("\n".join(lines))
+  PY
+}
+
+resource "null_resource" "ha_iphone_network_sensor" {
+  count = var.iphone_entity_prefix == "" ? 0 : 1
+
+  triggers = {
+    container_id = docker_container.homeassistant.id
+    sensor       = local.ha_iphone_network_sensor
+  }
+
+  provisioner "local-exec" {
+    command = <<-BASH
+      set -e
+      SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
+
+      if $${SSH} "docker exec homeassistant grep -q iphone_network_type_numeric /config/configuration.yaml" 2>/dev/null; then
+        echo "iPhone network type sensor already present, skipping"
+        exit 0
+      fi
+
+      $${SSH} "docker exec homeassistant cp /config/configuration.yaml /config/configuration.yaml.iphonebak"
+      echo "${base64encode(local.ha_iphone_network_insert)}" | base64 -d \
+        | $${SSH} "docker exec -i homeassistant python3 -"
+
+      if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
+        echo "HA config check FAILED — rolling back the iPhone sensor, NOT restarting"
+        $${SSH} "docker exec homeassistant mv /config/configuration.yaml.iphonebak /config/configuration.yaml"
+        exit 1
+      fi
+
+      $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+      $${SSH} "docker restart homeassistant"
+      echo "iPhone network type sensor written & validated, HA restarted"
+    BASH
+  }
+
+  depends_on = [null_resource.ha_vacuum_template_sensor]
+}

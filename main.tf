@@ -51,6 +51,9 @@ module "homeassistant" {
 
   alert_webhook_id = var.ha_alert_webhook_id
 
+  # Companion app entity prefix; feeds the iPhone Network Type sensor.
+  iphone_entity_prefix = "rainforests_iphone"
+
 }
 
 module "music_assistant" {
