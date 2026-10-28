@@ -452,5 +452,6 @@ resource "null_resource" "ha_iphone_network_sensor" {
     BASH
   }
 
-  depends_on = [null_resource.ha_vacuum_template_sensor]
+  # Serialized after the other config writers: they all edit and restart HA.
+  depends_on = [null_resource.ha_alertmanager_push]
 }
