@@ -387,13 +387,23 @@ locals {
     "          {% else %}-1{% endif %}",
   ])
 
-  # Runs inside the container (python3 reads it from stdin). Exits non-zero and
-  # leaves the file untouched when the `template:` / `  - sensor:` list is missing.
+  # Runs inside the container (python3 reads it from stdin). Replaces an older
+  # copy of the item (matched on its name line) so template changes reach HA.
+  # Exits 10 when the item is already identical, non-zero without touching the
+  # file when the `template:` / `  - sensor:` list is missing.
   ha_iphone_network_insert = <<-PY
     import sys
     p = "/config/configuration.yaml"
     lines = open(p).read().split("\n")
     block = ${jsonencode(local.ha_iphone_network_sensor)}.split("\n")
+    if block[0] in lines:
+        s = lines.index(block[0])
+        e = next((j for j in range(s + 1, len(lines))
+                  if lines[j].startswith("      - ") or (lines[j].strip() and not lines[j].startswith("        "))),
+                 len(lines))
+        if lines[s:e] == block:
+            sys.exit(10)
+        del lines[s:e]
     try:
         t = lines.index("template:")
         i = next(j for j in range(t + 1, len(lines)) if lines[j].rstrip() == "  - sensor:")
@@ -417,14 +427,18 @@ resource "null_resource" "ha_iphone_network_sensor" {
       set -e
       SSH="ssh -i ${var.ssh_private_key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -p ${var.ssh_port} ${var.ssh_user}@${var.hostname}"
 
-      if $${SSH} "docker exec homeassistant grep -q iphone_network_type_numeric /config/configuration.yaml" 2>/dev/null; then
-        echo "iPhone network type sensor already present, skipping"
-        exit 0
-      fi
-
       $${SSH} "docker exec homeassistant cp /config/configuration.yaml /config/configuration.yaml.iphonebak"
+      RC=0
       echo "${base64encode(local.ha_iphone_network_insert)}" | base64 -d \
-        | $${SSH} "docker exec -i homeassistant python3 -"
+        | $${SSH} "docker exec -i homeassistant python3 -" || RC=$?
+      if [ "$${RC}" = "10" ]; then
+        $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+        echo "iPhone network type sensor already up to date, skipping"
+        exit 0
+      elif [ "$${RC}" != "0" ]; then
+        $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
+        exit "$${RC}"
+      fi
 
       if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
         echo "HA config check FAILED — rolling back the iPhone sensor, NOT restarting"
