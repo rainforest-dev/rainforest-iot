@@ -355,24 +355,30 @@ resource "null_resource" "ha_alertmanager_push" {
   depends_on = [null_resource.ha_n8n_bridge_config]
 }
 
-# ─── iPhone network type as a number ────────────────────────────────────────
-# The companion app's Connection Type sensor is a string, so the Prometheus
-# integration only exports its change counter. This template sensor maps it to
-# a number so Grafana can show whether the phone was on Wi-Fi, 4G or 5G when it
-# felt slow. iOS reports the radio technology on the SIM sensor
-# ("Current Radio Technology"), so that is the fallback.
+# ─── iPhone monitoring sensors ───────────────────────────────────────────────
+# Companion-app sensors are mostly strings, so the Prometheus integration only
+# exports their change counters. These template sensors turn them into numbers
+# Grafana can chart next to the battery level:
 #
-# State mapping:  -1=no connection  0=Wi-Fi  1=4G/LTE  2=5G  3=other cellular
+#   iPhone Network Type   -1=no connection  0=Wi-Fi  1=4G/LTE  2=5G  3=other cellular
+#                         (iOS reports the radio on the SIM sensor's
+#                         "Current Radio Technology", so that is the fallback)
+#   iPhone Charging       1=charging or full  0=on battery
+#   iPhone Slow Reports   counts taps on the companion-app Action "手機好慢"
+#                         (ios.action_fired), one per "the phone feels slow now"
 #
 # configuration.yaml already has a top-level `template:` key (Roborock sensor
-# above) and a second one would replace it, so a small Python script inserts the
-# item into that existing list. Backup + check_config + rollback as in the n8n
-# bridge.
+# above) and a second one would replace it, so a small Python script keeps these
+# items between marker comments at the top of that list and rewrites them when
+# they change. Backup + check_config + rollback as in the n8n bridge.
 locals {
   ha_iphone_connection_entity = "sensor.${var.iphone_entity_prefix}_connection_type"
   ha_iphone_sim_entity        = "sensor.${var.iphone_entity_prefix}_sim_1"
+  ha_iphone_battery_entity    = "sensor.${var.iphone_entity_prefix}_battery_state"
 
   ha_iphone_network_sensor = join("\n", [
+    "  # iphone-monitoring:begin (managed by terraform, rainforest-iot modules/homeassistant)",
+    "  - sensor:",
     "      - name: \"iPhone Network Type\"",
     "        unique_id: iphone_network_type_numeric",
     "        icon: mdi:signal-cellular-3",
@@ -385,31 +391,52 @@ locals {
     "          {% elif s == 'Cellular' and ('LTE' in t or '4G' in t) %}1",
     "          {% elif s == 'Cellular' %}3",
     "          {% else %}-1{% endif %}",
+    "      - name: \"iPhone Charging\"",
+    "        unique_id: iphone_charging_numeric",
+    "        icon: mdi:battery-charging",
+    "        availability: \"{{ has_value('${local.ha_iphone_battery_entity}') }}\"",
+    "        state: \"{{ 1 if states('${local.ha_iphone_battery_entity}') in ['Charging', 'Full'] else 0 }}\"",
+    "  - trigger:",
+    "      - platform: event",
+    "        event_type: ios.action_fired",
+    "        event_data:",
+    "          actionName: \"手機好慢\"",
+    "    sensor:",
+    "      - name: \"iPhone Slow Reports\"",
+    "        unique_id: iphone_slow_reports",
+    "        icon: mdi:snail",
+    "        state_class: total_increasing",
+    "        state: \"{{ (this.state | int(0)) + 1 }}\"",
+    "  # iphone-monitoring:end",
   ])
 
-  # Runs inside the container (python3 reads it from stdin). Replaces an older
-  # copy of the item (matched on its name line) so template changes reach HA.
-  # Exits 10 when the item is already identical, non-zero without touching the
-  # file when the `template:` / `  - sensor:` list is missing.
+  # Runs inside the container (python3 reads it from stdin). Drops the managed
+  # region (and the pre-marker single-sensor copy from the first apply), then
+  # inserts the current block right under `template:`. Exits 10 when the region
+  # is already identical, non-zero without touching the file when there is no
+  # top-level `template:` key.
   ha_iphone_network_insert = <<-PY
     import sys
     p = "/config/configuration.yaml"
     lines = open(p).read().split("\n")
     block = ${jsonencode(local.ha_iphone_network_sensor)}.split("\n")
-    if block[0] in lines:
-        s = lines.index(block[0])
-        e = next((j for j in range(s + 1, len(lines))
-                  if lines[j].startswith("      - ") or (lines[j].strip() and not lines[j].startswith("        "))),
-                 len(lines))
+    begin, end = block[0], block[-1]
+    if begin in lines and end in lines:
+        s, e = lines.index(begin), lines.index(end) + 1
         if lines[s:e] == block:
             sys.exit(10)
         del lines[s:e]
-    try:
-        t = lines.index("template:")
-        i = next(j for j in range(t + 1, len(lines)) if lines[j].rstrip() == "  - sensor:")
-    except (ValueError, StopIteration):
-        sys.exit("no 'template:' -> '  - sensor:' list in configuration.yaml")
-    lines[i + 1:i + 1] = block
+    legacy = '      - name: "iPhone Network Type"'
+    if legacy in lines:
+        s = lines.index(legacy)
+        e = next((j for j in range(s + 1, len(lines))
+                  if lines[j].startswith("      - ") or (lines[j].strip() and not lines[j].startswith("        "))),
+                 len(lines))
+        del lines[s:e]
+    if "template:" not in lines:
+        sys.exit("no top-level 'template:' key in configuration.yaml")
+    t = lines.index("template:")
+    lines[t + 1:t + 1] = block
     open(p, "w").write("\n".join(lines))
   PY
 }
@@ -433,7 +460,7 @@ resource "null_resource" "ha_iphone_network_sensor" {
         | $${SSH} "docker exec -i homeassistant python3 -" || RC=$?
       if [ "$${RC}" = "10" ]; then
         $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
-        echo "iPhone network type sensor already up to date, skipping"
+        echo "iPhone monitoring sensors already up to date, skipping"
         exit 0
       elif [ "$${RC}" != "0" ]; then
         $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
@@ -441,14 +468,14 @@ resource "null_resource" "ha_iphone_network_sensor" {
       fi
 
       if ! $${SSH} "docker exec homeassistant python -m homeassistant --script check_config -c /config"; then
-        echo "HA config check FAILED — rolling back the iPhone sensor, NOT restarting"
+        echo "HA config check FAILED — rolling back the iPhone sensors, NOT restarting"
         $${SSH} "docker exec homeassistant mv /config/configuration.yaml.iphonebak /config/configuration.yaml"
         exit 1
       fi
 
       $${SSH} "docker exec homeassistant rm -f /config/configuration.yaml.iphonebak"
       $${SSH} "docker restart homeassistant"
-      echo "iPhone network type sensor written & validated, HA restarted"
+      echo "iPhone monitoring sensors written & validated, HA restarted"
     BASH
   }
 
