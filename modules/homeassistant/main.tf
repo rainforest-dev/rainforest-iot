@@ -367,7 +367,9 @@ resource "null_resource" "ha_alertmanager_push" {
 #   iPhone Slow Reports   counts taps on the companion-app Action "手機好慢"
 #                         (ios.action_fired), one per "the phone feels slow now";
 #                         an iOS Shortcut fires the same event from the iPhone
-#                         or iPad with `device` and an optional `note`, kept as
+#                         or iPad with `device` and that device's network and
+#                         battery at the moment (wifi, radio, carrier,
+#                         signal_bars, battery, optional note), kept as
 #                         attributes of the latest report;
 #                         the HA start trigger publishes 0 so the first tap
 #                         has an earlier sample for changes()/increase()
@@ -417,6 +419,11 @@ locals {
     "        attributes:",
     "          device: \"{{ trigger.event.data.device | default('unknown') if trigger.platform == 'event' else this.attributes.get('device', '') }}\"",
     "          note: \"{{ trigger.event.data.note | default('') if trigger.platform == 'event' else this.attributes.get('note', '') }}\"",
+    "          wifi: \"{{ trigger.event.data.wifi | default('') if trigger.platform == 'event' else this.attributes.get('wifi', '') }}\"",
+    "          radio: \"{{ trigger.event.data.radio | default('') if trigger.platform == 'event' else this.attributes.get('radio', '') }}\"",
+    "          carrier: \"{{ trigger.event.data.carrier | default('') if trigger.platform == 'event' else this.attributes.get('carrier', '') }}\"",
+    "          signal_bars: \"{{ trigger.event.data.signal_bars | default('') if trigger.platform == 'event' else this.attributes.get('signal_bars', '') }}\"",
+    "          battery: \"{{ trigger.event.data.battery | default('') if trigger.platform == 'event' else this.attributes.get('battery', '') }}\"",
     "  # iphone-monitoring:end",
   ])
 
