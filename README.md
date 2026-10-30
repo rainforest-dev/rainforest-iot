@@ -44,8 +44,8 @@ if you reset it and re-run Ansible, the Pi-hole rules stay gone until you run
 The Prometheus chart brings the CRDs. The Loki chart and the monitoring integrations follow it
 after a fixed 60-second `time_sleep`, which exists only when `loki_enabled` is true. The Loki
 ServiceMonitors that would use those CRDs are switched off in code, because a
-`kubernetes_manifest` needs its CRD to exist when Terraform plans. CLAUDE.md's fallback for a CRD
-conflict is `terraform destroy && terraform apply`, and that destroy also deletes the Docker
+`kubernetes_manifest` needs its CRD to exist when Terraform plans. For a CRD conflict, re-apply
+`module.prometheus_stack`. Never use `terraform destroy` for this: it also deletes the Docker
 volumes, Home Assistant's configuration among them.
 
 Rebuilding the host means running Ansible's `site.yml`, then `terraform apply`, then some work by

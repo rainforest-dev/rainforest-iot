@@ -33,8 +33,6 @@ kubectl --kubeconfig ~/.kube/config-raspberrypi-5 get pods -n monitoring
 terraform plan
 terraform apply -target=module.homepage  # Target specific services
 
-# Clean deployment for dependency testing
-terraform destroy && terraform apply
 
 # Validate CRD dependency resolution
 kubectl get servicemonitors -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
@@ -140,7 +138,7 @@ lifecycle {
 ### Modifying Monitoring Stack
 
 1. **Never modify CRD deployment order** - dependency chain is fragile
-2. Test ServiceMonitor changes with clean deployment: `terraform destroy && terraform apply`
+2. Test ServiceMonitor changes with `terraform plan`, then `terraform apply`; never `terraform destroy`, which deletes the Docker volumes
 3. Use `kubectl get servicemonitors -n monitoring` to verify CRD availability
 
 ### Branch Strategy

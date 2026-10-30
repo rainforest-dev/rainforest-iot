@@ -49,7 +49,7 @@ terraform apply -target=module.prometheus_stack
 ```
 
 Never run `terraform destroy` to test a change: it tears down Home Assistant, Pi-hole and the
-monitoring stack on the only Pi. Use `terraform plan`, then `terraform apply`.
+monitoring stack on the only Pi, and deletes their Docker volumes. Use `terraform plan`, then `terraform apply`.
 
 ### Service Management
 ```bash
