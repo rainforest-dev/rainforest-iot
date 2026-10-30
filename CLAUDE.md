@@ -46,10 +46,10 @@ terraform apply   # Deploy with automatic sequencing
 # Target specific modules if needed
 terraform apply -target=module.homepage
 terraform apply -target=module.prometheus_stack
-
-# Clean deployment (useful for testing)
-terraform destroy && terraform apply
 ```
+
+Never run `terraform destroy` to test a change: it tears down Home Assistant, Pi-hole and the
+monitoring stack on the only Pi, and deletes their Docker volumes. Use `terraform plan`, then `terraform apply`.
 
 ### Service Management
 ```bash
@@ -166,8 +166,7 @@ Edit `terraform.tfvars` for all deployments:
 4. Apply changes with `terraform apply`
 
 ### Branch Strategy
-- `main`: Production-ready configuration
-- `rental-setup`: Current branch with rental-specific modifications (acton-3 module disabled)
+- `main`: Production-ready configuration; work happens on feature branches that PR into `main`
 
 ## Terraform Best Practices & Troubleshooting
 
@@ -201,15 +200,13 @@ terraform apply -target=module.homepage  # Target specific module
 # Kubernetes monitoring issues
 kubectl get pods -n monitoring --kubeconfig ~/.kube/config-raspberrypi-5
 
-# CRD dependency issues (resolved by time_sleep)
-# Clean deployment usually resolves ServiceMonitor CRD conflicts:
-terraform destroy && terraform apply
+# CRD dependency issues (resolved by time_sleep): re-apply the monitoring module
+terraform apply -target=module.prometheus_stack
 ```
 
 #### Architecture-Specific Solutions
 - **ServiceMonitor CRD conflicts**: The `time_sleep` resource ensures Prometheus CRDs exist before Loki ServiceMonitors deploy
 - **Kubeconfig separation**: Pi cluster access via `~/.kube/config-raspberrypi-5`, Docker Desktop preserved at `~/.kube/config`
-- **Clean deployment validation**: Always test with `terraform destroy && terraform apply` to verify dependency management works
 
 ### Infrastructure Recovery
 ```bash
