@@ -6,7 +6,7 @@ variable "project_name" {
 variable "image_version" {
   description = "Grafana Alloy Docker image version"
   type        = string
-  default     = "v1.8.2"
+  default     = "v1.21.3"
 }
 
 variable "prometheus_url" {

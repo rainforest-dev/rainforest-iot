@@ -585,7 +585,7 @@ variable "minio_secret_key" {
 variable "alloy_pi_version" {
   description = "Grafana Alloy version for Pi deployment"
   type        = string
-  default     = "v1.8.2"
+  default     = "v1.21.3"
 }
 
 variable "ha_alert_webhook_id" {
