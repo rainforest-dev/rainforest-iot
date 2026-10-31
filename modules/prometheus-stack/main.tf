@@ -685,6 +685,16 @@ resource "helm_release" "prometheus_stack" {
       # endpoint could go down silently. probe_success is emitted per target by the
       # blackbox exporter.
       additionalPrometheusRulesMap = {
+        fleet-rules = {
+          groups = [
+            {
+              name     = "fleet"
+              interval = "60s"
+              rules    = local.fleet_rules
+            }
+          ]
+        }
+
         blackbox-rules = {
           groups = [
             {
