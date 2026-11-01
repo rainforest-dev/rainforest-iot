@@ -500,7 +500,7 @@ resource "helm_release" "prometheus_stack" {
               {
                 # Warning severity, but each means something is broken and silent.
                 receiver = "ha-push"
-                matchers = ["alertname=~\"SystemdUnitFailed|CrowdSecAcquisitionStalled\""]
+                matchers = ["alertname=~\"SystemdUnitFailed|CrowdSecAcquisitionStalled|RemoteSiteHostDown\""]
               },
             ]
           }

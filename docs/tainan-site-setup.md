@@ -167,11 +167,15 @@ own subnet, which the NAS cannot reach.
 
 With eth0 up, the Pi's default route goes through the TP-Link, so replies to anything off the IoT subnet
 leave by the wrong interface. The UCG can still ping it from the IoT gateway address, but the NAS gets
-no answer. Send traffic from the IoT address back out of wlan0, keeping it across reboots:
+no answer. Send traffic from the IoT address back out of wlan0.
+
+Give the Pi a fixed IP in UniFi first, and make sure it is active: the rule, the scrape target and the
+SSH entry all use that address, and if it changes the Pi drops off the only remote path to it. Then keep
+the routing across reboots:
 
 ```bash
 sudo nmcli con mod <wifi-connection> \
-  ipv4.routes "0.0.0.0/0 <iot-gateway> table=107" \
+  ipv4.routes "<iot-subnet> table=107, 0.0.0.0/0 <iot-gateway> table=107" \
   ipv4.routing-rules "priority 107 from <rpi4-iot-ip> table 107"
 echo 'net.ipv4.conf.all.rp_filter=2' | sudo tee /etc/sysctl.d/90-rp-filter.conf
 ```
@@ -179,12 +183,14 @@ echo 'net.ipv4.conf.all.rp_filter=2' | sudo tee /etc/sysctl.d/90-rp-filter.conf
 These take effect the next time the Wi-Fi connection comes up. To apply them straight away:
 
 ```bash
+sudo ip route add <iot-subnet> dev wlan0 table 107
 sudo ip route add default via <iot-gateway> dev wlan0 table 107
 sudo ip rule add from <rpi4-iot-ip> lookup 107 priority 107
 sudo sysctl -w net.ipv4.conf.all.rp_filter=2 net.ipv4.conf.wlan0.rp_filter=2
 ```
 
-Give the Pi a fixed IP in UniFi: the rule, the scrape target and the SSH entry all use that address.
+The rule also makes everything on the Pi's IoT address answer hosts on other networks, so what those
+hosts can reach now depends on the UniFi policies alone.
 
 ### SSH from the Mac
 
@@ -205,11 +211,12 @@ Host rpi4-tainan
 
 ### node_exporter
 
-The playbook binds node_exporter to the Pi's IoT address, so the TP-Link subnet cannot reach it. Other
-devices on the IoT VLAN can.
+The playbook binds node_exporter to the Pi's IoT address and uses systemd `IPAddressAllow` to accept only
+the NAS, because the metrics are unauthenticated and UniFi cannot filter traffic within a VLAN.
 
 ```bash
-ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tainan-node-exporter.yml
+ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tainan-node-exporter.yml \
+  -e node_exporter_allowed_source=<nas-lan-ip>
 ```
 
 Add the Pi to `lan_ping_targets` and `node_targets` in `sites/tainan/terraform.tfvars`, then apply
