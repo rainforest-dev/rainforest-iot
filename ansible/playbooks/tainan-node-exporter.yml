@@ -3,6 +3,7 @@
 - name: Node exporter on the Tainan Pi 4
   hosts: tainan_pi
   become: yes
+  force_handlers: yes
   vars:
     node_exporter_listen_address: "{{ ansible_facts['wlan0']['ipv4']['address'] }}:9100"
 
@@ -41,6 +42,9 @@
           Restart=always
           RestartSec=10
       notify: Restart node exporter
+
+    - name: Apply the restart before enabling
+      meta: flush_handlers
 
     - name: Enable node exporter
       systemd:

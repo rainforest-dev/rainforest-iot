@@ -150,6 +150,7 @@ Edit `terraform.tfvars` for all deployments:
 | AlertManager | 30093 | Alert management and routing |
 | Loki | 30100 | Log aggregation (internal) |
 | Tempo (OTLP/HTTP) | 30418 | Trace ingest from Alloy on the Mac (LAN, unauthenticated) |
+| node_exporter (Tainan Pi 4) | 9100 | Scraped by Alloy on the NAS; IoT VLAN address, unauthenticated |
 
 ## Development Workflow
 
