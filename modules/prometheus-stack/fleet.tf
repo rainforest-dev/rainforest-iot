@@ -40,6 +40,8 @@ locals {
       site      = "tainan"
       os        = "dsm"
       online    = "max(up{${local._fleet_nas}}) or on() vector(0)"
+      cpu       = "100 - avg(ssCpuIdle{${local._fleet_nas}})"
+      memory    = "1 - sum(memAvailReal{${local._fleet_nas}} + memBuffer{${local._fleet_nas}} + memCached{${local._fleet_nas}}) / sum(memTotalReal{${local._fleet_nas}})"
       disk_free = "sum(raidFreeSize{${local._fleet_nas}}) / sum(raidTotalSize{${local._fleet_nas}})"
       net_rx    = "sum(rate(ifHCInOctets{${local._fleet_nas},ifDescr=~\"eth.*\"}[5m]))"
       net_tx    = "sum(rate(ifHCOutOctets{${local._fleet_nas},ifDescr=~\"eth.*\"}[5m]))"
