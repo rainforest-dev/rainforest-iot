@@ -27,6 +27,8 @@ flowchart LR
       UP[unpoller] --> AL[Grafana Alloy]
       ST[speedtest-exporter] --> AL
     end
+    RPI[Raspberry Pi 4]
+    AL -->|node_exporter :9100| RPI
     UCG -->|UniFi API| UP
     AL -->|SNMP| AP1
     AL -->|ICMP| AP2
@@ -150,8 +152,66 @@ terraform apply
 
 On the Pi Prometheus (`http://<pi-tailnet-ip>:30090`):
 
-- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`).
+- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`, `site-node`).
 - `raidStatus{site="tainan"}` and `diskTemperature{site="tainan"}` return the NAS volumes and disks.
 - `probe_success{site="tainan", job="isp_icmp"}` is 1 for all three ISP targets.
 
 The `speedtest` job runs once an hour. Each run moves about 1 GB at 500 Mbps.
+
+## 8. Raspberry Pi 4
+
+The Pi 4 is on the IoT VLAN over Wi-Fi. Its eth0 goes to a TP-Link Wi-Fi-to-Ethernet box that runs its
+own subnet, which the NAS cannot reach.
+
+### Reply routing
+
+With eth0 up, the Pi's default route goes through the TP-Link, so replies to anything off the IoT subnet
+leave by the wrong interface. The UCG can still ping it from the IoT gateway address, but the NAS gets
+no answer. Send traffic from the IoT address back out of wlan0, keeping it across reboots:
+
+```bash
+sudo nmcli con mod <wifi-connection> \
+  ipv4.routes "0.0.0.0/0 <iot-gateway> table=107" \
+  ipv4.routing-rules "priority 107 from <rpi4-iot-ip> table 107"
+echo 'net.ipv4.conf.all.rp_filter=2' | sudo tee /etc/sysctl.d/90-rp-filter.conf
+```
+
+These take effect the next time the Wi-Fi connection comes up. To apply them straight away:
+
+```bash
+sudo ip route add default via <iot-gateway> dev wlan0 table 107
+sudo ip rule add from <rpi4-iot-ip> lookup 107 priority 107
+sudo sysctl -w net.ipv4.conf.all.rp_filter=2 net.ipv4.conf.wlan0.rp_filter=2
+```
+
+Give the Pi a fixed IP in UniFi: the rule, the scrape target and the SSH entry all use that address.
+
+### SSH from the Mac
+
+TCP forwarding through the NAS does not work, so `ProxyJump` and `ssh -J` fail with `Connection closed
+by UNKNOWN port 65535`, even to a port the NAS itself can reach. The NAS has no `nc`, so relay with bash:
+
+```
+Host rpi4-tainan
+  HostName <rpi4-iot-ip>
+  User rainforest
+  IdentityFile ~/.ssh/id_ed25519.rpi4
+  IdentitiesOnly yes
+  HostKeyAlias raspberrypi-4
+  AddKeysToAgent yes
+  UseKeychain yes
+  ProxyCommand ssh <nas>.<teleport-proxy> "exec bash -c 'exec 3<>/dev/tcp/%h/%p; cat <&3 & cat >&3'"
+```
+
+### node_exporter
+
+The playbook binds node_exporter to the Pi's IoT address, so the TP-Link subnet cannot reach it. Other
+devices on the IoT VLAN can.
+
+```bash
+ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tainan-node-exporter.yml
+```
+
+Add the Pi to `lan_ping_targets` and `node_targets` in `sites/tainan/terraform.tfvars`, then apply
+`sites/tainan` (this recreates the Alloy container) and the main root (Fleet entry and the
+`RemoteSiteHostDown` alert).

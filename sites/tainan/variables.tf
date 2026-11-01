@@ -75,3 +75,9 @@ variable "lan_ping_targets" {
   description = "Site devices to ping: name => LAN address"
   type        = map(string)
 }
+
+variable "node_targets" {
+  description = "Site hosts running node_exporter: instance name => host:port"
+  type        = map(string)
+  default     = {}
+}

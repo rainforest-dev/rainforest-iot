@@ -9,6 +9,11 @@ lan_ping_targets = {
   usw-flex-xg    = "<switch-lan-ip>"
   ap-nwa130be    = "<nwa130be-lan-ip>"
   ap-nwa50ax-pro = "<nwa50ax-pro-lan-ip>"
+  raspberrypi-4  = "<rpi4-iot-ip>"
+}
+
+node_targets = {
+  raspberrypi-4 = "<rpi4-iot-ip>:9100"
 }
 
 # SNMPv3 user from DSM -> Terminal & SNMP -> SNMPv3 (SHA + AES).

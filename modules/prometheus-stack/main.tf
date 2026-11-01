@@ -808,6 +808,18 @@ resource "helm_release" "prometheus_stack" {
                   }
                 },
                 {
+                  alert = "RemoteSiteHostDown"
+                  expr  = "up{job=\"site-node\"} == 0"
+                  for   = "10m"
+                  labels = {
+                    severity = "warning"
+                  }
+                  annotations = {
+                    summary     = "{{ $labels.instance }} unreachable at {{ $labels.site }}"
+                    description = "The site collector could not scrape node_exporter on {{ $labels.instance }} for 10 minutes"
+                  }
+                },
+                {
                   alert = "RemoteSiteISPPacketLoss"
                   expr  = "1 - avg by (site) (avg_over_time(probe_success{job=\"isp_icmp\"}[10m])) > 0.05"
                   for   = "10m"

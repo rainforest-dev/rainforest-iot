@@ -1,0 +1,11 @@
+---
+# Raspberry Pi 4 at the Tainan site. ansible_host is the ~/.ssh/config alias, which holds
+# the LAN address and the relay through the NAS; see docs/tainan-site-setup.md.
+
+all:
+  children:
+    tainan_pi:
+      hosts:
+        rpi4-tainan:
+          ansible_host: rpi4-tainan
+          ansible_user: rainforest
