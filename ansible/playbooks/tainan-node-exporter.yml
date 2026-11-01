@@ -1,0 +1,57 @@
+---
+# Install node_exporter on the Tainan Pi 4, bound to its IoT VLAN address so the NAS can scrape it
+- name: Node exporter on the Tainan Pi 4
+  hosts: tainan_pi
+  become: yes
+  vars:
+    node_exporter_listen_address: "{{ ansible_facts['wlan0']['ipv4']['address'] }}:9100"
+
+  tasks:
+    - name: Install prometheus-node-exporter
+      apt:
+        name: prometheus-node-exporter
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+        install_recommends: no
+
+    - name: Listen on the IoT VLAN address only
+      lineinfile:
+        path: /etc/default/prometheus-node-exporter
+        regexp: '^ARGS='
+        line: 'ARGS="--web.listen-address={{ node_exporter_listen_address }}"'
+      notify: Restart node exporter
+
+    - name: Create the systemd drop-in directory
+      file:
+        path: /etc/systemd/system/prometheus-node-exporter.service.d
+        state: directory
+        mode: '0755'
+
+    # The bind fails until wlan0 has its DHCP lease, and the packaged unit gives up after five fast restarts
+    - name: Keep retrying until wlan0 has its address
+      copy:
+        dest: /etc/systemd/system/prometheus-node-exporter.service.d/retry.conf
+        mode: '0644'
+        content: |
+          [Unit]
+          StartLimitIntervalSec=0
+
+          [Service]
+          Restart=always
+          RestartSec=10
+      notify: Restart node exporter
+
+    - name: Enable node exporter
+      systemd:
+        name: prometheus-node-exporter
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+  handlers:
+    - name: Restart node exporter
+      systemd:
+        name: prometheus-node-exporter
+        state: restarted
+        daemon_reload: yes

@@ -7,6 +7,7 @@ locals {
     "rainforest-mini" = { selector = "job=\"mac-mini-node\"", site = "taipei", os = "macos" }
     "rainforest-air"  = { selector = "job=\"macbook-node\"", site = "mobile", os = "macos" }
     "raspberrypi-5"   = { selector = "job=\"node-exporter\"", site = "taipei", os = "linux" }
+    "raspberrypi-4"   = { selector = "job=\"site-node\",site=\"tainan\",instance=\"raspberrypi-4\"", site = "tainan", os = "linux" }
   }
 
   _fleet_node_devices = {

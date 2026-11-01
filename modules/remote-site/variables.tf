@@ -85,6 +85,12 @@ variable "lan_ping_targets" {
   default     = {}
 }
 
+variable "node_targets" {
+  description = "Hosts running node_exporter: instance name => host:port"
+  type        = map(string)
+  default     = {}
+}
+
 variable "alloy_version" {
   type    = string
   default = "v1.8.2"

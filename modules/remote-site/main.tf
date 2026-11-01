@@ -3,6 +3,7 @@ locals {
     site             = var.site
     isp_ping_targets = var.isp_ping_targets
     lan_ping_targets = var.lan_ping_targets
+    node_targets     = var.node_targets
     snmp_targets     = var.snmp_targets
   })
 

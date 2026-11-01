@@ -40,4 +40,5 @@ module "site" {
   }
 
   lan_ping_targets = var.lan_ping_targets
+  node_targets     = var.node_targets
 }

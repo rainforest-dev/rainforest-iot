@@ -112,6 +112,19 @@ prometheus.scrape "snmp" {
   forward_to      = [prometheus.remote_write.pi.receiver]
 }
 %{ endif ~}
+%{ if length(node_targets) > 0 ~}
+
+prometheus.scrape "node" {
+  job_name = "site-node"
+  targets  = [
+%{ for name, address in node_targets ~}
+    { "__address__" = "${address}", "instance" = "${name}" },
+%{ endfor ~}
+  ]
+  scrape_interval = "60s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+}
+%{ endif ~}
 
 prometheus.scrape "unpoller" {
   job_name        = "unpoller"
