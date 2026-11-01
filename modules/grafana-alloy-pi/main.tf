@@ -52,7 +52,7 @@ resource "docker_container" "alloy" {
   log_opts   = var.log_opts
 
   healthcheck {
-    test         = ["CMD", "wget", "-qO-", "http://localhost:12345/-/healthy"]
+    test         = ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/12345'"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3

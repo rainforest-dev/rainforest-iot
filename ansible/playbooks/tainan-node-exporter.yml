@@ -1,6 +1,5 @@
 ---
-# Install node_exporter on the Tainan Pi 4, bound to its IoT VLAN address and open only to the NAS.
-# Pass the NAS LAN address with -e node_exporter_allowed_source=<nas-lan-ip>
+# Install node_exporter on the Tainan Pi 4, bound to its IoT VLAN address so the NAS can scrape it
 - name: Node exporter on the Tainan Pi 4
   hosts: tainan_pi
   become: yes
@@ -9,37 +8,6 @@
     node_exporter_listen_address: "{{ ansible_facts['wlan0']['ipv4']['address'] }}:9100"
 
   tasks:
-    - name: Require the scrape source
-      assert:
-        that:
-          - node_exporter_allowed_source is defined
-          - node_exporter_allowed_source is match('^[0-9.]+$')
-        fail_msg: "Pass -e node_exporter_allowed_source=<nas-lan-ip>"
-
-    - name: Create the systemd drop-in directory
-      file:
-        path: /etc/systemd/system/prometheus-node-exporter.service.d
-        state: directory
-        mode: '0755'
-
-    # The bind fails until wlan0 has its DHCP lease, and the packaged unit gives up after five fast restarts.
-    # Written before the install because the package starts the service on all interfaces.
-    - name: Allow only the NAS and keep retrying until wlan0 has its address
-      copy:
-        dest: /etc/systemd/system/prometheus-node-exporter.service.d/override.conf
-        mode: '0644'
-        content: |
-          [Unit]
-          StartLimitIntervalSec=0
-
-          [Service]
-          Restart=always
-          RestartSec=10
-          IPAddressDeny=any
-          IPAddressAllow=localhost
-          IPAddressAllow={{ node_exporter_allowed_source }}
-      notify: Restart node exporter
-
     - name: Install prometheus-node-exporter
       apt:
         name: prometheus-node-exporter
@@ -55,6 +23,26 @@
         line: 'ARGS="--web.listen-address={{ node_exporter_listen_address }}"'
       notify: Restart node exporter
 
+    - name: Create the systemd drop-in directory
+      file:
+        path: /etc/systemd/system/prometheus-node-exporter.service.d
+        state: directory
+        mode: '0755'
+
+    # The bind fails until wlan0 has its DHCP lease, and the packaged unit gives up after five fast restarts
+    - name: Keep retrying until wlan0 has its address
+      copy:
+        dest: /etc/systemd/system/prometheus-node-exporter.service.d/retry.conf
+        mode: '0644'
+        content: |
+          [Unit]
+          StartLimitIntervalSec=0
+
+          [Service]
+          Restart=always
+          RestartSec=10
+      notify: Restart node exporter
+
     - name: Apply the restart before enabling
       meta: flush_handlers
 
@@ -63,6 +51,7 @@
         name: prometheus-node-exporter
         enabled: yes
         state: started
+        daemon_reload: yes
 
   handlers:
     - name: Restart node exporter
