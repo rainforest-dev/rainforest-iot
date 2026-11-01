@@ -221,3 +221,5 @@ ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tainan-node-e
 Add the Pi to `lan_ping_targets` and `node_targets` in `sites/tainan/terraform.tfvars`, then apply
 `sites/tainan` (this recreates the Alloy container) and the main root (Fleet entry and the
 `RemoteSiteHostDown` alert).
+
+The Pi's containers are in `sites/tainan-rpi4`; see `docs/tainan-rpi4-upgrade.md` for adoption and upgrades.
