@@ -102,12 +102,3 @@ running.
 `homeassistant` stays privileged during adoption and the upgrade. That goes against the repo's no-privileged
 rule, and dropping it should be a separate change so that a Bluetooth or D-Bus failure is not confused with
 the version jump.
-
-## Music Assistant
-
-The Tainan Pi 4 runs its own Music Assistant, because AirPlay discovery uses mDNS, which does not cross
-sites, so the instance on the Pi 5 cannot see the Acton III. Phones keep using `acton-3` directly, and Music
-Assistant reaches the same receiver through its AirPlay provider. Only one source can play at a time.
-
-The first login at port 8095 creates the admin account, and Home Assistant's `music_assistant` integration
-is added from its UI after that.

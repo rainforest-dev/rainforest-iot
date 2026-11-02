@@ -18,19 +18,3 @@ variable "openspeedtest_version" {
   type    = string
   default = "v2.0.8"
 }
-
-variable "music_assistant_version" {
-  type    = string
-  default = "2.10.9"
-}
-
-variable "music_assistant_memory" {
-  description = "Memory limit in MB"
-  type        = number
-  default     = 1024
-}
-
-variable "timezone" {
-  type    = string
-  default = "Asia/Taipei"
-}
