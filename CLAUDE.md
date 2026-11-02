@@ -141,6 +141,7 @@ Edit `terraform.tfvars` for all deployments:
 | Homepage | 80 | Dashboard and service portal |
 | Pi-hole | 8080 | DNS ad-blocker web interface |
 | OpenSpeedTest | 3000/3001 | Network speed testing (HTTP/HTTPS) |
+| Music Assistant (Tainan Pi 4) | 8095 | Music server web interface, plus its stream and AirPlay ports on the host network |
 
 **Kubernetes Monitoring:**
 | Service | Port | Purpose |
