@@ -18,6 +18,11 @@ resource "docker_image" "openspeedtest" {
   keep_locally = true
 }
 
+resource "docker_image" "music_assistant" {
+  name         = "ghcr.io/music-assistant/server:${var.music_assistant_version}"
+  keep_locally = true
+}
+
 resource "docker_volume" "homeassistant_configuration" {
   name = "homeassistant_configuration"
 
@@ -28,6 +33,14 @@ resource "docker_volume" "homeassistant_configuration" {
 
 resource "docker_volume" "shairport_sync_configuration" {
   name = "shairport_sync_configuration"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "docker_volume" "music_assistant_data" {
+  name = "music_assistant_data"
 
   lifecycle {
     prevent_destroy = true
@@ -98,5 +111,34 @@ resource "docker_container" "openspeedtest" {
   ports {
     internal = 3001
     external = 3001
+  }
+}
+
+resource "docker_container" "music_assistant" {
+  name         = "music-assistant"
+  image        = docker_image.music_assistant.image_id
+  restart      = "unless-stopped"
+  network_mode = "host"
+  # MA publishes its AirPlay DACP record as `<hostname>.local`; with the Pi's hostname avahi renames the Pi.
+  hostname = "music-assistant-tainan"
+
+  memory = var.music_assistant_memory
+
+  env = ["TZ=${var.timezone}"]
+
+  volumes {
+    container_path = "/data"
+    volume_name    = docker_volume.music_assistant_data.name
+  }
+
+  log_driver = "json-file"
+  log_opts = {
+    max-file = "3"
+    max-size = "10m"
+  }
+
+  lifecycle {
+    # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
+    ignore_changes = [memory_swap]
   }
 }
