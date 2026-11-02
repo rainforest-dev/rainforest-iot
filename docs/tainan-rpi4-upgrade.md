@@ -49,16 +49,19 @@ The steps below do not stop any service. Copying a live SQLite file can give a c
 recorder database with SQLite's backup API and leave the live files out of the archive.
 
 ```bash
-ssh rpi4-tainan "docker exec homeassistant python3 -c \"import sqlite3; s=sqlite3.connect('/config/home-assistant_v2.db'); d=sqlite3.connect('/config/recorder-backup.db'); s.backup(d); d.close()\""
+ssh rpi4-tainan "docker exec homeassistant python3 -c \"import sqlite3; s=sqlite3.connect('/config/home-assistant_v2.db'); d=sqlite3.connect('/tmp/recorder-backup.db'); s.backup(d); d.close()\""
+ssh rpi4-tainan "docker exec homeassistant cat /tmp/recorder-backup.db | gzip" \
+  | ssh <nas>.<teleport-proxy> "umask 077 && cat > <nas-backup-dir>/recorder-$(date +%Y%m%d).db.gz"
+ssh rpi4-tainan "docker exec homeassistant rm /tmp/recorder-backup.db"
 
 for v in homeassistant_configuration shairport_sync_configuration; do
   ssh rpi4-tainan "sudo tar czf - --exclude='home-assistant_v2.db*' -C /var/lib/docker/volumes/$v/_data ." \
-    | ssh <nas>.<teleport-proxy> "cat > <nas-backup-dir>/$v-$(date +%Y%m%d).tar.gz"
+    | ssh <nas>.<teleport-proxy> "umask 077 && cat > <nas-backup-dir>/$v-$(date +%Y%m%d).tar.gz"
 done
 ```
 
-The archive holds `secrets.yaml` and tokens under `.storage`, so keep it readable by the owner only.
-Check `tar tzf` on the NAS and delete `recorder-backup.db` from the Pi afterwards.
+The archive holds `secrets.yaml` and tokens under `.storage`, so it is written readable by the owner only.
+Check it with `tar tzf` on the NAS.
 
 ## Upgrade order
 

@@ -11,10 +11,18 @@ locals {
 
 resource "docker_volume" "homeassistant_configuration" {
   name = "homeassistant_configuration"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "docker_volume" "shairport_sync_configuration" {
   name = "shairport_sync_configuration"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "docker_container" "homeassistant" {
