@@ -23,25 +23,13 @@ Home Assistant has 459 MB of config, a 14 MB recorder database, 15 devices and 7
 integrations are HACS 2.0.4, `dyson_local` 1.4.2 and `panasonic_smart_app` 2.8.4. The log has about
 10,000 recorder task errors; read those before the upgrade, because a damaged database changes the plan.
 
-The containers run images by ID and most tags have since moved, so `main.tf` pins those IDs.
-
 CPU was idle when sampled: load 0.18, each container under 2%. Fleet showed 38% earlier, which this sample
 does not explain.
 
 ## Adoption
 
-Run this from a checkout of `main` that has this root. State stays local and gitignored.
-
-```bash
-cd sites/tainan-rpi4
-terraform init
-terraform plan    # must say: 5 to import, 0 to add, 0 to change, 0 to destroy
-terraform apply
-```
-
-Delete `imports.tf` afterwards. Stop if the plan shows anything other than imports. Each container has
-`ignore_changes = all` because an import leaves env, volumes and provider defaults unset, which would
-otherwise force a replacement. The commit that upgrades a container removes that block.
+The containers and volumes were imported on 2026-11-02 and the plan was empty afterwards. State is local and
+gitignored, at `sites/tainan-rpi4/terraform.tfstate` in the main checkout, so run this root with that state.
 
 ## Backup
 
