@@ -23,7 +23,7 @@ module "site" {
   snmp_targets = {
     nas = {
       address = "host.docker.internal"
-      module  = "synology,if_mib"
+      module  = "synology,if_mib,ucd_memory,ucd_system_stats"
       auth    = "v3"
     }
     ap_nwa130be = {
