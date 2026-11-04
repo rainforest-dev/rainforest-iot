@@ -371,6 +371,9 @@ resource "null_resource" "ha_alertmanager_push" {
 #                         battery at the moment (wifi, radio, carrier,
 #                         signal_bars, battery, optional note), kept as
 #                         attributes of the latest report;
+#   iPhone Mobile Speed   Mbit/s from the Shortcut "網速測試" (times a 5 MB
+#                         download on cellular), same event with actionName
+#                         網速測試 or speed_test and `mbps`;
 #                         the HA start trigger publishes 0 so the first tap
 #                         has an earlier sample for changes()/increase()
 #
@@ -424,6 +427,32 @@ locals {
     "          carrier: \"{{ trigger.event.data.carrier | default('') if trigger.platform == 'event' else this.attributes.get('carrier', '') }}\"",
     "          signal_bars: \"{{ trigger.event.data.signal_bars | default('') if trigger.platform == 'event' else this.attributes.get('signal_bars', '') }}\"",
     "          battery: \"{{ trigger.event.data.battery | default('') if trigger.platform == 'event' else this.attributes.get('battery', '') }}\"",
+    "  - trigger:",
+    "      - platform: event",
+    "        event_type: ios.action_fired",
+    "        event_data:",
+    "          actionName: \"網速測試\"",
+    "      - platform: event",
+    "        event_type: ios.action_fired",
+    "        event_data:",
+    "          actionName: speed_test",
+    "    condition:",
+    "      - condition: template",
+    "        value_template: \"{{ (trigger.event.data.mbps | default('') | float(0)) > 0 }}\"",
+    "    sensor:",
+    "      - name: \"iPhone Mobile Speed\"",
+    "        unique_id: iphone_mobile_speed",
+    "        icon: mdi:speedometer",
+    "        device_class: data_rate",
+    "        unit_of_measurement: \"Mbit/s\"",
+    "        state_class: measurement",
+    "        state: \"{{ trigger.event.data.mbps | float | round(1) }}\"",
+    "        attributes:",
+    "          device: \"{{ trigger.event.data.device | default('') }}\"",
+    "          radio: \"{{ trigger.event.data.radio | default('') }}\"",
+    "          carrier: \"{{ trigger.event.data.carrier | default('') }}\"",
+    "          signal_bars: \"{{ trigger.event.data.signal_bars | default('') }}\"",
+    "          battery: \"{{ trigger.event.data.battery | default('') }}\"",
     "  # iphone-monitoring:end",
   ])
 
