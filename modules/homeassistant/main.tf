@@ -373,7 +373,7 @@ resource "null_resource" "ha_alertmanager_push" {
 #                         attributes of the latest report;
 #   iPhone Mobile Speed   Mbit/s from the Shortcut "網速測試" (times a 5 MB
 #                         download on cellular), same event with actionName
-#                         網速測試 and `mbps`;
+#                         網速測試 or speed_test and `mbps`;
 #                         the HA start trigger publishes 0 so the first tap
 #                         has an earlier sample for changes()/increase()
 #
@@ -432,6 +432,10 @@ locals {
     "        event_type: ios.action_fired",
     "        event_data:",
     "          actionName: \"網速測試\"",
+    "      - platform: event",
+    "        event_type: ios.action_fired",
+    "        event_data:",
+    "          actionName: speed_test",
     "    sensor:",
     "      - name: \"iPhone Mobile Speed\"",
     "        unique_id: iphone_mobile_speed",
