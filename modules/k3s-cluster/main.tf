@@ -143,7 +143,9 @@ resource "kubernetes_network_policy" "monitoring_network_policy" {
   spec {
     pod_selector {}
 
-    policy_types = ["Ingress", "Egress"]
+    # Egress stays open unless restrict_egress is set: the rules below miss the
+    # blackbox ICMP probes, Alertmanager webhooks and several host-network exporters.
+    policy_types = var.restrict_egress ? ["Ingress", "Egress"] : ["Ingress"]
 
     ingress {
       from {
@@ -159,6 +161,19 @@ resource "kubernetes_network_policy" "monitoring_network_policy" {
         namespace_selector {
           match_labels = {
             name = "monitoring"
+          }
+        }
+      }
+
+      # NodePorts (Grafana, Prometheus, Loki, Alertmanager, Tempo) from the LAN, the
+      # tailnet and the node itself. kube-proxy SNATs NodePort traffic to the cni0
+      # gateway, so that address has to be listed too. UFW and the Tailscale ACL
+      # still decide who reaches the node.
+      dynamic "from" {
+        for_each = var.network_policy_ingress_cidrs
+        content {
+          ip_block {
+            cidr = from.value
           }
         }
       }
