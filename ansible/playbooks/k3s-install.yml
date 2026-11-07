@@ -42,12 +42,12 @@
         - "/boot/cmdline.txt"
       register: cmdline_files
       
+    # Bookworm keeps a "DO NOT EDIT" stub at /boot/cmdline.txt, so the first match must win.
     - name: Set cmdline file path
       set_fact:
-        cmdline_path: "{{ item.item }}"
-      when: item.stat.exists
-      loop: "{{ cmdline_files.results }}"
-      
+        cmdline_path: "{{ cmdline_files.results | selectattr('stat.exists') | map(attribute='item') | first }}"
+      when: cmdline_files.results | selectattr('stat.exists') | list | length > 0
+
     - name: Fail if no cmdline file found
       fail:
         msg: "Could not find boot cmdline file in expected locations"
@@ -58,23 +58,23 @@
         src: "{{ cmdline_path }}"
       register: cmdline_content
       
-    - name: Check if cgroup settings already present
+    - name: Find missing cgroup arguments
       set_fact:
-        cgroup_present: "{{ 'cgroup_memory=1' in (cmdline_content.content | b64decode) }}"
-        
+        cgroup_missing: "{{ ['cgroup_memory=1', 'cgroup_enable=memory'] | difference((cmdline_content.content | b64decode).split()) }}"
+
     - name: Backup original cmdline file
       copy:
         src: "{{ cmdline_path }}"
         dest: "{{ cmdline_path }}.backup-{{ ansible_date_time.epoch }}"
         remote_src: yes
-      when: not cgroup_present
-      
+      when: cgroup_missing | length > 0
+
     - name: Add cgroup memory settings to cmdline
       replace:
         path: "{{ cmdline_path }}"
-        regexp: '(.*)'
-        replace: '\1 cgroup_memory=1 cgroup_enable=memory'
-      when: not cgroup_present
+        regexp: '\A(.*?)[ \t]*$'
+        replace: '\1 {{ cgroup_missing | join(" ") }}'
+      when: cgroup_missing | length > 0
       register: cmdline_updated
       
     - name: Reboot if cgroup settings changed
