@@ -292,6 +292,10 @@
       copy:
         content: |
           [Journal]
+          # CrowdSec bind-mounts /var/log/journal. With the default Storage=auto,
+          # journald writes to /run when that directory is missing at boot, as on a
+          # fresh install, and CrowdSec reads nothing.
+          Storage=persistent
           SystemMaxUse=1G
           SystemKeepFree=2G
           MaxRetentionSec=1month
