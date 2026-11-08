@@ -135,7 +135,9 @@ resource "docker_container" "alloy" {
   }
 
   healthcheck {
-    test         = ["CMD", "wget", "-qO-", "http://localhost:12345/-/healthy"]
+    # The Alloy image has no wget or curl, so the old wget check always failed and the
+    # container showed unhealthy. Same TCP check as modules/grafana-alloy-pi.
+    test         = ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/12345'"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3
