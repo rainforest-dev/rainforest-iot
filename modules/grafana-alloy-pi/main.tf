@@ -65,6 +65,9 @@ resource "docker_container" "alloy" {
       healthcheck,
       # Docker provider drops read_only after apply; ignore to prevent perpetual replacement
       volumes,
+      # Unset in config, so Docker reports its default "bridge" and every plan
+      # replaced the container (same as modules/crowdsec).
+      network_mode,
     ]
     replace_triggered_by = [
       docker_image.alloy.image_id,
