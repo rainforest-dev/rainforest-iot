@@ -483,5 +483,4 @@ module "grafana_alloy_pi" {
   image_version  = var.alloy_pi_version
   prometheus_url = "http://${var.raspberry_pi_ip}:30090/api/v1/write"
   loki_url       = "http://${var.raspberry_pi_ip}:30100/loki/api/v1/push"
-  log_opts       = {}
 }
