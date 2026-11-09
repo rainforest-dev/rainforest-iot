@@ -70,7 +70,7 @@ On DSM, **Task Scheduler → Create → Scheduled Task → User-defined script**
 ```bash
 set -e
 mkdir -p /volume1/@teleport-join && cd /volume1/@teleport-join
-curl -fsSL https://cdn.teleport.dev/teleport-v15.5.4-linux-amd64-bin.tar.gz | tar xz
+curl -fsSL https://cdn.teleport.dev/teleport-v18.11.9-linux-amd64-bin.tar.gz | tar xz
 ./teleport/teleport join openssh \
   --proxy-server=<teleport-proxy>:443 \
   --join-method=token --token=<TOKEN> \
