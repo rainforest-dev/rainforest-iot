@@ -68,6 +68,8 @@ resource "docker_container" "alloy" {
       # Unset in config, so Docker reports its default "bridge" and every plan
       # replaced the container (same as modules/crowdsec).
       network_mode,
+      # Docker sets swap to twice the memory limit when it is unset.
+      memory_swap,
     ]
     replace_triggered_by = [
       docker_image.alloy.image_id,
