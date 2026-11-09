@@ -124,7 +124,7 @@ resource "null_resource" "pihole_blocklists" {
     command     = <<-BASH
       TMPSCRIPT=$(mktemp /tmp/pihole-blocklist-XXXXXX.sh)
       cat > "$TMPSCRIPT" << 'SCRIPT_EOF'
-${join("\n", [for url in var.blocklists : "docker exec pihole sqlite3 /etc/pihole/gravity.db \"INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('${url}', 1, 'Terraform managed');\""])}
+${join("\n", [for url in var.blocklists : "docker exec pihole pihole-FTL sqlite3 /etc/pihole/gravity.db \"INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('${url}', 1, 'Terraform managed');\""])}
 docker exec pihole pihole updateGravity || docker exec pihole pihole -g || true
 SCRIPT_EOF
       ssh -i ~/.ssh/id_ed25519.rpi5 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
