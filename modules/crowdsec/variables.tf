@@ -6,7 +6,7 @@ variable "project_name" {
 variable "crowdsec_version" {
   description = "CrowdSec Agent image tag (a -debian variant: journald acquisition needs journalctl)"
   type        = string
-  default     = "v1.8.1-debian"
+  default     = "v1.8.2-debian"
 }
 
 variable "timezone" {
