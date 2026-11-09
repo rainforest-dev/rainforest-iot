@@ -109,6 +109,13 @@
         enabled: yes
         daemon_reload: yes
 
+    # A fresh install starts k3s before it has written k3s.yaml, so the replace
+    # below failed on the first run and only passed on a second one.
+    - name: Wait for K3s to write its kubeconfig
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 180
+
     - name: Ensure in-Pi kubeconfig uses localhost (undo any previous .local)
       replace:
         path: "/etc/rancher/k3s/k3s.yaml"
