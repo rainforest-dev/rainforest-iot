@@ -378,7 +378,7 @@ variable "teleport_auth_token" {
 variable "pihole_image_version" {
   description = "Pi-hole Docker image version"
   type        = string
-  default     = "2026.05.0"
+  default     = "2026.10.1"
 }
 
 variable "homebridge_image_version" {

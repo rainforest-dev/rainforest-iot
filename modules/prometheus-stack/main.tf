@@ -562,22 +562,25 @@ resource "helm_release" "prometheus_stack" {
       # Node Exporter configuration
       nodeExporter = {
         enabled = var.node_exporter_enabled
-
-        resources = {
-          requests = {
-            cpu    = "50m"
-            memory = "32Mi"
-          }
-          limits = {
-            cpu    = "100m"
-            memory = "64Mi"
-          }
-        }
       }
 
       # extraArgs replaces the subchart's default list, so its two filesystem
       # excludes are repeated verbatim.
+      # Resources must sit under the subchart key; nodeExporter.resources was
+      # ignored, so the pod ran with a 200m CPU limit and was throttled on
+      # 44% of CFS periods while each scrape burst through the systemd
+      # collector (CPUThrottlingHigh). Average use is about 5m.
       "prometheus-node-exporter" = {
+        resources = {
+          requests = {
+            cpu    = "20m"
+            memory = "32Mi"
+          }
+          limits = {
+            cpu    = "500m"
+            memory = "128Mi"
+          }
+        }
         extraArgs = [
           "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/containerd/.+|var/lib/docker/.+|var/lib/kubelet/.+)($|/)",
           "--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|erofs)$",
