@@ -5,9 +5,9 @@ variable "project_name" {
 }
 
 variable "teleport_version" {
-  description = "Teleport version to deploy (must match the cluster version)"
+  description = "Teleport version to deploy (match the cluster in rainforest-homelab main.tf teleport_version; an agent may be older but never newer)"
   type        = string
-  default     = "15.5.4"
+  default     = "18.11.9"
 }
 
 variable "teleport_proxy_address" {
