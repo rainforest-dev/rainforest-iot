@@ -3,6 +3,13 @@ resource "docker_image" "alloy" {
   keep_locally = true
 }
 
+# Alloy keeps its log read positions and WAL under --storage.path. Without a
+# volume they were lost on every container replacement, so Alloy re-read
+# container logs from the start and sent Loki duplicate lines.
+resource "docker_volume" "alloy_data" {
+  name = "${var.project_name}-alloy-pi-data"
+}
+
 resource "docker_container" "alloy" {
   name  = "${var.project_name}-alloy-pi"
   image = docker_image.alloy.image_id
@@ -31,6 +38,11 @@ resource "docker_container" "alloy" {
     host_path      = "/var/run/docker.sock"
     container_path = "/var/run/docker.sock"
     read_only      = true
+  }
+
+  volumes {
+    volume_name    = docker_volume.alloy_data.name
+    container_path = "/var/lib/alloy"
   }
 
   volumes {
@@ -73,6 +85,8 @@ resource "docker_container" "alloy" {
     ]
     replace_triggered_by = [
       docker_image.alloy.image_id,
+      # volumes is ignored above, so the new mount needs this to take effect.
+      docker_volume.alloy_data.id,
     ]
   }
 }
