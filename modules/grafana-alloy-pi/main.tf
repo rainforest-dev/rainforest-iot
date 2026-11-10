@@ -3,6 +3,10 @@ resource "docker_image" "alloy" {
   keep_locally = true
 }
 
+resource "docker_volume" "alloy_data" {
+  name = "${var.project_name}-alloy-pi-data"
+}
+
 resource "docker_container" "alloy" {
   name  = "${var.project_name}-alloy-pi"
   image = docker_image.alloy.image_id
@@ -39,6 +43,11 @@ resource "docker_container" "alloy" {
     read_only      = true
   }
 
+  volumes {
+    volume_name    = docker_volume.alloy_data.name
+    container_path = "/var/lib/alloy"
+  }
+
   ports {
     internal = 12345
     external = 12346
@@ -71,8 +80,10 @@ resource "docker_container" "alloy" {
       # Docker sets swap to twice the memory limit when it is unset.
       memory_swap,
     ]
+    # volumes are ignored above, so a new data volume has to force the replacement itself
     replace_triggered_by = [
       docker_image.alloy.image_id,
+      docker_volume.alloy_data.id,
     ]
   }
 }
