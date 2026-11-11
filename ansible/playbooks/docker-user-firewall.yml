@@ -33,6 +33,16 @@
           iptables -A DOCKER-USER -i tailscale0 -j RETURN -m comment --comment "homelab-managed"
           iptables -A DOCKER-USER -i lo -j RETURN -m comment --comment "homelab-managed"
           iptables -A DOCKER-USER -j DROP -m comment --comment "homelab-managed"
+          # k3s's kube-router accepts forwarded traffic (a mark-based accept in
+          # FORWARD) before FORWARD ever jumps to DOCKER-USER, so the chain above
+          # is never consulted. Rules that must hold go in mangle PREROUTING,
+          # which runs before kube-router, Docker's DNAT and UFW. A chain of our
+          # own keeps it idempotent without touching k3s's rules there.
+          iptables -t mangle -N HOMELAB-PRE 2>/dev/null || true
+          iptables -t mangle -F HOMELAB-PRE
+          iptables -t mangle -C PREROUTING -j HOMELAB-PRE -m comment --comment "homelab-managed" 2>/dev/null \
+            || iptables -t mangle -I PREROUTING 1 -j HOMELAB-PRE -m comment --comment "homelab-managed"
+          iptables -t mangle -A HOMELAB-PRE -p tcp -d {{ ansible_default_ipv4.address }} --dport 7456 ! -s {{ open_design_client }} -j DROP -m comment --comment "homelab-managed"
       notify: reapply docker-user rules
       tags: [docker-user]
 
