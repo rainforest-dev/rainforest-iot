@@ -80,6 +80,25 @@ variable "openspeedtest_ports" {
   }
 }
 
+variable "enable_open_design" {
+  description = "Deploy OpenDesign (design-agent workspace) on the Pi; LAN-only, reachable from the Mac Mini"
+  type        = bool
+  default     = false
+}
+
+variable "open_design_api_token" {
+  description = "OpenDesign OD_API_TOKEN (openssl rand -hex 32); required when enable_open_design is true"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "open_design_memory" {
+  description = "Memory limit for the OpenDesign container (MB)"
+  type        = number
+  default     = 384
+}
+
 variable "music_assistant_memory" {
   description = "Memory limit for Music Assistant container (MB)"
   type        = number

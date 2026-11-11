@@ -12,6 +12,7 @@
   vars:
     lan_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
     k3s_pod_cidr: 10.42.0.0/16
+    open_design_client: 192.168.0.126
 
   tasks:
     - name: Install the DOCKER-USER rule script
@@ -25,6 +26,7 @@
           while iptables -D DOCKER-USER -m comment --comment "homelab-managed" 2>/dev/null; do :; done
           iptables -F DOCKER-USER 2>/dev/null || true
           iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN -m comment --comment "homelab-managed"
+          iptables -A DOCKER-USER -p tcp --dport 7456 ! -s {{ open_design_client }} -j DROP -m comment --comment "homelab-managed"
           iptables -A DOCKER-USER -s {{ lan_cidr }} -j RETURN -m comment --comment "homelab-managed"
           iptables -A DOCKER-USER -s {{ k3s_pod_cidr }} -j RETURN -m comment --comment "homelab-managed"
           iptables -A DOCKER-USER -s 172.16.0.0/12 -j RETURN -m comment --comment "homelab-managed"

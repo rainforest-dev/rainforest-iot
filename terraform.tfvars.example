@@ -58,3 +58,7 @@ mac_mini_ip = "100.86.67.66"
 
 # Monitoring credentials (required — no defaults to prevent accidental use of weak passwords)
 grafana_admin_password = "changeme"  # Set to your actual Grafana admin password
+
+# OpenDesign (LAN-only design-agent workspace; see modules/open-design)
+# enable_open_design    = true
+# open_design_api_token = "<openssl rand -hex 32>"  # never commit the real value

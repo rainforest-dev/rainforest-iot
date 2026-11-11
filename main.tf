@@ -74,6 +74,22 @@ module "music_assistant" {
   log_level            = "INFO"
 }
 
+module "open_design" {
+  count  = var.enable_open_design ? 1 : 0
+  source = "./modules/open-design"
+
+  providers = {
+    docker = docker.raspberry-pi
+  }
+
+  bind_ip         = var.raspberry_pi_ip
+  api_token       = var.open_design_api_token
+  allowed_origins = ["http://${var.raspberry_pi_ip}:7456"]
+  memory_limit    = var.open_design_memory
+  timezone        = var.timezone
+  log_opts        = local.common_log_opts
+}
+
 module "homebridge" {
   source = "./modules/homebridge"
 
