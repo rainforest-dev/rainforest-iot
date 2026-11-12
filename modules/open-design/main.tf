@@ -40,6 +40,8 @@ resource "docker_container" "open_design" {
       memory,
       memory_swap,
       healthcheck,
+      # Docker reads back network_mode="bridge" (its default), a ForceNew attribute.
+      network_mode,
     ]
     replace_triggered_by = [
       docker_image.open_design.image_id,
