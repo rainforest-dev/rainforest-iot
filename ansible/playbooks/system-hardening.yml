@@ -79,7 +79,9 @@
         - { port: '21064' }     # HomeKit Bridge
         - { port: '53' }
         - { port: '53', proto: 'udp' }
-        - { port: '30000:32767' }  # K8s NodePorts
+        - { port: '30000:32767' }  # K8s NodePorts. Not the control: NodePort traffic is
+                                   # DNAT'd and forwarded, so it skips UFW's INPUT. The
+                                   # source limit is HOMELAB-FWD in docker-user-firewall.yml.
         - { port: '8095' }      # Music Assistant web UI and API
         - { port: '8097' }      # Music Assistant stream server — Chromecast and
                                 # AirPlay players fetch audio from here, so a
