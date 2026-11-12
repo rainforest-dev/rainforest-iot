@@ -4,7 +4,8 @@
 # it. DOCKER-USER is the hook Docker leaves for exactly this, but on this Pi
 # k3s's kube-router accepts forwarded traffic before FORWARD reaches it, so the
 # rules that hold live in mangle (HOMELAB-PRE, HOMELAB-FWD). They confine
-# container-published ports to the LAN, the tailnet and the k3s pods.
+# container-published ports and k3s NodePorts/LoadBalancer ports to the LAN,
+# the tailnet and the k3s pods.
 #
 # A systemd oneshot rather than iptables-persistent: the latter would also
 # snapshot UFW's rules and the two fight at boot.
@@ -49,10 +50,13 @@
           # mangle FORWARD: after Docker's DNAT, before kube-router's filter
           # FORWARD accept. Only new connections headed into a Docker bridge
           # are checked, so container egress and host-network services are
-          # untouched.
+          # untouched. cni0 covers k3s: NodePorts and ServiceLB (Traefik 80/443)
+          # are DNAT'd to pods behind it, and the UFW NodePort allow never sees
+          # that traffic. Only kube-system has no NetworkPolicy, but this keeps
+          # every namespace confined even when one is added without a policy.
           iptables -t mangle -N HOMELAB-FWD 2>/dev/null || true
           iptables -t mangle -F HOMELAB-FWD
-          for br in docker0 br-+; do
+          for br in docker0 br-+ cni0; do
             iptables -t mangle -C FORWARD -o "$br" -m conntrack --ctstate NEW -j HOMELAB-FWD -m comment --comment "homelab-managed" 2>/dev/null \
               || iptables -t mangle -I FORWARD 1 -o "$br" -m conntrack --ctstate NEW -j HOMELAB-FWD -m comment --comment "homelab-managed"
           done
@@ -71,7 +75,7 @@
         mode: '0644'
         content: |
           [Unit]
-          Description=Confine Docker-published ports to the LAN, tailnet and k3s pods
+          Description=Confine Docker-published ports and k3s NodePorts to the LAN, tailnet and k3s pods
           After=docker.service
           Requires=docker.service
 
