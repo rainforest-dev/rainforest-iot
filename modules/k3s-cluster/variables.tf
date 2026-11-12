@@ -29,9 +29,9 @@ variable "enable_network_policies" {
 }
 
 variable "network_policy_ingress_cidrs" {
-  description = "CIDRs allowed into the monitoring namespace: LAN, tailnet and the k3s cni0 gateway (NodePort SNAT source)"
+  description = "CIDRs allowed into the monitoring namespace: LAN, tailnet, the k3s cni0 gateway (NodePort SNAT source) and Docker's default bridge (Alloy on the Pi)"
   type        = list(string)
-  default     = ["192.168.0.0/24", "100.64.0.0/10", "10.42.0.1/32"]
+  default     = ["192.168.0.0/24", "100.64.0.0/10", "10.42.0.1/32", "172.17.0.0/16"]
 }
 
 variable "restrict_egress" {

@@ -168,7 +168,9 @@ resource "kubernetes_network_policy" "monitoring_network_policy" {
       # NodePorts (Grafana, Prometheus, Loki, Alertmanager, Tempo) from the LAN, the
       # tailnet and the node itself. kube-proxy SNATs NodePort traffic to the cni0
       # gateway, so that address has to be listed too. UFW and the Tailscale ACL
-      # still decide who reaches the node.
+      # still decide who reaches the node. That SNAT happens in POSTROUTING, after
+      # kube-router checks this policy in FORWARD, so a container on the Pi (Alloy
+      # on Docker's default bridge) is seen with its own 172.17.x address.
       dynamic "from" {
         for_each = var.network_policy_ingress_cidrs
         content {
