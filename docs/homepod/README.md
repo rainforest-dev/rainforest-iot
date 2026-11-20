@@ -63,11 +63,13 @@ not applied by Terraform. The YAML files next to this README are copies of what 
   rebuilding from these files. It has no `initial:` on purpose, because that would undo a pause at every HA
   restart.
 
-- `script.sleep_podcast(volume=0.2, max_minutes=30)` (睡前冥想): plays the newest episode of
-  究醬子睡著了 Sleep Eventually, read from its SoundOn RSS feed by `sensor.sleep_podcast_latest`
-  (a `rest` sensor, refreshed every 6 hours; the URL is in the `enclosure` attribute). MA plays the
-  MP3 URL directly, so no podcast provider is needed. The script stops playback after
-  `max_minutes` if the episode is still playing, then restores the volume it found.
+- `script.sleep_podcast(volume=0.2, show, max_minutes=30)` (睡前冥想): plays the newest episode
+  of the Spotify show Vitamind 心理維他命 through MA's Spotify provider
+  (`media_type: podcast`, `start_item: latest`; MA picks the episode with the highest position).
+  MA resumes an episode from its saved position, and the Spotify provider syncs that position
+  with the shared account. Subscription-only episodes (【Vitamind 訂閱制】) play only if the account
+  subscribes. The script stops playback after `max_minutes` if the episode is still playing, then
+  restores the volume it found.
 - `automation.sleep_podcast`: runs it at `input_datetime.sleep_podcast_time` (22:45) while
   `input_boolean.sleep_podcast_enabled` (睡前冥想) is on.
 - `script.wake_alarm(playlist, start_volume=0.05, step=0.015, max_volume=0.35, interval_seconds=30)`
@@ -82,8 +84,8 @@ not applied by Terraform. The YAML files next to this README are copies of what 
   `google_assistant.request_sync`. Apple Home needs both added to the HomeKit bridge's
   `include_entities` through its options flow, as for `bedtime_reminder`.
 - New helpers start off and the times start at 00:00, because none of them has `initial:`. After
-  adding them, turn the three switches on and set 22:45 and 07:30 once. The `rest:` key is new to
-  this configuration, so HA has to restart once to load it; the other YAML reloads.
+  adding them, turn the three switches on and set 22:45 and 07:30 once. All of it loads with a
+  reload of input booleans, input datetimes, scripts and automations; no restart is needed.
 
 ## Test
 

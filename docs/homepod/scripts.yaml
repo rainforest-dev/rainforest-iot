@@ -216,7 +216,7 @@ bedtime_reminder:
 
 sleep_podcast:
   alias: "睡前冥想"
-  description: "Play the newest 究醬子睡著了 episode on the Bedroom HomePod at a low volume, stop after a time limit, then restore the previous volume"
+  description: "Play the newest episode of the Spotify show Vitamind 心理維他命 on the Bedroom HomePod at a low volume, stop after a time limit, then restore the previous volume"
   icon: mdi:meditation
   mode: single
   fields:
@@ -228,6 +228,11 @@ sleep_podcast:
           min: 0.05
           max: 0.6
           step: 0.05
+    show:
+      name: Spotify show URL
+      default: "https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB"
+      selector:
+        text:
     max_minutes:
       name: Stop after (minutes)
       default: 30
@@ -238,10 +243,6 @@ sleep_podcast:
   sequence:
     - variables:
         prev_volume: "{{ state_attr('media_player.bedroom_2', 'volume_level') }}"
-        enclosure: "{{ state_attr('sensor.sleep_podcast_latest', 'enclosure') }}"
-        episode_url: "{{ enclosure['@url'] if enclosure is mapping else '' }}"
-    - condition: template
-      value_template: "{{ episode_url != '' }}"
     - action: media_player.volume_set
       target:
         entity_id: media_player.bedroom_2
@@ -251,8 +252,9 @@ sleep_podcast:
       target:
         entity_id: media_player.bedroom_2
       data:
-        media_id: "{{ episode_url }}"
-        media_type: track
+        media_id: "{{ show | default('https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB') }}"
+        media_type: podcast
+        start_item: latest
         enqueue: replace
     - wait_template: "{{ is_state('media_player.bedroom_2', 'playing') }}"
       timeout: "00:00:30"

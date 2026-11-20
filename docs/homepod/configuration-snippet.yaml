@@ -26,15 +26,3 @@ input_datetime:
     name: 起床鬧鐘時間
     has_date: false
     has_time: true
-
-rest:
-  - resource: https://feeds.soundon.fm/podcasts/f62417ee-054f-4ea7-aa3d-bc52c895c83e.xml
-    scan_interval: 21600
-    sensor:
-      - name: Sleep Podcast Latest
-        unique_id: sleep_podcast_latest
-        value_template: "{{ value_json.rss.channel.item[0].title | truncate(250, true, '') }}"
-        json_attributes_path: "$.rss.channel.item[0]"
-        json_attributes:
-          - enclosure
-          - pubDate
