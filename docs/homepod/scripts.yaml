@@ -213,3 +213,159 @@ bedtime_reminder:
           data:
             message: "{{ message }}"
             volume: "{{ volume | default(30) | int }}"
+
+sleep_podcast:
+  alias: "睡前冥想"
+  description: "Play the newest episode of the Spotify show Vitamind 心理維他命 on the Bedroom HomePod at a low volume, stop after a time limit, then restore the previous volume"
+  icon: mdi:meditation
+  mode: single
+  fields:
+    volume:
+      name: Volume
+      default: 0.2
+      selector:
+        number:
+          min: 0.05
+          max: 0.6
+          step: 0.05
+    show:
+      name: Spotify show URL
+      default: "https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB"
+      selector:
+        text:
+    max_minutes:
+      name: Stop after (minutes)
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 90
+  sequence:
+    - variables:
+        prev_volume: "{{ state_attr('media_player.bedroom_2', 'volume_level') }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        volume_level: "{{ volume | default(0.2) | float }}"
+    - action: music_assistant.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_id: "{{ show | default('https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB') }}"
+        media_type: podcast
+        start_item: latest
+        enqueue: replace
+    - wait_template: "{{ is_state('media_player.bedroom_2', 'playing') }}"
+      timeout: "00:00:30"
+    - wait_template: "{{ not is_state('media_player.bedroom_2', 'playing') }}"
+      timeout:
+        minutes: "{{ max_minutes | default(30) | int }}"
+    - if:
+        - condition: state
+          entity_id: media_player.bedroom_2
+          state: playing
+      then:
+        - action: media_player.media_stop
+          target:
+            entity_id: media_player.bedroom_2
+    - if:
+        - condition: template
+          value_template: "{{ prev_volume is number }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.bedroom_2
+          data:
+            volume_level: "{{ prev_volume }}"
+
+wake_alarm:
+  alias: "起床鬧鐘"
+  description: "Play a shuffled morning playlist on the Bedroom HomePod and raise the volume step by step; the ramp stops if playback stops or someone changes the volume"
+  icon: mdi:alarm
+  mode: single
+  fields:
+    playlist:
+      name: Spotify playlist URI
+      default: "spotify:playlist:3MpMZTJI3cgqU50A9kNPv7"
+      selector:
+        text:
+    start_volume:
+      name: Start volume
+      default: 0.05
+      selector:
+        number:
+          min: 0.01
+          max: 0.3
+          step: 0.01
+    step:
+      name: Step
+      default: 0.015
+      selector:
+        number:
+          min: 0.005
+          max: 0.05
+          step: 0.005
+    max_volume:
+      name: Max volume
+      default: 0.35
+      selector:
+        number:
+          min: 0.1
+          max: 0.6
+          step: 0.05
+    interval_seconds:
+      name: Step interval (seconds)
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 120
+  sequence:
+    - variables:
+        start: "{{ start_volume | default(0.05) | float }}"
+        inc: "{{ step | default(0.015) | float }}"
+        top: "{{ max_volume | default(0.35) | float }}"
+        every: "{{ interval_seconds | default(30) | int }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        volume_level: "{{ start }}"
+    - action: music_assistant.play_media
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        media_id: "{{ playlist | default('spotify:playlist:3MpMZTJI3cgqU50A9kNPv7') }}"
+        media_type: playlist
+        enqueue: replace
+    - action: media_player.shuffle_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.bedroom_2
+      data:
+        shuffle: true
+    - wait_template: "{{ is_state('media_player.bedroom_2', 'playing') }}"
+      timeout: "00:00:30"
+      continue_on_timeout: false
+    - repeat:
+        sequence:
+          - delay:
+              seconds: "{{ every }}"
+          # MA reports volume in whole percent, so allow for rounding before calling it a manual change.
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ not is_state('media_player.bedroom_2', 'playing') or
+                     (state_attr('media_player.bedroom_2', 'volume_level') | float(-1)
+                      - [start + inc * (repeat.index - 1), top] | min) | abs > 0.02 }}
+            then:
+              - stop: "Playback stopped or the volume was changed by hand"
+          - action: media_player.volume_set
+            target:
+              entity_id: media_player.bedroom_2
+            data:
+              volume_level: "{{ [start + inc * repeat.index, top] | min | round(3) }}"
+        until:
+          - condition: template
+            value_template: "{{ start + inc * repeat.index >= top - 0.0001 }}"

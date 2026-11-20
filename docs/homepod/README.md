@@ -63,6 +63,30 @@ not applied by Terraform. The YAML files next to this README are copies of what 
   rebuilding from these files. It has no `initial:` on purpose, because that would undo a pause at every HA
   restart.
 
+- `script.sleep_podcast(volume=0.2, show, max_minutes=30)` (睡前冥想): plays the newest episode
+  of the Spotify show Vitamind 心理維他命 through MA's Spotify provider
+  (`media_type: podcast`, `start_item: latest`; MA picks the episode with the highest position).
+  MA resumes an episode from its saved position, and the Spotify provider syncs that position
+  with the shared account. Subscription-only episodes (【Vitamind 訂閱制】) play only if the account
+  subscribes. The script stops playback after `max_minutes` if the episode is still playing, then
+  restores the volume it found.
+- `automation.sleep_podcast`: runs it at `input_datetime.sleep_podcast_time` (22:45) while
+  `input_boolean.sleep_podcast_enabled` (睡前冥想) is on.
+- `script.wake_alarm(playlist, start_volume=0.05, step=0.015, max_volume=0.35, interval_seconds=30)`
+  (起床鬧鐘): plays Spotify "Easy Morning" (`spotify:playlist:3MpMZTJI3cgqU50A9kNPv7`) shuffled
+  and raises the volume one step every 30 s, reaching 0.35 after 10 minutes. Before each step it
+  checks that the HomePod is still playing and the volume is still where the script left it
+  (±0.02, since MA reports whole percent); otherwise it stops ramping and leaves the music alone.
+- `automation.wake_alarm`: runs it at `input_datetime.wake_alarm_time` (07:30) while
+  `input_boolean.wake_alarm_enabled` (起床鬧鐘) is on, Monday to Friday only while
+  `input_boolean.wake_alarm_weekdays_only` is on.
+- Google Home sees 睡前冥想 and 起床鬧鐘 through the exposed `input_boolean` domain after
+  `google_assistant.request_sync`. Apple Home needs both added to the HomeKit bridge's
+  `include_entities` through its options flow, as for `bedtime_reminder`.
+- New helpers start off and the times start at 00:00, because none of them has `initial:`. After
+  adding them, turn the three switches on and set 22:45 and 07:30 once. All of it loads with a
+  reload of input booleans, input datetimes, scripts and automations; no restart is needed.
+
 ## Test
 
 ```bash
