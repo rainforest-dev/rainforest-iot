@@ -2,8 +2,39 @@ input_boolean:
   bedtime_reminder:
     name: 睡前提醒
     icon: mdi:book-open-page-variant
+  sleep_podcast_enabled:
+    name: 睡前冥想
+    icon: mdi:meditation
+  wake_alarm_enabled:
+    name: 起床鬧鐘
+    icon: mdi:alarm
+  wake_alarm_weekdays_only:
+    name: 起床鬧鐘只在平日
+    icon: mdi:calendar-week
 
 input_text:
   leave_reminder_announced:
     name: 該出門提醒已播
     max: 255
+
+input_datetime:
+  sleep_podcast_time:
+    name: 睡前冥想時間
+    has_date: false
+    has_time: true
+  wake_alarm_time:
+    name: 起床鬧鐘時間
+    has_date: false
+    has_time: true
+
+rest:
+  - resource: https://feeds.soundon.fm/podcasts/f62417ee-054f-4ea7-aa3d-bc52c895c83e.xml
+    scan_interval: 21600
+    sensor:
+      - name: Sleep Podcast Latest
+        unique_id: sleep_podcast_latest
+        value_template: "{{ value_json.rss.channel.item[0].title | truncate(250, true, '') }}"
+        json_attributes_path: "$.rss.channel.item[0]"
+        json_attributes:
+          - enclosure
+          - pubDate
