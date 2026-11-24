@@ -16,7 +16,7 @@ not applied by Terraform. The YAML files next to this README are copies of what 
 
 | Where | Setting | Why |
 |---|---|---|
-| HA `music_assistant` config entry | `url = http://localhost:8095` | It pointed at `https://music-assistant.rainforest.tools`; when the Mac's tunnel went down on 2026-10-17 HA lost MA and every MA player went `unavailable`. HA and MA both use host networking on the Pi, so loopback needs no tunnel. The integration has no reconfigure flow: stop HA, edit `.storage/core.config_entries`, start HA. |
+| HA `music_assistant` config entry | `url = http://localhost:8095` | It pointed at `https://music-assistant.rainforest.tools`; when the Mac's tunnel went down on 2026-10-17 HA lost MA and every MA player went `unavailable`. HA and MA both use host networking on the Pi, so loopback needs no tunnel. The integration has no reconfigure flow: stop HA, edit `.storage/core.config_entries`, start HA. HA's zeroconf flow rewrites this URL to whatever `base_url` MA advertises every time it rediscovers MA, which is why MA's `base_url` is the LAN address (`main.tf`); with the public hostname there, the URL flipped back to the tunnel at each HA or MA restart. |
 | MA image | `2.10.9` (was 2.7.11) | 2.7's librespot cannot fetch Spotify audio since 2026-08-10. Rollback: see "Upgrading or rolling back HA and MA" below on the Pi. |
 | MA player `Bedroom` | streaming mode `auto` (AirPlay 2, PTP) | The HomePod mini plays only over AirPlay 2 with PTP; RAOP and `ap2_compat` never connect. PTP needs UDP 319/320 open from the LAN. |
 | MA plugin `Spotify Connect` | backend Spotify Soloist, player `Bedroom` | Shows the HomePod as `Bedroom \| Music Assistant` in Spotify apps on the LAN. go-librespot connects but this account gets no audio on it. |
