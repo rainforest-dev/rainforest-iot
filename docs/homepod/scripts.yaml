@@ -246,25 +246,43 @@ sleep_podcast:
     - action: rest_command.sleep_podcast_feed
       response_variable: feed
     - variables:
-        episode: >-
+        episode_url: >-
           {% set items = (feed.content if feed.status == 200 and feed.content is string else '')
-             | regex_findall('(?s)<item>.*?<title>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?</title>.*?<enclosure url="([^"]+)"') %}
+             | regex_findall('(?s)<item>(.*?)</item>') %}
           {% set match = title_match | default('一起愛睏') %}
           {% set ns = namespace(found=none) %}
-          {% for t, u in items if ns.found is none and match in t and '訂閱制' not in t %}
-            {% set ns.found = {'title': t, 'url': u} %}
+          {% for pass in ['match', 'any'] if ns.found is none %}
+            {% for it in items if ns.found is none %}
+              {% set t = (it | regex_findall('(?s)<title>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?</title>') + [''])[0] %}
+              {% set u = (it | regex_findall('<enclosure[^>]*\\surl="([^"]+)"') + [''])[0] %}
+              {% if u and '訂閱制' not in t and (pass == 'any' or match in t) %}
+                {% set ns.found = [t, u] %}
+              {% endif %}
+            {% endfor %}
           {% endfor %}
-          {% for t, u in items if ns.found is none and '訂閱制' not in t %}
-            {% set ns.found = {'title': t, 'url': u} %}
+          {{ ns.found[1] if ns.found else '' }}
+        episode_title: >-
+          {% set items = (feed.content if feed.status == 200 and feed.content is string else '')
+             | regex_findall('(?s)<item>(.*?)</item>') %}
+          {% set match = title_match | default('一起愛睏') %}
+          {% set ns = namespace(found=none) %}
+          {% for pass in ['match', 'any'] if ns.found is none %}
+            {% for it in items if ns.found is none %}
+              {% set t = (it | regex_findall('(?s)<title>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?</title>') + [''])[0] %}
+              {% set u = (it | regex_findall('<enclosure[^>]*\\surl="([^"]+)"') + [''])[0] %}
+              {% if u and '訂閱制' not in t and (pass == 'any' or match in t) %}
+                {% set ns.found = [t, u] %}
+              {% endif %}
+            {% endfor %}
           {% endfor %}
-          {{ ns.found }}
+          {{ ns.found[0] if ns.found else '' }}
     - condition: template
-      value_template: "{{ episode is mapping and episode.url.startswith('https://m.cdn.firstory.me/') }}"
+      value_template: "{{ episode_url is string and episode_url.startswith('https://m.cdn.firstory.me/') }}"
     - action: system_log.write
       data:
         level: info
         logger: sleep_podcast
-        message: "Playing {{ episode.title }}"
+        message: "Playing {{ episode_title | string }}"
     - action: media_player.volume_set
       target:
         entity_id: media_player.bedroom_2
@@ -274,11 +292,28 @@ sleep_podcast:
       target:
         entity_id: media_player.bedroom_2
       data:
-        media_id: "{{ episode.url }}"
+        media_id: "{{ episode_url }}"
         media_type: track
         enqueue: replace
     - wait_template: "{{ is_state('media_player.bedroom_2', 'playing') }}"
       timeout: "00:00:30"
+    - if:
+        - condition: template
+          value_template: "{{ not wait.completed }}"
+      then:
+        - action: media_player.media_stop
+          target:
+            entity_id: media_player.bedroom_2
+        - if:
+            - condition: template
+              value_template: "{{ prev_volume is number }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.bedroom_2
+              data:
+                volume_level: "{{ prev_volume }}"
+        - stop: "The episode did not start within 30 seconds"
     - wait_template: "{{ not is_state('media_player.bedroom_2', 'playing') }}"
       timeout:
         minutes: "{{ max_minutes | default(30) | int }}"
