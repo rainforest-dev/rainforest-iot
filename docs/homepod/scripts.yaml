@@ -259,7 +259,7 @@ sleep_podcast:
           {% endfor %}
           {{ ns.found }}
     - condition: template
-      value_template: "{{ episode is mapping }}"
+      value_template: "{{ episode is mapping and episode.url.startswith('https://m.cdn.firstory.me/') }}"
     - action: system_log.write
       data:
         level: info
