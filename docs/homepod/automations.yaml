@@ -109,7 +109,7 @@
   mode: single
 
 - id: sleep_podcast
-  alias: "睡前冥想"
+  alias: "Sleep Meditation at bedtime"
   description: "Play a sleep meditation episode at input_datetime.sleep_podcast_time while input_boolean.sleep_podcast_enabled is on"
   trigger:
     - platform: time
@@ -123,7 +123,7 @@
   mode: single
 
 - id: wake_alarm
-  alias: "起床鬧鐘"
+  alias: "Wake Alarm in the morning"
   description: "Start the fade-in morning music at input_datetime.wake_alarm_time while input_boolean.wake_alarm_enabled is on; weekdays only when input_boolean.wake_alarm_weekdays_only is on"
   trigger:
     - platform: time

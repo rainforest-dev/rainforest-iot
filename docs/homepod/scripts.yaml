@@ -215,8 +215,8 @@ bedtime_reminder:
             volume: "{{ volume | default(30) | int }}"
 
 sleep_podcast:
-  alias: "睡前冥想"
-  description: "Play the newest episode of the Spotify show Vitamind 心理維他命 on the Bedroom HomePod at a low volume, stop after a time limit, then restore the previous volume"
+  alias: "Sleep Meditation"
+  description: "Play the newest 【Vitamind 一起愛睏】 episode from the Vitamind 心理維他命 RSS feed on the Bedroom HomePod at a low volume, stop after a time limit, then restore the previous volume"
   icon: mdi:meditation
   mode: single
   fields:
@@ -228,9 +228,9 @@ sleep_podcast:
           min: 0.05
           max: 0.6
           step: 0.05
-    show:
-      name: Spotify show URL
-      default: "https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB"
+    title_match:
+      name: Episode title contains
+      default: "一起愛睏"
       selector:
         text:
     max_minutes:
@@ -243,6 +243,28 @@ sleep_podcast:
   sequence:
     - variables:
         prev_volume: "{{ state_attr('media_player.bedroom_2', 'volume_level') }}"
+    - action: rest_command.sleep_podcast_feed
+      response_variable: feed
+    - variables:
+        episode: >-
+          {% set items = (feed.content if feed.status == 200 and feed.content is string else '')
+             | regex_findall('(?s)<item>.*?<title>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?</title>.*?<enclosure url="([^"]+)"') %}
+          {% set match = title_match | default('一起愛睏') %}
+          {% set ns = namespace(found=none) %}
+          {% for t, u in items if ns.found is none and match in t and '訂閱制' not in t %}
+            {% set ns.found = {'title': t, 'url': u} %}
+          {% endfor %}
+          {% for t, u in items if ns.found is none and '訂閱制' not in t %}
+            {% set ns.found = {'title': t, 'url': u} %}
+          {% endfor %}
+          {{ ns.found }}
+    - condition: template
+      value_template: "{{ episode is mapping }}"
+    - action: system_log.write
+      data:
+        level: info
+        logger: sleep_podcast
+        message: "Playing {{ episode.title }}"
     - action: media_player.volume_set
       target:
         entity_id: media_player.bedroom_2
@@ -252,9 +274,8 @@ sleep_podcast:
       target:
         entity_id: media_player.bedroom_2
       data:
-        media_id: "{{ show | default('https://open.spotify.com/show/3LJxpGIZZRctVH25y0wxYB') }}"
-        media_type: podcast
-        start_item: latest
+        media_id: "{{ episode.url }}"
+        media_type: track
         enqueue: replace
     - wait_template: "{{ is_state('media_player.bedroom_2', 'playing') }}"
       timeout: "00:00:30"
@@ -280,7 +301,7 @@ sleep_podcast:
             volume_level: "{{ prev_volume }}"
 
 wake_alarm:
-  alias: "起床鬧鐘"
+  alias: "Wake Alarm"
   description: "Play a shuffled morning playlist on the Bedroom HomePod and raise the volume step by step; the ramp stops if playback stops or someone changes the volume"
   icon: mdi:alarm
   mode: single

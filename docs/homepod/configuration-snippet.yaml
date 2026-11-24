@@ -3,13 +3,13 @@ input_boolean:
     name: 睡前提醒
     icon: mdi:book-open-page-variant
   sleep_podcast_enabled:
-    name: 睡前冥想
+    name: Sleep Meditation Schedule
     icon: mdi:meditation
   wake_alarm_enabled:
-    name: 起床鬧鐘
+    name: Wake Alarm Schedule
     icon: mdi:alarm
   wake_alarm_weekdays_only:
-    name: 起床鬧鐘只在平日
+    name: Wake Alarm Weekdays Only
     icon: mdi:calendar-week
 
 input_text:
@@ -19,10 +19,16 @@ input_text:
 
 input_datetime:
   sleep_podcast_time:
-    name: 睡前冥想時間
+    name: Sleep Meditation Time
     has_date: false
     has_time: true
   wake_alarm_time:
-    name: 起床鬧鐘時間
+    name: Wake Alarm Time
     has_date: false
     has_time: true
+
+rest_command:
+  sleep_podcast_feed:
+    url: "https://feed.firstory.me/rss/user/ckgk7ej6h3uud081394y4caub"
+    method: GET
+    timeout: 20
