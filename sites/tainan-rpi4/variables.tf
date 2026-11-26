@@ -6,15 +6,15 @@ variable "ssh_host" {
 
 variable "homeassistant_version" {
   type    = string
-  default = "2026.10.4"
+  default = "2026.11.3"
 }
 
 variable "shairport_version" {
   type    = string
-  default = "5.6.2"
+  default = "5.6.3"
 }
 
 variable "openspeedtest_version" {
   type    = string
-  default = "v2.0.8"
+  default = "v2.0.9"
 }
