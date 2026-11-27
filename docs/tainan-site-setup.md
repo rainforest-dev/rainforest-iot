@@ -152,7 +152,7 @@ terraform apply
 
 On the Pi Prometheus (`http://<pi-tailnet-ip>:30090`):
 
-- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`, `site-node`).
+- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`, `site-node`, and `homeassistant` once `homeassistant_target` is set; see `docs/tainan-climate`).
 - `raidStatus{site="tainan"}` and `diskTemperature{site="tainan"}` return the NAS volumes and disks.
 - `probe_success{site="tainan", job="isp_icmp"}` is 1 for all three ISP targets.
 

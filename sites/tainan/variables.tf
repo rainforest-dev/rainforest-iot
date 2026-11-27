@@ -81,3 +81,16 @@ variable "node_targets" {
   type        = map(string)
   default     = {}
 }
+
+variable "homeassistant_target" {
+  description = "Tainan Home Assistant host:port for the homeassistant scrape job; empty skips it"
+  type        = string
+  default     = ""
+}
+
+variable "homeassistant_token" {
+  description = "Long-lived token of a non-admin HA user, used only for /api/prometheus"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

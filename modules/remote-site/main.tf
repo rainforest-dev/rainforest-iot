@@ -5,6 +5,7 @@ locals {
     lan_ping_targets = var.lan_ping_targets
     node_targets     = var.node_targets
     snmp_targets     = var.snmp_targets
+    ha_target        = var.homeassistant_target
   })
 
   unifi_auth_env = var.unifi_api_key != "" ? [
@@ -108,6 +109,7 @@ resource "docker_container" "alloy" {
     "SNMP_V3_AUTH_PASSWORD=${var.snmp_v3.auth_password}",
     "SNMP_V3_PRIV_PASSWORD=${var.snmp_v3.priv_password}",
     "SNMP_COMMUNITY=${var.snmp_community}",
+    "HA_TOKEN=${var.homeassistant_token}",
   ]
 
   upload {
