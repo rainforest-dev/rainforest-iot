@@ -28,7 +28,7 @@ temperature or humidity sensors anyway.
 They read `sensor.bedroom_humidity`, the highest humidity among the room's sensors that are
 online (only the Dyson today; add a closet sensor to its two lists), and
 `sensor.bedroom_temperature` (Dyson, else the AC's indoor reading). Alerts go to
-`notify.mobile_app_rainforests_iphone`.
+`notify.mobile_app_YOUR_PHONE`.
 
 - `closet_dehumidify_start`: humidity above 65% for 15 minutes (re-checked every 30 minutes),
   room above 20 °C, AC off, no fault, and at least an hour since the last run. Records the

@@ -2,7 +2,8 @@
 # with these (or paste each one in the HA UI's YAML editor), then reload automations.
 #
 # sensor.bedroom_humidity / sensor.bedroom_temperature come from configuration-snippet.yaml.
-# Phone alerts go to notify.mobile_app_rainforests_iphone.
+# Phone alerts go to notify.mobile_app_YOUR_PHONE: replace it with your phone's service
+# (Developer tools → Actions, search "mobile_app") before pasting.
 
 - id: closet_dehumidify_start
   alias: 衣櫥除濕 開始
@@ -131,7 +132,7 @@
           {{ ((now() - states.input_boolean.closet_dehumidify.last_changed).total_seconds() / 60) | round(0) }}
         fallback: "{{ states('input_number.closet_dehumidify_start_humidity') | float(0) == 0 }}"
         dry_enough: "{{ states('sensor.bedroom_humidity') | float(100) < 55 }}"
-        capped: "{{ ran_min > 180 or (fallback and ran_min > 120) }}"
+        capped: "{{ ran_min >= 180 or (fallback and ran_min >= 120) }}"
     - condition: template
       value_template: "{{ dry_enough or capped }}"
     - if:
@@ -148,7 +149,7 @@
         - condition: template
           value_template: "{{ capped and not dry_enough and not fallback }}"
       then:
-        - action: notify.mobile_app_rainforests_iphone
+        - action: notify.mobile_app_YOUR_PHONE
           data:
             title: 台南衣櫥除濕
             message: >
@@ -188,7 +189,7 @@
       target: { entity_id: input_boolean.closet_dehumidify }
     - action: input_boolean.turn_on
       target: { entity_id: input_boolean.closet_dehumidify_fault }
-    - action: notify.mobile_app_rainforests_iphone
+    - action: notify.mobile_app_YOUR_PHONE
       data:
         title: 台南衣櫥除濕故障
         message: >
@@ -219,7 +220,7 @@
       to: [unavailable, unknown]
       for: { hours: 2 }
   actions:
-    - action: notify.mobile_app_rainforests_iphone
+    - action: notify.mobile_app_YOUR_PHONE
       data:
         title: 台南衣櫥除濕
         message: >
