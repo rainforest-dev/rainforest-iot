@@ -107,7 +107,7 @@ resource "local_file" "kubeconfig_pi5_content" {
 
 # Helper container to create both kubeconfig files with IP instead of mDNS hostname
 resource "docker_container" "kubeconfig_updater" {
-  image    = "alpine:latest"
+  image    = "alpine:3.24"
   name     = "homepage-kubeconfig-updater-${substr(md5(local_file.kubeconfig_pi5_content.content), 0, 8)}"
   must_run = false
 
@@ -143,7 +143,7 @@ resource "docker_container" "kubeconfig_updater" {
 
 # Helper container to create configs directly in volume
 resource "docker_container" "config_updater" {
-  image    = "alpine:latest"
+  image    = "alpine:3.24"
   name     = "homepage-config-updater-${substr(md5(join("", [local_file.services_config.content, local_file.docker_config.content])), 0, 8)}"
   must_run = false
 

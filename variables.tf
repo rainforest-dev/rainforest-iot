@@ -517,9 +517,9 @@ variable "crowdsec_version" {
 }
 
 variable "ntopng_image_version" {
-  description = "Ntopng Docker image version"
+  description = "Ntopng Docker image tag; Docker Hub publishes only latest, so it is pinned by digest"
   type        = string
-  default     = "latest"
+  default     = "latest@sha256:39029eaa9b2d4a024aeda49f1889d822a6c72fcd8c960267181140794c1b9833"
 }
 
 variable "ntopng_web_port" {
