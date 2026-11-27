@@ -1,0 +1,22 @@
+# Add to /config/configuration.yaml on the Tainan Pi 4, then restart HA.
+
+# Marker set only by the closet automations, so they never turn off an AC someone else started.
+input_boolean:
+  closet_dehumidify:
+    name: 衣櫥除濕中
+    icon: mdi:water-percent
+
+# /api/prometheus for the NAS Alloy (job="homeassistant", site="tainan").
+# Only these entities are exported; everything else stays out of Prometheus.
+prometheus:
+  namespace: hass
+  requires_auth: true
+  filter:
+    include_entities:
+      - sensor.dyson_hp09_humidity
+      - sensor.dyson_hp09_temperature
+      - climate.leng_qi_ji
+      - sensor.leng_qi_ji_shi_wai_wen_du   # AC outdoor unit; reads high in direct sun
+      - input_boolean.closet_dehumidify
+    # Add a closet sensor here by name when there is one. No globs: any new integration's
+    # *_humidity or *_temperature would otherwise start flowing to the Pi 5.

@@ -126,6 +126,24 @@ prometheus.scrape "node" {
 }
 %{ endif ~}
 
+%{ if ha_target != "" ~}
+
+// Home Assistant's prometheus integration. Its filter in configuration.yaml decides which
+// entities are exported (docs/tainan-climate), so this job stays a handful of series.
+prometheus.scrape "homeassistant" {
+  job_name        = "homeassistant"
+  targets         = [{ "__address__" = "${ha_target}", "instance" = "homeassistant" }]
+  metrics_path    = "/api/prometheus"
+  scrape_interval = "60s"
+  forward_to      = [prometheus.remote_write.pi.receiver]
+
+  authorization {
+    type        = "Bearer"
+    credentials = sys.env("HA_TOKEN")
+  }
+}
+%{ endif ~}
+
 prometheus.scrape "unpoller" {
   job_name        = "unpoller"
   targets         = [{ "__address__" = "unpoller:9130" }]

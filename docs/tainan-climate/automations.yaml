@@ -1,0 +1,101 @@
+# Append to /config/automations.yaml on the Tainan Pi 4 (or paste each one in the HA UI's
+# YAML editor), then reload automations.
+
+- id: closet_dehumidify_start
+  alias: 衣櫥除濕 開始
+  description: Room humidity above 65% starts the AC in dry mode, unless someone is using the AC.
+  mode: single
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.dyson_hp09_humidity
+      above: 65
+      for: { minutes: 15 }
+    # Re-check every 30 minutes, so a run that hit the 3 h cap starts again after the cooldown.
+    - trigger: time_pattern
+      minutes: /30
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.dyson_hp09_humidity
+      above: 65
+    # Dry mode also cools; below 20 °C it would make the room cold for little gain.
+    - condition: numeric_state
+      entity_id: sensor.dyson_hp09_temperature
+      above: 20
+    - condition: state
+      entity_id: climate.leng_qi_ji
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.closet_dehumidify
+      state: "off"
+    # One hour of rest after each run.
+    - condition: template
+      value_template: >
+        {{ now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=1) }}
+  actions:
+    - action: input_boolean.turn_on
+      target: { entity_id: input_boolean.closet_dehumidify }
+    - action: climate.set_hvac_mode
+      target: { entity_id: climate.leng_qi_ji }
+      data: { hvac_mode: dry }
+    - delay: { seconds: 30 }
+    - action: climate.set_temperature
+      target: { entity_id: climate.leng_qi_ji }
+      data: { temperature: 26 }
+    # 乾燥防霉 is a flag stored in the AC: once on, every power-off blows the coil dry.
+    # The switch is only available while the AC is on, hence here and not at stop.
+    - action: switch.turn_on
+      target: { entity_id: switch.leng_qi_ji_gan_zao_fang_mei }
+      continue_on_error: true
+
+- id: closet_dehumidify_stop
+  alias: 衣櫥除濕 結束
+  description: Stops a run this automation started, below 55% or after 3 hours.
+  mode: single
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.dyson_hp09_humidity
+      below: 55
+      for: { minutes: 10 }
+    - trigger: state
+      entity_id: input_boolean.closet_dehumidify
+      to: "on"
+      for: { hours: 3 }
+    # HA drops the two timers above on a restart or reload, so re-check every 10 minutes.
+    - trigger: time_pattern
+      minutes: /10
+  conditions:
+    - condition: state
+      entity_id: input_boolean.closet_dehumidify
+      state: "on"
+    - condition: template
+      value_template: >
+        {{ states('sensor.dyson_hp09_humidity') | float(100) < 55
+           or now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=3) }}
+  actions:
+    - if:
+        - condition: state
+          entity_id: climate.leng_qi_ji
+          state: dry
+      then:
+        - action: climate.turn_off
+          target: { entity_id: climate.leng_qi_ji }
+    - action: input_boolean.turn_off
+      target: { entity_id: input_boolean.closet_dehumidify }
+
+- id: closet_dehumidify_handover
+  alias: 衣櫥除濕 交給手動
+  description: Someone changed the AC away from dry mode, so the automation lets go of it.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: climate.leng_qi_ji
+      not_to: [dry, unavailable, unknown]
+      # The cloud API can report the old mode for a moment while dry mode is being set.
+      for: { minutes: 2 }
+  conditions:
+    - condition: state
+      entity_id: input_boolean.closet_dehumidify
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target: { entity_id: input_boolean.closet_dehumidify }
