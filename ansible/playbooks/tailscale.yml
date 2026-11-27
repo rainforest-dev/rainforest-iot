@@ -10,15 +10,21 @@
 #
 # The inverse is tailscale-remove.yml. Do not run that one casually — the Pi is
 # on the tailnet today and the firewall rules trust the tailscale0 interface.
+#
+# The Tainan Pi 4 uses the same play with its own inventory; its host vars set
+# the hostname and turn MagicDNS off (see inventory-tainan.yml):
+#   ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tailscale.yml -e tailscale_hosts=tainan_pi
 - name: Ensure Tailscale membership
-  hosts: raspberry_pi
+  hosts: "{{ tailscale_hosts | default('raspberry_pi') }}"
   become: yes
   vars:
-    tailscale_hostname: "{{ inventory_hostname }}"
+    # Inventory host vars may override these two, so they are read with a
+    # default here instead of being set as play vars (which would win).
+    ts_hostname: "{{ tailscale_hostname | default(inventory_hostname) }}"
+    ts_accept_dns: "{{ tailscale_accept_dns | default(true) }}"
     # Mirrors the live node: no subnet routes, no exit node, no Tailscale SSH.
     # The Pi is reachable on the LAN and over plain SSH already, so the tailnet
     # is a path in from outside the house, not a replacement for either.
-    tailscale_accept_dns: true
     tailscale_advertise_routes: []
     tailscale_ssh: false
     # Raspberry Pi OS 64-bit reports ansible_distribution "Debian", and
@@ -85,8 +91,8 @@
     - name: Converge the preferences
       command: >-
         tailscale set
-        --hostname={{ tailscale_hostname }}
-        --accept-dns={{ tailscale_accept_dns | ternary('true', 'false') }}
+        --hostname={{ ts_hostname }}
+        --accept-dns={{ ts_accept_dns | bool | ternary('true', 'false') }}
         --accept-routes=false
         --ssh={{ tailscale_ssh | ternary('true', 'false') }}
         --advertise-routes={{ tailscale_advertise_routes | join(',') }}
