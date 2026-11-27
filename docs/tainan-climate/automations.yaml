@@ -50,7 +50,11 @@
     - delay: { seconds: 30 }
     - action: climate.set_temperature
       target: { entity_id: climate.leng_qi_ji }
-      data: { temperature: 26 }
+      # 2 °C under the room, at least 22 °C. At the room's own temperature the compressor
+      # idles and the fan blows the coil's water back into the room (seen 2026-11-27).
+      data:
+        temperature: >
+          {{ [22, (states('sensor.bedroom_temperature') | float(26) - 2) | round(0) | int] | max }}
     # 乾燥防霉 is a flag stored in the AC: once on, every power-off blows the coil dry.
     # The switch is only available while the AC is on, hence here and not at stop.
     - action: switch.turn_on
@@ -97,7 +101,11 @@
     - delay: { seconds: 30 }
     - action: climate.set_temperature
       target: { entity_id: climate.leng_qi_ji }
-      data: { temperature: 26 }
+      # 2 °C under the room, at least 22 °C. At the room's own temperature the compressor
+      # idles and the fan blows the coil's water back into the room (seen 2026-11-27).
+      data:
+        temperature: >
+          {{ [22, (states('sensor.bedroom_temperature') | float(26) - 2) | round(0) | int] | max }}
     - action: switch.turn_on
       target: { entity_id: switch.leng_qi_ji_gan_zao_fang_mei }
       continue_on_error: true
