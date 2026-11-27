@@ -1,10 +1,52 @@
 # Add to /config/configuration.yaml on the Tainan Pi 4, then restart HA.
 
-# Marker set only by the closet automations, so they never turn off an AC someone else started.
 input_boolean:
+  # Marker set only by the closet automations, so they never turn off an AC someone else started.
   closet_dehumidify:
     name: 衣櫥除濕中
     icon: mdi:water-percent
+  # Set when a run fails to lower the humidity. Blocks new runs until turned off, or 24 h.
+  closet_dehumidify_fault:
+    name: 衣櫥除濕故障
+    icon: mdi:alert-circle
+
+input_number:
+  # Humidity when the current run started; 0 marks a fallback run with no room reading.
+  closet_dehumidify_start_humidity:
+    name: 衣櫥除濕起始濕度
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+
+template:
+  - sensor:
+      # The wettest of the room's humidity sensors that are online. Max, not mean: mould
+      # grows at the dampest spot. Add a closet sensor to both lists when there is one.
+      - name: Bedroom humidity
+        unique_id: tainan_bedroom_humidity
+        unit_of_measurement: "%"
+        device_class: humidity
+        state_class: measurement
+        state: >
+          {{ ['sensor.dyson_hp09_humidity']
+             | map('states') | select('is_number') | map('float') | max }}
+        availability: >
+          {{ ['sensor.dyson_hp09_humidity']
+             | map('states') | select('is_number') | list | count > 0 }}
+      # Dyson first; the AC's indoor reading (whole degrees) when the Dyson is unplugged.
+      - name: Bedroom temperature
+        unique_id: tainan_bedroom_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {% set d = states('sensor.dyson_hp09_temperature') %}
+          {{ d | float if d | is_number else state_attr('climate.leng_qi_ji', 'current_temperature') }}
+        availability: >
+          {{ states('sensor.dyson_hp09_temperature') | is_number
+             or state_attr('climate.leng_qi_ji', 'current_temperature') is number }}
 
 # /api/prometheus for the NAS Alloy (job="homeassistant", site="tainan").
 # Only these entities are exported; everything else stays out of Prometheus.
@@ -13,10 +55,13 @@ prometheus:
   requires_auth: true
   filter:
     include_entities:
+      - sensor.bedroom_humidity
+      - sensor.bedroom_temperature
       - sensor.dyson_hp09_humidity
       - sensor.dyson_hp09_temperature
       - climate.leng_qi_ji
       - sensor.leng_qi_ji_shi_wai_wen_du   # AC outdoor unit; reads high in direct sun
       - input_boolean.closet_dehumidify
+      - input_boolean.closet_dehumidify_fault
     # Add a closet sensor here by name when there is one. No globs: any new integration's
     # *_humidity or *_temperature would otherwise start flowing to the Pi 5.
