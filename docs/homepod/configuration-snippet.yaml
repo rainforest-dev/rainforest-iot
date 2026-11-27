@@ -2,8 +2,33 @@ input_boolean:
   bedtime_reminder:
     name: 睡前提醒
     icon: mdi:book-open-page-variant
+  sleep_podcast_enabled:
+    name: Sleep Meditation Schedule
+    icon: mdi:meditation
+  wake_alarm_enabled:
+    name: Wake Alarm Schedule
+    icon: mdi:alarm
+  wake_alarm_weekdays_only:
+    name: Wake Alarm Weekdays Only
+    icon: mdi:calendar-week
 
 input_text:
   leave_reminder_announced:
     name: 該出門提醒已播
     max: 255
+
+input_datetime:
+  sleep_podcast_time:
+    name: Sleep Meditation Time
+    has_date: false
+    has_time: true
+  wake_alarm_time:
+    name: Wake Alarm Time
+    has_date: false
+    has_time: true
+
+rest_command:
+  sleep_podcast_feed:
+    url: "https://feed.firstory.me/rss/user/ckgk7ej6h3uud081394y4caub"
+    method: GET
+    timeout: 20

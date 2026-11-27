@@ -1,0 +1,23 @@
+entity_config:
+  script.sleep_podcast:
+    name: Sleep Meditation
+    aliases:
+      - 睡前冥想
+    expose: true
+    room: Bedroom
+  input_boolean.sleep_podcast_enabled:
+    name: Sleep Meditation Schedule
+    aliases:
+      - 睡前冥想排程
+    room: Bedroom
+  script.wake_alarm:
+    name: Wake Alarm
+    aliases:
+      - 起床鬧鐘
+    expose: true
+    room: Bedroom
+  input_boolean.wake_alarm_enabled:
+    name: Wake Alarm Schedule
+    aliases:
+      - 起床鬧鐘排程
+    room: Bedroom

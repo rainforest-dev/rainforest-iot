@@ -107,3 +107,33 @@
   action:
     - action: script.bedtime_reminder
   mode: single
+
+- id: sleep_podcast
+  alias: "Sleep Meditation at bedtime"
+  description: "Play a sleep meditation episode at input_datetime.sleep_podcast_time while input_boolean.sleep_podcast_enabled is on"
+  trigger:
+    - platform: time
+      at: input_datetime.sleep_podcast_time
+  condition:
+    - condition: state
+      entity_id: input_boolean.sleep_podcast_enabled
+      state: "on"
+  action:
+    - action: script.sleep_podcast
+  mode: single
+
+- id: wake_alarm
+  alias: "Wake Alarm in the morning"
+  description: "Start the fade-in morning music at input_datetime.wake_alarm_time while input_boolean.wake_alarm_enabled is on; weekdays only when input_boolean.wake_alarm_weekdays_only is on"
+  trigger:
+    - platform: time
+      at: input_datetime.wake_alarm_time
+  condition:
+    - condition: state
+      entity_id: input_boolean.wake_alarm_enabled
+      state: "on"
+    - condition: template
+      value_template: "{{ is_state('input_boolean.wake_alarm_weekdays_only', 'off') or now().isoweekday() <= 5 }}"
+  action:
+    - action: script.wake_alarm
+  mode: single
