@@ -14,6 +14,7 @@
 # The Tainan Pi 4 uses the same play with its own inventory; its host vars set
 # the hostname and turn MagicDNS off (see inventory-tainan.yml):
 #   ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tailscale.yml -e tailscale_hosts=tainan_pi
+# It joins with tag:tainan instead of tag:homelab.
 - name: Ensure Tailscale membership
   hosts: "{{ tailscale_hosts | default('raspberry_pi') }}"
   become: yes

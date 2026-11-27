@@ -12,5 +12,8 @@ all:
           # Tailscale (playbooks/tailscale.yml). The node name is the Pi's own hostname, so
           # the HA app can use http://raspberrypi-4:8123 from outside Tainan. MagicDNS stays
           # off: the Pi keeps the UCG's resolver, and a tailnet DNS change cannot break it.
+          # The node carries tag:tainan, not tag:homelab: the tailnet policy opens only tcp:8123
+          # on it, and keeps the Pi 5 rules (and the test that blocks 8123 there) separate.
+          # First join or re-auth: sudo tailscale up --advertise-tags=tag:tainan
           tailscale_hostname: raspberrypi-4
           tailscale_accept_dns: false
