@@ -9,3 +9,8 @@ all:
         rpi4-tainan:
           ansible_host: rpi4-tainan
           ansible_user: rainforest
+          # Tailscale (playbooks/tailscale.yml). The node name is the Pi's own hostname, so
+          # the HA app can use http://raspberrypi-4:8123 from outside Tainan. MagicDNS stays
+          # off: the Pi keeps the UCG's resolver, and a tailnet DNS change cannot break it.
+          tailscale_hostname: raspberrypi-4
+          tailscale_accept_dns: false
