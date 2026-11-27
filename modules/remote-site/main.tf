@@ -154,5 +154,10 @@ resource "docker_container" "alloy" {
   lifecycle {
     # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
     ignore_changes = [memory_swap]
+
+    precondition {
+      condition     = var.homeassistant_target == "" || var.homeassistant_token != ""
+      error_message = "homeassistant_target is set but homeassistant_token is empty; HA would answer 401."
+    }
   }
 }

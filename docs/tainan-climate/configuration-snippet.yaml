@@ -16,10 +16,7 @@ prometheus:
       - sensor.dyson_hp09_humidity
       - sensor.dyson_hp09_temperature
       - climate.leng_qi_ji
+      - sensor.leng_qi_ji_shi_wai_wen_du   # AC outdoor unit; reads high in direct sun
       - input_boolean.closet_dehumidify
-    include_entity_globs:
-      - sensor.*_humidity
-      - sensor.*_temperature
-    exclude_entities:
-      # The LG dehumidifier on the ThinQ account is not in this house.
-      - sensor.dehumidifier_humidity
+    # Add a closet sensor here by name when there is one. No globs: any new integration's
+    # *_humidity or *_temperature would otherwise start flowing to the Pi 5.

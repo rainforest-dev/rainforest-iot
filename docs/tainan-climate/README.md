@@ -43,7 +43,7 @@ off the wall, desiccant) before a dehumidifier is worth buying.
 
 ## History in Grafana
 
-HA's `prometheus` integration exports only the entities in `configuration-snippet.yaml`. The
+HA's `prometheus` integration exports only the entities listed by name in `configuration-snippet.yaml`; add a closet sensor there when there is one. The
 NAS Alloy scrapes `/api/prometheus` as `job="homeassistant"` and remote-writes it to the Pi 5
 with `site="tainan"`. Metric names start with `hass_`, for example:
 
