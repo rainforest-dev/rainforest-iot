@@ -206,6 +206,16 @@
       entity_id: input_boolean.closet_dehumidify_fault
       to: "on"
       for: { hours: 24 }
+    # HA drops the timer above on a restart or reload.
+    - trigger: time_pattern
+      minutes: /30
+  conditions:
+    - condition: state
+      entity_id: input_boolean.closet_dehumidify_fault
+      state: "on"
+    - condition: template
+      value_template: >
+        {{ now() - states.input_boolean.closet_dehumidify_fault.last_changed >= timedelta(hours=24) }}
   actions:
     - action: input_boolean.turn_off
       target: { entity_id: input_boolean.closet_dehumidify_fault }
