@@ -15,5 +15,6 @@ all:
           # The node carries tag:tainan, not tag:homelab: the tailnet policy opens only tcp:8123
           # on it, and keeps the Pi 5 rules (and the test that blocks 8123 there) separate.
           # First join or re-auth: sudo tailscale up --advertise-tags=tag:tainan
+          tailscale_tag: tag:tainan
           tailscale_hostname: raspberrypi-4
           tailscale_accept_dns: false
