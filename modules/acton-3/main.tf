@@ -13,11 +13,11 @@ resource "docker_volume" "shairport_sync_configuration" {
 }
 
 resource "docker_image" "alpine" {
-  name = "alpine:latest"
+  name = "alpine:3.24"
 }
 
 resource "docker_image" "shairport-sync" {
-  name = "mikebrady/shairport-sync:latest"
+  name = "mikebrady/shairport-sync:${var.shairport_version}"
 }
 
 resource "docker_container" "add-configuration" {
