@@ -68,6 +68,9 @@ ansible-playbook playbooks/validate-setup.yml --check
 - Configures memory cgroups  
 - Sets up kubectl access
 - Pins the bundled Traefik image through `files/traefik-helmchartconfig.yaml` (a k3s `HelmChartConfig`); edit `tag` there to move it. The `k3s_version` bump is the supported way to move the chart itself
+  - Verify after applying: `kubectl -n kube-system get helmchart traefik`, then the `helm-install-traefik` job logs for a schema error on `image.registry` (if present, drop the `registry:` line), then the `traefik` Deployment image and Ready state
+  - Roll back: delete `/var/lib/rancher/k3s/server/manifests/traefik-config.yaml` on the server and let k3s reconcile to the packaged image, or set `tag` back to `3.3.6`
+  - Follow-up: bump `k3s_version` so the chart and CRDs match the image, then drop or raise the pin
 - **Alternative to**: Manual K3s installation
 
 ### 🔒 system-hardening.yml  
