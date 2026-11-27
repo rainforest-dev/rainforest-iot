@@ -25,12 +25,24 @@ temperature or humidity sensors anyway.
 
 ## Automations (`automations.yaml`)
 
+They read `sensor.bedroom_humidity`, the highest humidity among the room's sensors that are
+online (only the Dyson today; add a closet sensor to its two lists), and
+`sensor.bedroom_temperature` (Dyson, else the AC's indoor reading). Alerts go to
+`notify.mobile_app_rainforests_iphone`.
+
 - `closet_dehumidify_start`: humidity above 65% for 15 minutes (re-checked every 30 minutes),
-  room above 20 °C, AC off, and at least an hour since the last run. Sets dry mode, 26 °C, and
-  turns 乾燥防霉 on while the AC is on.
-- `closet_dehumidify_stop`: below 55% for 10 minutes, or after 3 hours, re-checked every 10
-  minutes so a restart mid-run cannot leave the AC on. Turns the AC off only if it is still in
-  dry mode.
+  room above 20 °C, AC off, no fault, and at least an hour since the last run. Records the
+  starting humidity, sets dry mode at 26 °C, and turns 乾燥防霉 on while the AC is on.
+- `closet_dehumidify_fallback`: no room humidity for 2 h (Dyson unplugged) and outdoor humidity
+  above 80% (`weather.forecast_home`): one dry run at 14:00, recorded with start humidity 0.
+- `closet_dehumidify_stop`: below 55% for 10 minutes, 2 h for a fallback run, or 3 h; re-checked
+  every 10 minutes so a restart mid-run cannot leave the AC on. Turns the AC off only if it is
+  still in dry mode, and alerts when a normal run hits 3 h above 55%.
+- `closet_dehumidify_no_progress`: an hour in, humidity has not dropped 5 points from the start.
+  Turns the AC off, sets `input_boolean.closet_dehumidify_fault` (衣櫥除濕故障), and alerts.
+  No run starts while the fault is on; turn it off in HA after checking the room.
+- `closet_dehumidify_fault_reset`: clears a fault left on for 24 h.
+- `closet_dehumidify_sensor_offline`: alerts when the room has had no humidity reading for 2 h.
 - `closet_dehumidify_handover`: if anyone switches the AC out of dry mode, the automation lets
   go and will not turn it off later.
 
