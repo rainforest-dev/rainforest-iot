@@ -67,6 +67,7 @@ ansible-playbook playbooks/validate-setup.yml --check
 - Installs K3s on Raspberry Pi 5
 - Configures memory cgroups  
 - Sets up kubectl access
+- Pins the bundled Traefik image through `files/traefik-helmchartconfig.yaml` (a k3s `HelmChartConfig`); edit `tag` there to move it. The `k3s_version` bump is the supported way to move the chart itself
 - **Alternative to**: Manual K3s installation
 
 ### 🔒 system-hardening.yml  

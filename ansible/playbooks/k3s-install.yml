@@ -151,6 +151,15 @@
       delay: 10
       changed_when: false
 
+    # k3s only reads HelmChartConfig from its server manifests directory.
+    - name: Pin the bundled Traefik image
+      copy:
+        src: "../files/traefik-helmchartconfig.yaml"
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+        owner: root
+        group: root
+        mode: '0600'
+
     - name: Check current API cert SANs for .local entry
       shell: |
         set -o pipefail
