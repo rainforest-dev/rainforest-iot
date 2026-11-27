@@ -29,6 +29,7 @@ flowchart LR
     end
     RPI[Raspberry Pi 4]
     AL -->|node_exporter :9100| RPI
+    AL -->|HA /api/prometheus :8123| RPI
     UCG -->|UniFi API| UP
     AL -->|SNMP| AP1
     AL -->|ICMP| AP2
@@ -152,7 +153,8 @@ terraform apply
 
 On the Pi Prometheus (`http://<pi-tailnet-ip>:30090`):
 
-- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`, `site-node`).
+- `up{site="tainan"}`: every job is 1 (`isp_icmp`, `lan_icmp`, `snmp`, `unpoller`, `speedtest`, `site-node`,
+  and `homeassistant` once section 8 is done).
 - `raidStatus{site="tainan"}` and `diskTemperature{site="tainan"}` return the NAS volumes and disks.
 - `probe_success{site="tainan", job="isp_icmp"}` is 1 for all three ISP targets.
 
@@ -221,5 +223,31 @@ ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tainan-node-e
 Add the Pi to `lan_ping_targets` and `node_targets` in `sites/tainan/terraform.tfvars`, then apply
 `sites/tainan` (this recreates the Alloy container) and the main root (Fleet entry and the
 `RemoteSiteHostDown` alert).
+
+### Home Assistant metrics
+
+Alloy scrapes room temperature and humidity from Home Assistant's `/api/prometheus`. The Pi Prometheus
+keeps them for its usual retention; Home Assistant's own long-term statistics hold the history.
+
+Export only the climate readings. Add to `/config/configuration.yaml` in the `homeassistant` container,
+then restart Home Assistant:
+
+```yaml
+prometheus:
+  filter:
+    include_entity_globs:
+      - sensor.*_humidity
+      - sensor.*_temperature
+    include_entities:
+      - climate.<air-conditioner>
+    exclude_entities:
+      - sensor.<cloud-device-in-another-home>
+```
+
+Exclude any sensor a cloud integration pulls in from another home. Create a long-lived access token
+(Home Assistant profile, Security tab) and set `homeassistant_target` and `homeassistant_token` in
+`sites/tainan/terraform.tfvars`, then apply `sites/tainan`.
+
+Check on the Pi Prometheus: `{site="tainan", job="homeassistant", __name__=~".*sensor_humidity_percent"}`.
 
 The Pi's containers are in `sites/tainan-rpi4`; see `docs/tainan-rpi4-upgrade.md` for adoption and upgrades.

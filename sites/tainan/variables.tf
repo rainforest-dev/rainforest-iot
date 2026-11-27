@@ -81,3 +81,16 @@ variable "node_targets" {
   type        = map(string)
   default     = {}
 }
+
+variable "homeassistant_target" {
+  description = "Pi 4 Home Assistant as host:port, e.g. <rpi4-iot-ip>:8123; empty skips the scrape"
+  type        = string
+  default     = ""
+}
+
+variable "homeassistant_token" {
+  description = "Long-lived access token from the Home Assistant profile page"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

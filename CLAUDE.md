@@ -151,6 +151,7 @@ Edit `terraform.tfvars` for all deployments:
 | Loki | 30100 | Log aggregation (internal) |
 | Tempo (OTLP/HTTP) | 30418 | Trace ingest from Alloy on the Mac (LAN, unauthenticated) |
 | node_exporter (Tainan Pi 4) | 9100 | Scraped by Alloy on the NAS; IoT VLAN address, unauthenticated |
+| Home Assistant (Tainan Pi 4) | 8123 | `/api/prometheus` scraped by Alloy on the NAS with a long-lived token |
 
 ## Development Workflow
 
