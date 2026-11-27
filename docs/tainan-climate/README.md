@@ -5,7 +5,7 @@ in that room, so the Panasonic AC (`climate.leng_qi_ji`, CS-QX50FA2, `panasonic_
 does the drying, driven by the Dyson HP09's humidity sensor.
 
 ```
-sensor.dyson_hp09_humidity > 65% → AC dry mode at 26 °C → < 55% or 3 h → AC off → 乾燥防霉 dries the coil
+sensor.dyson_hp09_humidity > 65% → AC dry mode 2 °C under the room (min 22 °C) → < 55% or 3 h → AC off → 乾燥防霉 dries the coil
 ```
 
 HA's config lives in the `homeassistant_configuration` volume on the Pi 4, edited by hand, so
@@ -32,7 +32,8 @@ online (only the Dyson today; add a closet sensor to its two lists), and
 
 - `closet_dehumidify_start`: humidity above 65% for 15 minutes (re-checked every 30 minutes),
   room above 20 °C, AC off, no fault, and at least an hour since the last run. Records the
-  starting humidity, sets dry mode at 26 °C, and turns 乾燥防霉 on while the AC is on.
+  starting humidity, sets dry mode 2 °C under the room temperature (at least 22 °C; at the room's own temperature the
+  compressor idles and humidity climbs back), and turns 乾燥防霉 on while the AC is on.
 - `closet_dehumidify_fallback`: no room humidity for 2 h (Dyson unplugged) and outdoor humidity
   above 80% (`weather.forecast_home`): one dry run at 14:00, recorded with start humidity 0.
 - `closet_dehumidify_stop`: below 55% for 10 minutes, 2 h for a fallback run, or 3 h; re-checked
