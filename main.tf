@@ -67,7 +67,7 @@ module "music_assistant" {
   memory_limit         = var.music_assistant_memory
   timezone             = var.timezone
   log_opts             = local.common_log_opts
-  base_url             = "https://music-assistant.rainforest.tools"
+  base_url             = "http://${var.raspberry_pi_ip}:8095"
   ssh_user             = var.raspberry_pi_user
   ssh_port             = var.raspberry_pi_port
   ssh_private_key_path = "~/.ssh/id_ed25519.rpi5"
