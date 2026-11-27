@@ -60,10 +60,17 @@
       entity_id: input_boolean.closet_dehumidify
       to: "on"
       for: { hours: 3 }
+    # HA drops the two timers above on a restart or reload, so re-check every 10 minutes.
+    - trigger: time_pattern
+      minutes: /10
   conditions:
     - condition: state
       entity_id: input_boolean.closet_dehumidify
       state: "on"
+    - condition: template
+      value_template: >
+        {{ states('sensor.dyson_hp09_humidity') | float(100) < 55
+           or now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=3) }}
   actions:
     - if:
         - condition: state

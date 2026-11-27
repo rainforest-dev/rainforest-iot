@@ -89,7 +89,7 @@ variable "homeassistant_target" {
 }
 
 variable "homeassistant_token" {
-  description = "Long-lived token of a non-admin HA user, used only for /api/prometheus"
+  description = "Long-lived token of a non-admin HA user for /api/prometheus (it can also read states and call services)"
   type        = string
   default     = ""
   sensitive   = true
