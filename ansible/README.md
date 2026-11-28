@@ -68,6 +68,8 @@ ansible-playbook playbooks/validate-setup.yml --check
 - Configures memory cgroups  
 - Sets up kubectl access
 - **Alternative to**: Manual K3s installation
+- Installs only when k3s is missing; upgrading an existing node is manual, see
+  [k3s upgrade plan](../docs/k3s-upgrade.md)
 
 ### 🔒 system-hardening.yml  
 - SSH security configuration

@@ -4,7 +4,7 @@
   hosts: raspberry_pi
   become: yes
   vars:
-    k3s_version: "v1.33.3+k3s1"
+    k3s_version: "v1.34.13+k3s1"
     k3s_node_name: "{{ inventory_hostname }}"
     k3s_tls_sans:
       - "{{ inventory_hostname }}.local"
