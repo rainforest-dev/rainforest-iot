@@ -223,3 +223,37 @@ Add the Pi to `lan_ping_targets` and `node_targets` in `sites/tainan/terraform.t
 `RemoteSiteHostDown` alert).
 
 The Pi's containers are in `sites/tainan-rpi4`; see `docs/tainan-rpi4-upgrade.md` for adoption and upgrades.
+
+### Tailscale
+
+The Pi is on the tailnet as `raspberrypi-4` with `tag:tainan`, so the Home Assistant app can reach it from
+outside Tainan at `http://raspberrypi-4.<tailnet>.ts.net:8123`. It is kept apart from `tag:homelab` because
+the tailnet policy has a test that blocks tcp:8123 on the Pi 5; a grant opens tcp:8123 on `tag:tainan` only.
+The playbook holds no auth key, so join the Pi by hand with `sudo tailscale up --advertise-tags=tag:tainan`,
+then converge its preferences with
+`ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tailscale.yml -e tailscale_hosts=tainan_pi`
+(host vars in `inventory-tainan.yml`).
+MagicDNS and route acceptance stay off, so the table 107 rule above is not affected.
+
+### Wi-Fi isolation on the IoT SSID
+
+Home Assistant talks to some devices over the LAN directly, for example the Dyson fan on MQTT (tcp:1883).
+The Pi and those devices are all Wi-Fi clients of the Nebula APs, so client isolation on the IoT SSID
+breaks it:
+
+- Intra-BSS traffic blocking must stay off. With it on, the Pi gets no ARP reply from the fan, while the
+  UCG can still reach it.
+- Layer 2 isolation must stay off too. Its MAC allow list names the destinations clients may reach, so
+  listing the Pi lets devices reach the Pi but not the Pi reach them; every device Home Assistant drives
+  would have to be listed, which removes the isolation anyway.
+
+Separation from the Default and Work networks comes from the VLAN and the UniFi policies, not from the
+SSID. Isolating IoT clients from each other needs the Pi on a wired port in the IoT VLAN.
+
+Give LAN-controlled devices a fixed IP in UniFi; the Dyson integration stores the address.
+
+### Desktop services
+
+The Pi runs Raspberry Pi OS with a desktop. `rpi-connect-wayvnc` (a user unit) crash-looped every five
+seconds with no display attached and is disabled; `rpi-connect` itself is left running.
+
