@@ -20,7 +20,24 @@ input_number:
     unit_of_measurement: "%"
     mode: box
 
+input_datetime:
+  # Run start and end times. Kept here, not read from the marker's last_changed, because HA
+  # resets last_changed on every restart.
+  closet_dehumidify_last_start:
+    name: 衣櫥除濕上次開始
+    has_date: true
+    has_time: true
+  closet_dehumidify_last_end:
+    name: 衣櫥除濕上次結束
+    has_date: true
+    has_time: true
+
 template:
+  - binary_sensor:
+      - name: Bedroom humid
+        unique_id: tainan_bedroom_humid
+        state: "{{ states('sensor.bedroom_humidity') | float(0) > 70 }}"
+        availability: "{{ states('sensor.bedroom_humidity') | is_number }}"
   - sensor:
       # The wettest of the room's humidity sensors that are online. Max, not mean: mould
       # grows at the dampest spot. Add a closet sensor to both lists when there is one.
@@ -48,6 +65,26 @@ template:
           {{ states('sensor.dyson_hp09_temperature') | is_number
              or state_attr('climate.leng_qi_ji', 'current_temperature') is number }}
 
+sensor:
+  # Share of the last hour spent above 70%. history_stats counts the state held at the
+  # window start, so a reading that has not changed for an hour still counts.
+  - platform: history_stats
+    name: Bedroom humid last hour
+    unique_id: tainan_bedroom_humid_last_hour
+    entity_id: binary_sensor.bedroom_humid
+    state: "on"
+    type: ratio
+    start: "{{ now() - timedelta(hours=1) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Closet dehumidify runs today
+    unique_id: tainan_closet_dehumidify_runs_today
+    entity_id: input_boolean.closet_dehumidify
+    state: "on"
+    type: count
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+
 # /api/prometheus for the NAS Alloy (job="homeassistant", site="tainan").
 # Only these entities are exported; everything else stays out of Prometheus.
 prometheus:
@@ -57,6 +94,8 @@ prometheus:
     include_entities:
       - sensor.bedroom_humidity
       - sensor.bedroom_temperature
+      - sensor.bedroom_humid_last_hour
+      - sensor.closet_dehumidify_runs_today
       - sensor.dyson_hp09_humidity
       - sensor.dyson_hp09_temperature
       - climate.leng_qi_ji
