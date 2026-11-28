@@ -4,6 +4,13 @@ The Pi 4 at the Tainan site is managed by hand. `sites/tainan-rpi4` brings its r
 Terraform without changing them, and the upgrades follow as separate commits. Access and routing are in
 `docs/tainan-site-setup.md`, section 8.
 
+## Status
+
+Done on 2026-11-26 and 2026-11-27: the Pi rebooted cleanly with the table 107 routing intact, the OS has
+no pending upgrades, and `sites/tainan-rpi4` runs Home Assistant 2026.11.3, shairport-sync 5.6.3 and
+OpenSpeedTest v2.0.9. The custom integrations are updated from Home Assistant (HACS is the built-in
+Marketplace since 2026.11). The sections below are the plan as written.
+
 ## Current state
 
 Inventory taken on 2026-11-01, read-only.
