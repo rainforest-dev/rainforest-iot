@@ -20,6 +20,8 @@
     - condition: numeric_state
       entity_id: sensor.bedroom_humid_last_hour
       above: 99
+    - condition: template
+      value_template: "{{ states('sensor.bedroom_humidity') | is_number }}"
     # Dry mode also cools; below 20 °C it would make the room cold for little gain.
     - condition: numeric_state
       entity_id: sensor.bedroom_temperature
