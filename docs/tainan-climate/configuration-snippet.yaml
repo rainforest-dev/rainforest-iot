@@ -20,7 +20,24 @@ input_number:
     unit_of_measurement: "%"
     mode: box
 
+input_datetime:
+  # Run start and end times. Kept here, not read from the marker's last_changed, because HA
+  # resets last_changed on every restart.
+  closet_dehumidify_last_start:
+    name: 衣櫥除濕上次開始
+    has_date: true
+    has_time: true
+  closet_dehumidify_last_end:
+    name: 衣櫥除濕上次結束
+    has_date: true
+    has_time: true
+
 template:
+  - binary_sensor:
+      - name: Bedroom humid
+        unique_id: tainan_bedroom_humid
+        state: "{{ states('sensor.bedroom_humidity') | float(0) > 70 }}"
+        availability: "{{ states('sensor.bedroom_humidity') | is_number }}"
   - sensor:
       # The wettest of the room's humidity sensors that are online. Max, not mean: mould
       # grows at the dampest spot. Add a closet sensor to both lists when there is one.
@@ -49,15 +66,16 @@ template:
              or state_attr('climate.leng_qi_ji', 'current_temperature') is number }}
 
 sensor:
-  # Lowest reading of the last hour: a run starts only after the room has stayed humid,
-  # not on a short spike.
-  - platform: statistics
-    name: Bedroom humidity 1h min
-    unique_id: tainan_bedroom_humidity_1h_min
-    entity_id: sensor.bedroom_humidity
-    state_characteristic: value_min
-    max_age: { hours: 1 }
-    sampling_size: 500
+  # Share of the last hour spent above 70%. history_stats counts the state held at the
+  # window start, so a reading that has not changed for an hour still counts.
+  - platform: history_stats
+    name: Bedroom humid last hour
+    unique_id: tainan_bedroom_humid_last_hour
+    entity_id: binary_sensor.bedroom_humid
+    state: "on"
+    type: ratio
+    start: "{{ now() - timedelta(hours=1) }}"
+    end: "{{ now() }}"
   - platform: history_stats
     name: Closet dehumidify runs today
     unique_id: tainan_closet_dehumidify_runs_today
@@ -76,7 +94,7 @@ prometheus:
     include_entities:
       - sensor.bedroom_humidity
       - sensor.bedroom_temperature
-      - sensor.bedroom_humidity_1h_min
+      - sensor.bedroom_humid_last_hour
       - sensor.closet_dehumidify_runs_today
       - sensor.dyson_hp09_humidity
       - sensor.dyson_hp09_temperature

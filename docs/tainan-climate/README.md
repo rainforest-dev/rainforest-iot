@@ -31,10 +31,13 @@ online (only the Dyson today; add a closet sensor to its two lists), and
 `sensor.bedroom_temperature` (Dyson, else the AC's indoor reading). Alerts go to
 `notify.mobile_app_YOUR_PHONE`.
 
-- `closet_dehumidify_start`: lowest humidity of the last hour above 70%
-  (`sensor.bedroom_humidity_1h_min`, re-checked every 30 minutes), room above 20 °C, AC off, no
+- `closet_dehumidify_start`: humidity above 70% for the whole last hour
+  (`sensor.bedroom_humid_last_hour`, a history_stats ratio of `binary_sensor.bedroom_humid`,
+  re-checked every 30 minutes), room above 20 °C, AC off, no
   fault, fewer than 2 runs today (`sensor.closet_dehumidify_runs_today`), and at least 6 hours
-  since the last run. Records the
+  since the last run ended (`input_datetime.closet_dehumidify_last_end`; run length and the
+  rest are timed from these input_datetimes, not from the marker, because a restart resets
+  `last_changed`). Records the
   starting humidity, sets dry mode 2 °C under the room temperature (at least 22 °C; at the room's own temperature the
   compressor idles and humidity climbs back), and turns 乾燥防霉 on while the AC is on.
 - `closet_dehumidify_fallback`: no room humidity for 2 h (Dyson unplugged) and outdoor humidity
