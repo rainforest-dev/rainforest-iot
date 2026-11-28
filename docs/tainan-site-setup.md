@@ -229,7 +229,10 @@ The Pi's containers are in `sites/tainan-rpi4`; see `docs/tainan-rpi4-upgrade.md
 The Pi is on the tailnet as `raspberrypi-4` with `tag:tainan`, so the Home Assistant app can reach it from
 outside Tainan at `http://raspberrypi-4.<tailnet>.ts.net:8123`. It is kept apart from `tag:homelab` because
 the tailnet policy has a test that blocks tcp:8123 on the Pi 5; a grant opens tcp:8123 on `tag:tainan` only.
-Join and re-converge with `ansible/playbooks/tailscale.yml` (see the host vars in `inventory-tainan.yml`).
+The playbook holds no auth key, so join the Pi by hand with `sudo tailscale up --advertise-tags=tag:tainan`,
+then converge its preferences with
+`ansible-playbook -i ansible/inventory-tainan.yml ansible/playbooks/tailscale.yml -e tailscale_hosts=tainan_pi`
+(host vars in `inventory-tainan.yml`).
 MagicDNS and route acceptance stay off, so the table 107 rule above is not affected.
 
 ### Wi-Fi isolation on the IoT SSID
