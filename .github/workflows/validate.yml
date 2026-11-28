@@ -45,6 +45,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install ansible-core==2.21.4 yamllint==1.38.0
+      - run: ansible-galaxy collection install community.docker:==5.3.0
       - name: Syntax-check every playbook
         working-directory: ansible
         run: |
