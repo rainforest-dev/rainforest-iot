@@ -5,7 +5,8 @@ in that room, so the Panasonic AC (`climate.leng_qi_ji`, CS-QX50FA2, `panasonic_
 does the drying, driven by the Dyson HP09's humidity sensor.
 
 ```
-sensor.dyson_hp09_humidity > 65% → AC dry mode 2 °C under the room (min 22 °C) → < 55% or 3 h → AC off → 乾燥防霉 dries the coil
+room > 70% for 1 h → AC dry mode 2 °C under the room (min 22 °C) → ≥ 1 h and < 55%, or 3 h → AC off → 乾燥防霉 dries the coil
+at most 2 runs a day, 6 h apart
 ```
 
 HA's config lives in the `homeassistant_configuration` volume on the Pi 4, edited by hand, so
@@ -30,13 +31,19 @@ online (only the Dyson today; add a closet sensor to its two lists), and
 `sensor.bedroom_temperature` (Dyson, else the AC's indoor reading). Alerts go to
 `notify.mobile_app_YOUR_PHONE`.
 
-- `closet_dehumidify_start`: humidity above 65% for 15 minutes (re-checked every 30 minutes),
-  room above 20 °C, AC off, no fault, and at least an hour since the last run. Records the
+- `closet_dehumidify_start`: `binary_sensor.bedroom_humid` on (room above 70% for an hour,
+  re-checked every 30 minutes), room above 20 °C, AC off, no fault, fewer than 2 runs today
+  (`counter.closet_dehumidify_runs_today`) and at least 6 h since the last run. Records the
   starting humidity, sets dry mode 2 °C under the room temperature (at least 22 °C; at the room's own temperature the
   compressor idles and humidity climbs back), and turns 乾燥防霉 on while the AC is on.
+  Until 2026-11-28 it started at 65% after 15 minutes with an hour's rest: each run dried the
+  air in 10 minutes and the room was back at 65% two hours later, so the AC cycled all night.
+  Mould needs surfaces damp for long stretches, and an AC uses the most power just after it
+  starts, so fewer, longer runs are better.
 - `closet_dehumidify_fallback`: no room humidity for 2 h (Dyson unplugged) and outdoor humidity
   above 80% (`weather.forecast_home`): one dry run at 14:00, recorded with start humidity 0.
-- `closet_dehumidify_stop`: below 55% for 10 minutes, 2 h for a fallback run, or 3 h; re-checked
+- `closet_dehumidify_stop`: below 55% for 10 minutes once the run has lasted an hour (so the
+  walls and clothes dry, not just the air), 2 h for a fallback run, or 3 h; re-checked
   every 10 minutes so a restart mid-run cannot leave the AC on. Turns the AC off only if it is
   still in dry mode, and alerts when a normal run hits 3 h above 55%.
 - `closet_dehumidify_no_progress`: an hour in, humidity has not dropped 5 points from the start.
@@ -44,6 +51,8 @@ online (only the Dyson today; add a closet sensor to its two lists), and
   No run starts while the fault is on; turn it off in HA after checking the room.
 - `closet_dehumidify_fault_reset`: clears a fault left on for 24 h.
 - `closet_dehumidify_sensor_offline`: alerts when the room has had no humidity reading for 2 h.
+- `closet_dehumidify_daily_reset`: zeroes the runs-today counter at midnight. Fallback runs
+  count too.
 - `closet_dehumidify_handover`: if anyone switches the AC out of dry mode, the automation lets
   go and will not turn it off later.
 

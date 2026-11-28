@@ -7,20 +7,19 @@
 
 - id: closet_dehumidify_start
   alias: 衣櫥除濕 開始
-  description: Room humidity above 65% starts the AC in dry mode, unless someone is using the AC.
+  description: Room above 70% for an hour starts the AC in dry mode, at most twice a day, unless someone is using the AC.
   mode: single
   triggers:
-    - trigger: numeric_state
-      entity_id: sensor.bedroom_humidity
-      above: 65
-      for: { minutes: 15 }
-    # Re-check every 30 minutes, so a run that hit the 3 h cap starts again after the cooldown.
+    - trigger: state
+      entity_id: binary_sensor.bedroom_humid
+      to: "on"
+    # Re-check every 30 minutes, so a room that stays humid starts again after the rest.
     - trigger: time_pattern
       minutes: /30
   conditions:
-    - condition: numeric_state
-      entity_id: sensor.bedroom_humidity
-      above: 65
+    - condition: state
+      entity_id: binary_sensor.bedroom_humid
+      state: "on"
     # Dry mode also cools; below 20 °C it would make the room cold for little gain.
     - condition: numeric_state
       entity_id: sensor.bedroom_temperature
@@ -34,11 +33,16 @@
     - condition: state
       entity_id: input_boolean.closet_dehumidify_fault
       state: "off"
-    # One hour of rest after each run.
+    # Two runs a day, six hours apart: longer runs dry the walls and clothes, not just the air.
+    - condition: numeric_state
+      entity_id: counter.closet_dehumidify_runs_today
+      below: 2
     - condition: template
       value_template: >
-        {{ now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=1) }}
+        {{ now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=6) }}
   actions:
+    - action: counter.increment
+      target: { entity_id: counter.closet_dehumidify_runs_today }
     - action: input_number.set_value
       target: { entity_id: input_number.closet_dehumidify_start_humidity }
       data: { value: "{{ states('sensor.bedroom_humidity') | float | round(0) }}" }
@@ -89,6 +93,8 @@
       entity_id: input_boolean.closet_dehumidify_fault
       state: "off"
   actions:
+    - action: counter.increment
+      target: { entity_id: counter.closet_dehumidify_runs_today }
     # 0 tells the stop automation this run has no humidity to judge it by: it ends at 2 h.
     - action: input_number.set_value
       target: { entity_id: input_number.closet_dehumidify_start_humidity }
@@ -112,7 +118,7 @@
 
 - id: closet_dehumidify_stop
   alias: 衣櫥除濕 結束
-  description: Ends a run this automation started, below 55%, after 2 h (fallback) or 3 h.
+  description: Ends a run this automation started, below 55% after at least 1 h, after 2 h (fallback) or 3 h.
   mode: single
   triggers:
     - trigger: numeric_state
@@ -139,7 +145,8 @@
         ran_min: >
           {{ ((now() - states.input_boolean.closet_dehumidify.last_changed).total_seconds() / 60) | round(0) }}
         fallback: "{{ states('input_number.closet_dehumidify_start_humidity') | float(0) == 0 }}"
-        dry_enough: "{{ states('sensor.bedroom_humidity') | float(100) < 55 }}"
+        # At least an hour even when the air is dry sooner: the walls and clothes are not.
+        dry_enough: "{{ states('sensor.bedroom_humidity') | float(100) < 55 and ran_min >= 60 }}"
         capped: "{{ ran_min >= 180 or (fallback and ran_min >= 120) }}"
     - condition: template
       value_template: "{{ dry_enough or capped }}"
@@ -262,3 +269,14 @@
   actions:
     - action: input_boolean.turn_off
       target: { entity_id: input_boolean.closet_dehumidify }
+
+- id: closet_dehumidify_daily_reset
+  alias: 衣櫥除濕 每日歸零
+  description: Zero the runs-today counter at midnight.
+  mode: single
+  triggers:
+    - trigger: time
+      at: "00:00:00"
+  actions:
+    - action: counter.reset
+      target: { entity_id: counter.closet_dehumidify_runs_today }

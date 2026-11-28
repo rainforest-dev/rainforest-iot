@@ -10,6 +10,13 @@ input_boolean:
     name: 衣櫥除濕故障
     icon: mdi:alert-circle
 
+counter:
+  # Runs started today; the closet_dehumidify_daily_reset automation zeroes it at midnight.
+  closet_dehumidify_runs_today:
+    name: 衣櫥除濕今日次數
+    icon: mdi:counter
+    step: 1
+
 input_number:
   # Humidity when the current run started; 0 marks a fallback run with no room reading.
   closet_dehumidify_start_humidity:
@@ -47,6 +54,14 @@ template:
         availability: >
           {{ states('sensor.dyson_hp09_temperature') | is_number
              or state_attr('climate.leng_qi_ji', 'current_temperature') is number }}
+  - binary_sensor:
+      # On once the room has stayed above 70% for an hour. A short rise is harmless: mould
+      # needs surfaces damp for long stretches, and each start costs the AC the most power.
+      - name: Bedroom humid
+        unique_id: tainan_bedroom_humid
+        device_class: moisture
+        state: "{{ states('sensor.bedroom_humidity') | float(0) > 70 }}"
+        delay_on: { hours: 1 }
 
 # /api/prometheus for the NAS Alloy (job="homeassistant", site="tainan").
 # Only these entities are exported; everything else stays out of Prometheus.
@@ -63,5 +78,7 @@ prometheus:
       - sensor.leng_qi_ji_shi_wai_wen_du   # AC outdoor unit; reads high in direct sun
       - input_boolean.closet_dehumidify
       - input_boolean.closet_dehumidify_fault
+      - binary_sensor.bedroom_humid
+      - counter.closet_dehumidify_runs_today
     # Add a closet sensor here by name when there is one. No globs: any new integration's
     # *_humidity or *_temperature would otherwise start flowing to the Pi 5.
