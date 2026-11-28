@@ -125,7 +125,6 @@
         restart: true
       listen: "restart homebridge"
 
----
 # Separate play to configure target machines for WoL
 - name: Configure Target Machines for Wake-on-LAN
   hosts: target_machines
