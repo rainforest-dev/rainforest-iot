@@ -57,6 +57,9 @@ sensor:
     entity_id: sensor.bedroom_humidity
     state_characteristic: value_min
     max_age: { hours: 1 }
+    # HA records a reading only when it changes, so a room stuck at 72% for an hour would
+    # leave no samples and the sensor unknown, blocking the start exactly when it is needed.
+    keep_last_sample: true
     sampling_size: 500
   - platform: history_stats
     name: Closet dehumidify runs today
