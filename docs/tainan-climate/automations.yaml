@@ -20,6 +20,9 @@
     - condition: numeric_state
       entity_id: sensor.bedroom_humidity_1h_min
       above: 70
+    # The 1h min keeps the Dyson's last value while it is offline; never start on stale data.
+    - condition: template
+      value_template: "{{ states('sensor.bedroom_humidity') | is_number }}"
     # Dry mode also cools; below 20 °C it would make the room cold for little gain.
     - condition: numeric_state
       entity_id: sensor.bedroom_temperature
