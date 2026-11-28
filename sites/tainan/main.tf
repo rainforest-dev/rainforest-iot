@@ -41,7 +41,4 @@ module "site" {
 
   lan_ping_targets = var.lan_ping_targets
   node_targets     = var.node_targets
-
-  homeassistant_target = var.homeassistant_target
-  homeassistant_token  = var.homeassistant_token
 }

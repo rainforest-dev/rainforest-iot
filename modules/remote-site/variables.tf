@@ -91,19 +91,6 @@ variable "node_targets" {
   default     = {}
 }
 
-variable "homeassistant_target" {
-  description = "Home Assistant host:port to scrape at /api/prometheus; empty disables the job"
-  type        = string
-  default     = ""
-}
-
-variable "homeassistant_token" {
-  description = "Home Assistant long-lived access token for the scrape"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "alloy_version" {
   type    = string
   default = "v1.8.2"

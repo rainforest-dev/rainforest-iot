@@ -5,7 +5,6 @@ locals {
     lan_ping_targets = var.lan_ping_targets
     node_targets     = var.node_targets
     snmp_targets     = var.snmp_targets
-    ha_target        = var.homeassistant_target
   })
 
   unifi_auth_env = var.unifi_api_key != "" ? [
@@ -109,7 +108,6 @@ resource "docker_container" "alloy" {
     "SNMP_V3_AUTH_PASSWORD=${var.snmp_v3.auth_password}",
     "SNMP_V3_PRIV_PASSWORD=${var.snmp_v3.priv_password}",
     "SNMP_COMMUNITY=${var.snmp_community}",
-    "HOMEASSISTANT_TOKEN=${var.homeassistant_token}",
   ]
 
   upload {
@@ -154,10 +152,5 @@ resource "docker_container" "alloy" {
   lifecycle {
     # Docker defaults memory_swap to twice memory; ignore to prevent a perpetual in-place diff
     ignore_changes = [memory_swap]
-
-    precondition {
-      condition     = var.homeassistant_target == "" || var.homeassistant_token != ""
-      error_message = "Set homeassistant_token when homeassistant_target is set."
-    }
   }
 }

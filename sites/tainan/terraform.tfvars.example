@@ -16,10 +16,6 @@ node_targets = {
   raspberrypi-4 = "<rpi4-iot-ip>:9100"
 }
 
-# Home Assistant on the Pi 4; its prometheus: filter limits what is exported.
-homeassistant_target = "<rpi4-iot-ip>:8123"
-homeassistant_token  = "<long-lived access token>"
-
 # SNMPv3 user from DSM -> Terminal & SNMP -> SNMPv3 (SHA + AES).
 snmp_v3_username      = "alloy"
 snmp_v3_auth_password = "<auth password>"
