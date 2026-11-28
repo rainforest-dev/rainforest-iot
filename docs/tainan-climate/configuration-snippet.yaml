@@ -48,6 +48,25 @@ template:
           {{ states('sensor.dyson_hp09_temperature') | is_number
              or state_attr('climate.leng_qi_ji', 'current_temperature') is number }}
 
+sensor:
+  # Lowest reading of the last hour: a run starts only after the room has stayed humid,
+  # not on a short spike.
+  - platform: statistics
+    name: Bedroom humidity 1h min
+    unique_id: tainan_bedroom_humidity_1h_min
+    entity_id: sensor.bedroom_humidity
+    state_characteristic: value_min
+    max_age: { hours: 1 }
+    sampling_size: 500
+  - platform: history_stats
+    name: Closet dehumidify runs today
+    unique_id: tainan_closet_dehumidify_runs_today
+    entity_id: input_boolean.closet_dehumidify
+    state: "on"
+    type: count
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+
 # /api/prometheus for the NAS Alloy (job="homeassistant", site="tainan").
 # Only these entities are exported; everything else stays out of Prometheus.
 prometheus:
@@ -57,6 +76,8 @@ prometheus:
     include_entities:
       - sensor.bedroom_humidity
       - sensor.bedroom_temperature
+      - sensor.bedroom_humidity_1h_min
+      - sensor.closet_dehumidify_runs_today
       - sensor.dyson_hp09_humidity
       - sensor.dyson_hp09_temperature
       - climate.leng_qi_ji

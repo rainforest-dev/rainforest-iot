@@ -7,20 +7,19 @@
 
 - id: closet_dehumidify_start
   alias: 衣櫥除濕 開始
-  description: Room humidity above 65% starts the AC in dry mode, unless someone is using the AC.
+  description: Room humidity above 70% for an hour starts the AC in dry mode, at most twice a day.
   mode: single
   triggers:
     - trigger: numeric_state
-      entity_id: sensor.bedroom_humidity
-      above: 65
-      for: { minutes: 15 }
-    # Re-check every 30 minutes, so a run that hit the 3 h cap starts again after the cooldown.
+      entity_id: sensor.bedroom_humidity_1h_min
+      above: 70
+    # Re-check every 30 minutes, so a run blocked by the rest period starts once it is over.
     - trigger: time_pattern
       minutes: /30
   conditions:
     - condition: numeric_state
-      entity_id: sensor.bedroom_humidity
-      above: 65
+      entity_id: sensor.bedroom_humidity_1h_min
+      above: 70
     # Dry mode also cools; below 20 °C it would make the room cold for little gain.
     - condition: numeric_state
       entity_id: sensor.bedroom_temperature
@@ -34,10 +33,14 @@
     - condition: state
       entity_id: input_boolean.closet_dehumidify_fault
       state: "off"
-    # One hour of rest after each run.
+    # A few long runs a day dry the walls and clothes; short frequent ones only dry the air
+    # and spend most of their power on compressor start-up.
+    - condition: numeric_state
+      entity_id: sensor.closet_dehumidify_runs_today
+      below: 2
     - condition: template
       value_template: >
-        {{ now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=1) }}
+        {{ now() - states.input_boolean.closet_dehumidify.last_changed > timedelta(hours=6) }}
   actions:
     - action: input_number.set_value
       target: { entity_id: input_number.closet_dehumidify_start_humidity }
@@ -112,7 +115,7 @@
 
 - id: closet_dehumidify_stop
   alias: 衣櫥除濕 結束
-  description: Ends a run this automation started, below 55%, after 2 h (fallback) or 3 h.
+  description: Ends a run this automation started, below 55% after at least 1 h, after 2 h (fallback) or 3 h.
   mode: single
   triggers:
     - trigger: numeric_state
@@ -139,7 +142,7 @@
         ran_min: >
           {{ ((now() - states.input_boolean.closet_dehumidify.last_changed).total_seconds() / 60) | round(0) }}
         fallback: "{{ states('input_number.closet_dehumidify_start_humidity') | float(0) == 0 }}"
-        dry_enough: "{{ states('sensor.bedroom_humidity') | float(100) < 55 }}"
+        dry_enough: "{{ ran_min >= 60 and states('sensor.bedroom_humidity') | float(100) < 55 }}"
         capped: "{{ ran_min >= 180 or (fallback and ran_min >= 120) }}"
     - condition: template
       value_template: "{{ dry_enough or capped }}"
@@ -155,7 +158,7 @@
     # A normal run reaching the cap without getting below 55% is worth knowing about.
     - if:
         - condition: template
-          value_template: "{{ capped and not dry_enough and not fallback }}"
+          value_template: "{{ capped and states('sensor.bedroom_humidity') | float(100) >= 55 and not fallback }}"
       then:
         - action: notify.mobile_app_YOUR_PHONE
           data:
