@@ -65,7 +65,10 @@ resource "docker_container" "acton_3" {
   image        = docker_image.shairport.image_id
   restart      = "unless-stopped"
   network_mode = "host"
-  command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "Headphone"]
+  # The Pi's headphone card names its mixer "PCM". With "Headphone" shairport found no mixer,
+  # fell back to software volume and left the hardware at -19.88 dB, so full AirPlay volume
+  # was ~20 dB under the jack's maximum.
+  command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "PCM"]
 
   devices {
     host_path      = "/dev/snd"

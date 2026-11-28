@@ -37,7 +37,7 @@ resource "docker_container" "acton-3" {
   name         = "acton-3"
   restart      = "unless-stopped"
   network_mode = "host"
-  command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "Headphone"]
+  command      = ["--statistics", "-a", "Acton III", "-c", "/config/shairport-sync.conf", "--", "-d", "hw:Headphones", "-c", "PCM"]
 
   # Resource limits
   memory      = 128
